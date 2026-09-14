@@ -66,7 +66,7 @@ float halfToFloat(std::uint16_t h) noexcept {
                 ++shift;
             }
             mantissa &= 0x03ffu;
-            const std::uint32_t exp32 = static_cast<std::uint32_t>(127 - 15 - shift);
+            const std::uint32_t exp32 = static_cast<std::uint32_t>(127 - 14 - shift);
             out = sign | (exp32 << 23) | (mantissa << 13);
         }
     } else if (exponent == 0x1fu) {
