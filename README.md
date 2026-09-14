@@ -93,3 +93,14 @@ Protocol behavior was independently reimplemented from public reverse-engineerin
 - `zengguizhang/pyvut` / `nijkah/pyvut`
 
 No third-party source is vendored or copied into this repository.
+
+## Task 3 common Observation boundary
+
+The fixed Task 1 kit is now consumed by `ViveObservationAdapter`, the bounded loopback
+`ObservationPublisher`, and the Windows `vut_service` executable. Existing backend/probe targets
+remain available without C1 (`-DVUT_BUILD_OBSERVATION=OFF`). Full instructions, exact mapping,
+RF-counter limitations, test ledger and Task 4 handoff: [Task 3](docs/task3/implementation.md).
+
+Implemented and mock/Windows-build verified does not mean hardware verified: no Hub-free dongle,
+tracker, map, 1 m translation or quaternion-axis hardware checks were run for Task 3. Battery and
+all derivatives remain null. `vut-native-v1` requires a verified upper-layer conversion.

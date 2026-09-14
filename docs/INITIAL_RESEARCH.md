@@ -72,3 +72,13 @@ Coordinate conversion, mount transforms, IK and SteamVR policy are intentionally
 - local `PicoMotionTrackerBridge` — architectural reference only.
 
 No third-party source code is copied into this repository. Protocol facts and observed packet formats were reimplemented independently in C++.
+
+## Task 3 verification update
+
+The common C1 boundary is implemented using the hash-verified fixed Task 1 kit. See
+[Task 3 implementation](task3/implementation.md) for provenance, mapping, config and test evidence.
+Windows Release compilation, parser/adapter/generic consumer mocks and loopback tests have run;
+physical dongle/tracker/Hub-free operation has NOT RUN. The position-metre and quaternion/map
+interpretations above remain hypotheses pending hardware measurements. Battery, acceleration,
+four-component angular values and map-transfer recovery are still unresolved. No new third-party
+reverse-engineering source was imported; MonakaProtocol is the explicitly required protocol kit.
