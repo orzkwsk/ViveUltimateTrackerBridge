@@ -35,6 +35,8 @@ with zipfile.ZipFile(artifact if a.verify else a.zip) as z:
     for name, sha in sums.items(): require(digest(data[name]) == sha, name)
     kit = ROOT/'third_party/monaka-protocol'
     if a.verify:
+        require(json.loads((ROOT/'dependencies/task1-external-handoff.json').read_text()) == meta, 'retained external handoff')
+        require({str(f.relative_to(kit)).replace('\\','/') for f in kit.rglob('*') if f.is_file()} == set(data), 'extracted file coverage')
         for name, content in data.items(): require((kit/name).read_bytes() == content, name)
         require((ROOT/'dependencies/monaka-protocol.lock.json').read_bytes() == data['protocol.lock.json'], 'retained lock')
     else:

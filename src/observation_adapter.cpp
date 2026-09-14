@@ -1,0 +1,93 @@
+#include "vut/observation_adapter.hpp"
+#include <cmath>
+#include <limits>
+#include <stdexcept>
+
+namespace vut {
+namespace c1 = monaka::protocol::v1;
+namespace {
+template<class T> void header(T& out, const DeviceId& device, const ObservationContext& c,
+                             std::int64_t seq, std::int64_t received) {
+    out.version = {1, 0};
+    out.source_id = c.sourceId;
+    out.session_id = out.clock_id = c.sessionId;
+    out.device_id = device.toString();
+    out.sequence = seq;
+    out.timestamp_ns = out.sent_at_ns = received - c.epochNs;
+    out.timestamp_kind = "receive";
+    out.coordinate_space = {c.spaces.at(out.device_id), "vut-native-v1", c.revision};
+    out.capabilities = {"position", "orientation"};
+}
+}
+ViveObservationAdapter::ViveObservationAdapter(ObservationContext c) : context_(std::move(c)) {
+    if (context_.spaces.size() > 256 || context_.epochNs < 0) throw std::invalid_argument("invalid observation context");
+    // Validate configured common fields with the fixed codec before polling HID.
+    for (const auto& [mac, space] : context_.spaces) {
+        c1::ObservationDeviceState state;
+        state.version = {1, 0}; state.source_id = context_.sourceId;
+        state.session_id = state.clock_id = context_.sessionId;
+        state.device_id = mac; state.timestamp_kind = "receive";
+        state.presence = "unknown"; state.tracking_state = "unknown";
+        state.coordinate_space = {space, "vut-native-v1", context_.revision};
+        std::string bytes; c1::Error error;
+        if (!c1::EncodeEnvelope(state, bytes, error)) throw std::invalid_argument(error.message);
+    }
+}
+c1::TrackerObservation ViveObservationAdapter::mapPose(const TrackerState& p, const ObservationContext& c, std::int64_t seq) {
+    c1::TrackerObservation out;
+    header(out, p.device, c, seq, p.observedMonotonicNs);
+    const auto status = p.trackingStatus;
+    const bool allowPosition = status == TrackingStatus::Ok;
+    const bool allowOrientation = allowPosition || status == TrackingStatus::Lost || status == TrackingStatus::RecentlyLost;
+    const auto& v = p.positionMeters;
+    const auto& q = p.orientationXyzw;
+    const double norm = std::hypot(std::hypot(double(q.x), double(q.y)), std::hypot(double(q.z), double(q.w)));
+    out.validity.position = allowPosition && std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
+    out.validity.orientation = allowOrientation && std::isfinite(norm) && norm >= 0.5 && norm <= 1.5;
+    if (out.validity.position) out.position = c1::Vec3{v.x, v.y, v.z};
+    if (out.validity.orientation) out.orientation = c1::QuatXyzw{q.x, q.y, q.z, q.w};
+    out.orientation_evidence = out.validity.orientation ? "device" : "none";
+    if (allowOrientation) out.tracking_state = out.validity.position && out.validity.orientation ? "tracked" :
+        out.validity.position || out.validity.orientation ? "degraded" : "lost";
+    else out.tracking_state = status == TrackingStatus::NoImagesYet || status == TrackingStatus::NotInitialized ||
+        status == TrackingStatus::SystemNotReady ? "initializing" : "unknown";
+    return out;
+}
+std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& event) {
+    const auto reject = [&]() -> std::optional<c1::Envelope> { ++rejected_; return {}; };
+    if (event.kind != BackendEvent::Kind::Pose && event.kind != BackendEvent::Kind::DevicePaired &&
+        event.kind != BackendEvent::Kind::DeviceUnpaired) return {};
+    if (event.transportGeneration != context_.generation || event.observedMonotonicNs < context_.epochNs ||
+        !context_.spaces.contains(event.device.toString())) return reject();
+    auto& stream = streams_[event.device.toString()];
+    if (event.kind == BackendEvent::Kind::Pose) {
+        if (!event.pose || event.pose->device.toString() != event.device.toString() || stream.absent) return reject();
+        const auto& p = *event.pose;
+        if (p.observedMonotonicNs != event.observedMonotonicNs || p.observedMonotonicNs <= stream.lastPoseNs) return reject();
+        if (stream.lastPoseNs >= 0) {
+            const auto delta = static_cast<std::uint8_t>(p.packetIndex - stream.rf);
+            // Half-range serial arithmetic. Ambiguous gaps require explicit session restart.
+            if (delta == 0 || delta >= 128 || p.observedMonotonicNs - stream.lastPoseNs > 500000000) return reject();
+        }
+        if (stream.poseSequence == std::numeric_limits<std::int64_t>::max()) { restartRequired_ = true; return reject(); }
+        auto out = mapPose(p, context_, stream.poseSequence++);
+        stream.lastPoseNs = p.observedMonotonicNs; stream.rf = p.packetIndex;
+        return out;
+    }
+    if (stream.stateSequence == std::numeric_limits<std::int64_t>::max()) { restartRequired_ = true; return reject(); }
+    if (event.observedMonotonicNs <= stream.lastStateNs) return reject();
+    if (event.kind == BackendEvent::Kind::DevicePaired && stream.absent) {
+        // Re-pair may establish a new map origin. Reserve a new source session/revision.
+        restartRequired_ = true; return reject();
+    }
+    c1::ObservationDeviceState out;
+    header(out, event.device, context_, stream.stateSequence++, event.observedMonotonicNs);
+    stream.lastStateNs = event.observedMonotonicNs;
+    const bool absent = event.kind == BackendEvent::Kind::DeviceUnpaired;
+    // Do not reset pose counters or duplicate history on metadata events.
+    stream.absent = absent;
+    out.presence = absent ? "absent" : "present";
+    out.tracking_state = absent ? "disconnected" : "initializing";
+    return out;
+}
+}
