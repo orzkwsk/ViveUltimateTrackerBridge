@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <chrono>
 #include <map>
+#include <limits>
 #include <mutex>
 #include <utility>
 
@@ -121,15 +122,19 @@ public:
         return buffer;
     }
 
+    bool readFailed() const { return readFailed_; }
+
     std::vector<std::uint8_t> read(int timeoutMs) {
+        readFailed_ = false;
         std::vector<std::uint8_t> buffer(inputLength_, 0);
         OVERLAPPED ov{};
         ov.hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-        if (!ov.hEvent) return {};
+        if (!ov.hEvent) { readFailed_ = true; return {}; }
 
         DWORD readBytes = 0;
         const BOOL immediate = ReadFile(handle_, buffer.data(), static_cast<DWORD>(buffer.size()), &readBytes, &ov);
         if (!immediate && GetLastError() != ERROR_IO_PENDING) {
+            readFailed_ = true;
             CloseHandle(ov.hEvent);
             return {};
         }
@@ -137,10 +142,14 @@ public:
             const DWORD wait = WaitForSingleObject(ov.hEvent, static_cast<DWORD>(std::max(timeoutMs, 0)));
             if (wait != WAIT_OBJECT_0) {
                 CancelIoEx(handle_, &ov);
+                // OVERLAPPED and buffer must live until cancellation completes.
+                GetOverlappedResult(handle_, &ov, &readBytes, TRUE);
+                readFailed_ = wait != WAIT_TIMEOUT;
                 CloseHandle(ov.hEvent);
                 return {};
             }
             if (!GetOverlappedResult(handle_, &ov, &readBytes, FALSE)) {
+                readFailed_ = true;
                 CloseHandle(ov.hEvent);
                 return {};
             }
@@ -151,6 +160,7 @@ public:
     }
 
 private:
+    bool readFailed_ = false;
     HANDLE handle_ = INVALID_HANDLE_VALUE;
     std::size_t featureLength_ = 65;
     std::size_t inputLength_ = 0x400;
@@ -168,12 +178,16 @@ struct Backend::Impl {
     std::map<int, std::uint16_t> buttons;
     int hostSlot = -1;
     bool isRunning = false;
+    std::uint64_t generation = 0;
+    std::int64_t receivedNs = 0;
     std::string error;
 #ifdef _WIN32
     WinHidDevice hid;
 #endif
 
     void emit(BackendEvent event) {
+        event.observedMonotonicNs = receivedNs;
+        event.transportGeneration = generation;
         if (callback) callback(event);
     }
 
@@ -231,6 +245,10 @@ bool Backend::start(const BackendConfig& config) {
     stop();
     impl_->config = config;
     impl_->error.clear();
+    if (impl_->generation == std::numeric_limits<std::uint64_t>::max()) {
+        impl_->error = "transport generation exhausted"; return false;
+    }
+    ++impl_->generation;
 #ifdef _WIN32
     if (!impl_->hid.open(protocol::kVendorIdVive, protocol::kProductIdUltimateTrackerDongle, impl_->error)) return false;
     const std::array<std::uint8_t, 7> enablePairing = {
@@ -257,6 +275,8 @@ void Backend::stop() {
     impl_->buttons.clear();
 }
 
+std::uint64_t Backend::transportGeneration() const noexcept { return impl_->generation; }
+
 bool Backend::running() const noexcept { return impl_->isRunning; }
 const std::string& Backend::lastError() const noexcept { return impl_->error; }
 void Backend::setEventCallback(EventCallback callback) { impl_->callback = std::move(callback); }
@@ -276,6 +296,12 @@ bool Backend::pollOnce() {
     if (!impl_->isRunning) return false;
 #ifdef _WIN32
     auto report = impl_->hid.read(impl_->config.readTimeoutMs);
+    impl_->receivedNs = monotonicNs();
+    if (impl_->hid.readFailed()) {
+        impl_->error = "HID read failed: transport session lost";
+        stop();
+        return false;
+    }
     if (report.empty()) return true;
 
     if (auto pair = protocol::parsePairEvent(report)) {
@@ -310,7 +336,7 @@ bool Backend::pollOnce() {
     }
 
     if (incoming->type == protocol::kIncomingPose) {
-        auto state = protocol::parsePose(*incoming, monotonicNs());
+        auto state = protocol::parsePose(*incoming, impl_->receivedNs);
         if (!state) return true;
         {
             std::scoped_lock lock(impl_->mutex);

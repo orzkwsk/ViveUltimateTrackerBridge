@@ -32,6 +32,7 @@ public:
     [[nodiscard]] const std::string& lastError() const noexcept;
 
     bool pollOnce();
+    [[nodiscard]] std::uint64_t transportGeneration() const noexcept;
     void setEventCallback(EventCallback callback);
     [[nodiscard]] std::vector<TrackerState> snapshot() const;
 

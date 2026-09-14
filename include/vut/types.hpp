@@ -65,6 +65,8 @@ struct BackendEvent {
     DeviceId device;
     std::optional<TrackerState> pose;
     std::string text;
+    std::int64_t observedMonotonicNs = 0;
+    std::uint64_t transportGeneration = 0;
 };
 
 } // namespace vut

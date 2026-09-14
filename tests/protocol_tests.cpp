@@ -24,7 +24,9 @@ void putU16(std::vector<std::uint8_t>& b, std::size_t off, std::uint16_t value) 
 bool near(float a, float b) { return std::fabs(a - b) < 1e-5f; }
 }
 
-int main() try {
+int main(int argc, char** argv) try {
+    if (argc == 2 && std::string(argv[1]) == "--negative-fixture")
+        CHECK(vut::protocol::halfToFloat(0x0001) == 0.0f);
     CHECK(vut::protocol::halfToFloat(0x0001) == std::ldexp(1.0f, -24));
     CHECK(vut::protocol::halfToFloat(0x03ff) == std::ldexp(1023.0f, -24));
     CHECK(vut::protocol::halfToFloat(0x0400) == std::ldexp(1.0f, -14));
@@ -71,6 +73,30 @@ int main() try {
     CHECK(near(pose->orientationXyzw.w, 1.0f));
     CHECK(pose->observedMonotonicNs == 1234);
 
+    report.resize(51); report[11]=39;
+    auto extended=vut::protocol::parseIncomingEnvelope(report); CHECK(extended);
+    CHECK(vut::protocol::parsePose(*extended,1234));
+    for (std::size_t len=0; len<51; ++len) {
+        std::vector<std::uint8_t> truncated(report.begin(),report.begin()+len);
+        CHECK(!vut::protocol::parseIncomingEnvelope(truncated));
+    }
+    report[11]=38;
+    auto badLength=vut::protocol::parseIncomingEnvelope(report); CHECK(badLength);
+    CHECK(!vut::protocol::parsePose(*badLength,0));
+    std::vector<std::uint8_t> pair(12); pair[0]=0x18; pair[1]=12;
+    std::memcpy(pair.data()+6,mac,6);
+    auto paired=vut::protocol::parsePairEvent(pair); CHECK(paired && !paired->unpair);
+    CHECK(paired->device.toString()=="23:32:42:b7:82:d3");
+    pair[5]=1; CHECK(vut::protocol::parsePairEvent(pair)->unpair);
+    pair.insert(pair.begin(),0); CHECK(vut::protocol::parsePairEvent(pair));
+    pair.resize(10); CHECK(!vut::protocol::parsePairEvent(pair));
+    const std::vector<std::uint8_t> payload{1,2,3};
+    auto command=vut::protocol::buildFeatureCommand(0x18,payload);
+    CHECK(command.size()==65 && command[0]==0 && command[1]==0x18 && command[2]==5 && command[3]==1);
+    CHECK(vut::protocol::buildFeatureCommand(0x18,payload,5).empty());
+    auto ack=vut::protocol::buildAckTx(paired->device,"ARI1");
+    CHECK(ack.size()==14 && ack[0]==4 && ack[10]=='A' && ack[13]=='1');
+    CHECK(vut::protocol::buildAckTx(paired->device,std::string(45,'x')).empty());
     std::cout << "protocol tests passed\n";
     return 0;
 }
