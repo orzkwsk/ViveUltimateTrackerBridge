@@ -25,13 +25,8 @@ namespace {
 template <typename T>
 T readLe(const std::uint8_t* p) {
     T value{};
-    std::memcpy(&value, p, sizeof(T));
-#if defined(__cpp_lib_endian)
-    if constexpr (std::endian::native == std::endian::big) {
-        if constexpr (sizeof(T) == 2) value = static_cast<T>(__builtin_bswap16(static_cast<std::uint16_t>(value)));
-        if constexpr (sizeof(T) == 4) value = static_cast<T>(__builtin_bswap32(static_cast<std::uint32_t>(value)));
-    }
-#endif
+    for (std::size_t i = 0; i < sizeof(T); ++i)
+        value |= static_cast<T>(static_cast<T>(p[i]) << (8 * i));
     return value;
 }
 
