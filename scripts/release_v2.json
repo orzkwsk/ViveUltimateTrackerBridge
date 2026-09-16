@@ -66,6 +66,19 @@
       ]
     },
     {
+      "name": "codec-probe-build",
+      "command": [
+        "{CMAKE}",
+        "--build",
+        "{BUILD}",
+        "--config",
+        "Release",
+        "--target",
+        "monaka_codec_runner",
+        "monaka_codec_runner_v2"
+      ]
+    },
+    {
       "name": "ctest",
       "command": [
         "{CTEST}",
@@ -111,6 +124,7 @@
     "pinned-v2-kit",
     "cmake-configure",
     "cmake-build",
+    "codec-probe-build",
     "ctest",
     "synthetic-samples",
     "v2-interop"
@@ -128,7 +142,9 @@
         "protocol_kit_integrity",
         "loopback_udp",
         "cross_language",
-        "service_configuration"
+        "service_configuration",
+        "model_validation",
+        "model_validation_v2"
       ]
     }
   ],
