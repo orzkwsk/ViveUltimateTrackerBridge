@@ -1,0 +1,159 @@
+{
+  "repo": "ViveUltimateTrackerBridge",
+  "commands": [
+    {
+      "name": "release-tool-tests",
+      "command": [
+        "{PYTHON}",
+        "scripts/test_release_v2.py"
+      ]
+    },
+    {
+      "name": "release-tool-tests-optimized",
+      "command": [
+        "{PYTHON}",
+        "-O",
+        "scripts/test_release_v2.py"
+      ]
+    },
+    {
+      "name": "java-version",
+      "command": [
+        "{JAVA}",
+        "-version"
+      ]
+    },
+    {
+      "name": "cmake-version",
+      "command": [
+        "{CMAKE}",
+        "--version"
+      ]
+    },
+    {
+      "name": "pinned-v2-kit",
+      "command": [
+        "{PYTHON}",
+        "scripts/verify_protocol_v2.py"
+      ]
+    },
+    {
+      "name": "cmake-configure",
+      "command": [
+        "{CMAKE}",
+        "-S",
+        "{ROOT}",
+        "-B",
+        "{BUILD}",
+        "-A",
+        "x64",
+        "-DBUILD_TESTING=ON",
+        "-DMONAKA_BUILD_TESTS=ON",
+        "-DCMAKE_CXX_FLAGS=/EHsc",
+        "-DVUT_BUILD_OBSERVATION=ON",
+        "-DJava_JAVA_EXECUTABLE={JAVA}",
+        "-DJava_JAVAC_EXECUTABLE={JAVAC}"
+      ]
+    },
+    {
+      "name": "cmake-build",
+      "command": [
+        "{CMAKE}",
+        "--build",
+        "{BUILD}",
+        "--config",
+        "Release"
+      ]
+    },
+    {
+      "name": "ctest",
+      "command": [
+        "{CTEST}",
+        "--test-dir",
+        "{BUILD}",
+        "-C",
+        "Release",
+        "--output-on-failure",
+        "--no-tests=error",
+        "--output-junit",
+        "{WORK}/ctest.xml"
+      ]
+    },
+    {
+      "name": "synthetic-samples",
+      "command": [
+        "{BUILD}/Release/vut_observation_tests.exe",
+        "--emit",
+        "{WORK}/samples.jsonl"
+      ]
+    },
+    {
+      "name": "v2-interop",
+      "command": [
+        "{PYTHON}",
+        "scripts/release_interop.py",
+        "--kit",
+        "{ROOT}/third_party/monaka-protocol-v2",
+        "--cpp",
+        "{BUILD}/Release/vut_common_codec_runner.exe",
+        "--java-home",
+        "{JAVA_HOME}",
+        "--work",
+        "{WORK}/interop"
+      ]
+    }
+  ],
+  "required_steps": [
+    "release-tool-tests",
+    "release-tool-tests-optimized",
+    "java-version",
+    "cmake-version",
+    "pinned-v2-kit",
+    "cmake-configure",
+    "cmake-build",
+    "ctest",
+    "synthetic-samples",
+    "v2-interop"
+  ],
+  "test_groups": [
+    {
+      "name": "native",
+      "paths": [
+        "{WORK}/ctest.xml"
+      ],
+      "required": [
+        "protocol_v2_integrity",
+        "protocol",
+        "observation",
+        "protocol_kit_integrity",
+        "loopback_udp",
+        "cross_language",
+        "service_configuration"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "runtime/vut_service.exe",
+      "path": "{BUILD}/Release/vut_service.exe"
+    },
+    {
+      "name": "runtime/vut_probe.exe",
+      "path": "{BUILD}/Release/vut_probe.exe"
+    },
+    {
+      "name": "config/vut-service.example.conf",
+      "path": "{ROOT}/config/vut-service.example.conf"
+    }
+  ],
+  "evidence": [
+    {
+      "name": "evidence/synthetic-vive-samples.jsonl",
+      "path": "{WORK}/samples.jsonl"
+    },
+    {
+      "name": "evidence/v2-interop.json",
+      "path": "{WORK}/interop/result.json"
+    }
+  ]
+}
