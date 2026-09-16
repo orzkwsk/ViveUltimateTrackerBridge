@@ -54,6 +54,8 @@ function Invoke-RevisionStep {
 
 $BuildDir = Join-Path $RepoRoot ("build/revision-{0}" -f $Mode.ToLowerInvariant())
 $Steps = @(
+    @{ Name='release-tooling'; File='python'; Args=@('scripts/test_release_v2.py') },
+    @{ Name='release-tooling-optimized'; File='python'; Args=@('-O','scripts/test_release_v2.py') },
     @{ Name='protocol-v2-kit'; File='python'; Args=@('scripts/verify_protocol_v2.py') },
     @{ Name='protocol-v1-historical-kit'; File='python'; Args=@('scripts/import_protocol_kit.py','--verify') },
     @{ Name='cmake-configure'; File='cmake'; Args=@('-S','.','-B',$BuildDir,'-A','x64','-DBUILD_TESTING=ON','-DVUT_BUILD_OBSERVATION=ON') },

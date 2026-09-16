@@ -1,6 +1,10 @@
 """Package committed Task 3 handoff without depending on sibling source trees."""
 import hashlib,json,subprocess,zipfile
 from pathlib import Path
+
+if __name__ == "__main__":
+    raise SystemExit("Historical wire-v1 report is retired at current v2 HEAD. Use python scripts/release_v2.py; see docs/release-v2.md. Historical supplied artifacts remain immutable provenance.")
+
 ROOT=Path(__file__).resolve().parents[1]
 def git(*args):return subprocess.check_output(['git',*args],cwd=ROOT).decode().strip()
 def sha(data):return hashlib.sha256(data).hexdigest()

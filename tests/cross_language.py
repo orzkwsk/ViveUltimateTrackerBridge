@@ -1,6 +1,9 @@
 """Run the pinned shared fixtures and backend samples through both actual codecs."""
 import json, os, subprocess, sys
 from pathlib import Path
+
+def require(ok, message):
+    if not ok: raise RuntimeError(message)
 root=Path(__file__).resolve().parents[1]
 cpp,producer,java,javac=sys.argv[1:5]
 kit=root/'third_party/monaka-protocol-v2'
@@ -16,18 +19,18 @@ for item in index:
     path=kit/'fixtures/v2'/item['file']
     results=[call([cpp],path),call(jvm,path)]
     if item['error']:
-        assert results==['ERROR:'+item['error']]*2,item['file']
+        require(results==['ERROR:'+item['error']]*2, item['file'])
     else:
         expected=item['decoded'];expected['version']['minor']=0
         for output,consumer in zip(results,[jvm,[cpp]]):
-            assert json.loads(output)==expected,item['file']
+            require(json.loads(output)==expected, item['file'])
             temp=build/'cross.json';temp.write_text(output,encoding='utf-8')
-            assert json.loads(call(consumer,temp))==expected,item['file']
+            require(json.loads(call(consumer,temp))==expected, item['file'])
             cross+=1
 samples=build/'vive-samples.jsonl'
 subprocess.run([producer,'--emit',str(samples)],check=True)
 for i,line in enumerate(samples.read_text().splitlines()):
     path=build/f'vive-{i}.json';path.write_text(line,encoding='utf-8')
-    output=call(jvm,path);assert json.loads(output)==json.loads(line)
-    path.write_text(output,encoding='utf-8');assert json.loads(call([cpp],path))==json.loads(line)
+    output=call(jvm,path);require(json.loads(output)==json.loads(line), 'Validation failed: json.loads(output)==json.loads(line)')
+    path.write_text(output,encoding='utf-8');require(json.loads(call([cpp],path))==json.loads(line), 'Validation failed: json.loads(call([cpp],path))==json.loads(line)')
 print(f'PASS: {len(index)} fixed fixtures, {cross} shared cross directions, 7 synthetic VIVE C++ -> JVM -> C++ samples')
