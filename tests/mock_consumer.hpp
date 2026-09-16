@@ -1,5 +1,5 @@
 #pragma once
-#include "monaka/protocol/v1/codec.hpp"
+#include "monaka/protocol/v2/codec.hpp"
 #include <map>
 #include <set>
 #include <string_view>

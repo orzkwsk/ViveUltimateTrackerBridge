@@ -1,5 +1,5 @@
 #include "mock_consumer.hpp"
-namespace c1=monaka::protocol::v1;
+namespace c1=monaka::protocol::v2;
 bool MockConsumer::receive(std::string_view bytes,std::int64_t now) {
     c1::Envelope value; c1::Error error;
     if(!c1::DecodeEnvelope(reinterpret_cast<const std::uint8_t*>(bytes.data()),bytes.size(),value,error)) return false;

@@ -1,4 +1,4 @@
-import dev.monaka.protocol.v1.*;
+import dev.monaka.protocol.v2.*;
 import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
 public class CodecConsumer {

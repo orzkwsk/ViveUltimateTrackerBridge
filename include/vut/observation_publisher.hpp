@@ -1,5 +1,5 @@
 #pragma once
-#include "monaka/protocol/v1/codec.hpp"
+#include "monaka/protocol/v2/codec.hpp"
 #include <deque>
 #include <functional>
 #include <map>
@@ -14,7 +14,7 @@ public:
     using Clock = std::function<std::int64_t()>;
     struct Counters { std::uint64_t sent=0, sendErrors=0, encodeErrors=0, dropped=0; };
     ObservationPublisher(std::string session, Send send, Clock clock, std::size_t capacity=512);
-    void enqueue(monaka::protocol::v1::Envelope);
+    void enqueue(monaka::protocol::v2::Envelope);
     void flush(std::size_t budget=8);
     void clear();
     std::size_t pending() const { return latest_.size(); }
@@ -25,7 +25,7 @@ private:
     Send send_;
     Clock clock_;
     std::size_t capacity_;
-    std::map<Key, monaka::protocol::v1::Envelope> latest_;
+    std::map<Key, monaka::protocol::v2::Envelope> latest_;
     std::deque<Key> order_;
     Counters counters_;
 };

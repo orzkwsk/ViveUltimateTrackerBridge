@@ -1,6 +1,6 @@
 #pragma once
 #include "vut/types.hpp"
-#include "monaka/protocol/v1/codec.hpp"
+#include "monaka/protocol/v2/codec.hpp"
 #include <map>
 
 namespace vut {
@@ -15,9 +15,9 @@ struct ObservationContext {
 class ViveObservationAdapter {
 public:
     explicit ViveObservationAdapter(ObservationContext context);
-    static monaka::protocol::v1::TrackerObservation mapPose(
+    static monaka::protocol::v2::TrackerObservation mapPose(
         const TrackerState&, const ObservationContext&, std::int64_t sequence);
-    std::optional<monaka::protocol::v1::Envelope> admit(const BackendEvent&);
+    std::optional<monaka::protocol::v2::Envelope> admit(const BackendEvent&);
     bool restartRequired() const { return restartRequired_; }
     std::uint64_t rejected() const { return rejected_; }
 private:

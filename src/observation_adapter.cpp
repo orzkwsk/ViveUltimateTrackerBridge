@@ -4,11 +4,12 @@
 #include <stdexcept>
 
 namespace vut {
-namespace c1 = monaka::protocol::v1;
+namespace c1 = monaka::protocol::v2;
 namespace {
 template<class T> void header(T& out, const DeviceId& device, const ObservationContext& c,
                              std::int64_t seq, std::int64_t received) {
-    out.version = {1, 0};
+    out.version = {2, 0};
+    out.modality = "none";
     out.source_id = c.sourceId;
     out.session_id = out.clock_id = c.sessionId;
     out.device_id = device.toString();
@@ -24,7 +25,7 @@ ViveObservationAdapter::ViveObservationAdapter(ObservationContext c) : context_(
     // Validate configured common fields with the fixed codec before polling HID.
     for (const auto& [mac, space] : context_.spaces) {
         c1::ObservationDeviceState state;
-        state.version = {1, 0}; state.source_id = context_.sourceId;
+        state.version = {2, 0}; state.modality = "none"; state.source_id = context_.sourceId;
         state.session_id = state.clock_id = context_.sessionId;
         state.device_id = mac; state.timestamp_kind = "receive";
         state.presence = "unknown"; state.tracking_state = "unknown";
@@ -38,17 +39,24 @@ c1::TrackerObservation ViveObservationAdapter::mapPose(const TrackerState& p, co
     header(out, p.device, c, seq, p.observedMonotonicNs);
     const auto status = p.trackingStatus;
     const bool allowPosition = status == TrackingStatus::Ok;
-    const bool allowOrientation = allowPosition || status == TrackingStatus::Lost || status == TrackingStatus::RecentlyLost;
+    // Lost/RecentlyLost numeric quaternions do not prove independent usable rotation.
+    // Native loss semantics remain hardware NOT RUN, unlike an explicit OpenVR
+    // Fallback_RotationOnly report. Do not fabricate a second IMU stream.
+    const bool allowOrientation = allowPosition;
     const auto& v = p.positionMeters;
     const auto& q = p.orientationXyzw;
     const double norm = std::hypot(std::hypot(double(q.x), double(q.y)), std::hypot(double(q.z), double(q.w)));
     out.validity.position = allowPosition && std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
     out.validity.orientation = allowOrientation && std::isfinite(norm) && norm >= 0.5 && norm <= 1.5;
+    const bool full = out.validity.position && out.validity.orientation;
+    out.validity = {full, full};
+    out.modality = full ? "full" : "none";
     if (out.validity.position) out.position = c1::Vec3{v.x, v.y, v.z};
     if (out.validity.orientation) out.orientation = c1::QuatXyzw{q.x, q.y, q.z, q.w};
     out.orientation_evidence = out.validity.orientation ? "device" : "none";
     if (allowOrientation) out.tracking_state = out.validity.position && out.validity.orientation ? "tracked" :
         out.validity.position || out.validity.orientation ? "degraded" : "lost";
+    else if (status == TrackingStatus::Lost || status == TrackingStatus::RecentlyLost) out.tracking_state = "lost";
     else out.tracking_state = status == TrackingStatus::NoImagesYet || status == TrackingStatus::NotInitialized ||
         status == TrackingStatus::SystemNotReady ? "initializing" : "unknown";
     return out;

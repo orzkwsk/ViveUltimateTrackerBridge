@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <iterator>
 #define CHECK(x) do {if(!(x)) throw std::runtime_error("check failed: " #x);} while(false)
-namespace c1=monaka::protocol::v1;
+namespace c1=monaka::protocol::v2;
 const std::string mac="23:32:42:b7:82:d3";
 const std::string sid="00000000-0000-4000-8000-000000000001";
 const std::string sid2="00000000-0000-4000-8000-000000000002";
@@ -43,8 +43,9 @@ int main(int argc,char** argv) try {
     for(int status: {0,1,2,3,4,5,255}) {
         e.pose->trackingStatus=static_cast<vut::TrackingStatus>(status);
         auto p=vut::ViveObservationAdapter::mapPose(*e.pose,c,0);
-        CHECK(p.validity.position==(status==2)); CHECK(p.validity.orientation==(status==2||status==3||status==4));
-        CHECK(p.tracking_state==(status==2?"tracked":status==3||status==4?"degraded":status==255?"unknown":"initializing"));
+        CHECK(p.validity.position==(status==2)); CHECK(p.validity.orientation==(status==2));
+        CHECK(p.modality==(status==2?"full":"none"));
+        CHECK(p.tracking_state==(status==2?"tracked":status==3||status==4?"lost":status==255?"unknown":"initializing"));
         CHECK(!p.battery && !p.linear_velocity && !p.angular_velocity && !p.linear_acceleration);
         CHECK(p.capabilities==std::vector<std::string>({"position","orientation"}));
         CHECK(p.device_id==mac && p.coordinate_space.id=="map-a"); encode(p);
@@ -52,7 +53,7 @@ int main(int argc,char** argv) try {
     e=fixture();
     for(float invalid: {std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}) {
         auto p=*e.pose; p.positionMeters.x=invalid;
-        auto o=vut::ViveObservationAdapter::mapPose(p,c,0); CHECK(!o.position && o.orientation && o.tracking_state=="degraded"); encode(o);
+        auto o=vut::ViveObservationAdapter::mapPose(p,c,0); CHECK(!o.position && !o.orientation && o.tracking_state=="lost" && o.modality=="none"); encode(o);
         p.orientationXyzw.x=invalid; o=vut::ViveObservationAdapter::mapPose(p,c,0);
         CHECK(o.tracking_state=="lost" && !o.orientation); encode(o);
     }

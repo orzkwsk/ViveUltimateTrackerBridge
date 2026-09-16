@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #endif
 namespace vut {
-namespace c1 = monaka::protocol::v1;
+namespace c1 = monaka::protocol::v2;
 ObservationPublisher::ObservationPublisher(std::string session, Send send, Clock clock, std::size_t capacity)
     : session_(std::move(session)), send_(std::move(send)), clock_(std::move(clock)), capacity_(capacity) {
     if (!capacity || capacity > 512) throw std::invalid_argument("queue capacity must be 1..512");
