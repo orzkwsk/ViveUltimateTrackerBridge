@@ -1,33 +1,41 @@
 # ViveUltimateTrackerBridge repository instructions
 
-This repository owns the VIVE Ultimate Tracker backend boundary for MonakaVR: official dongle -> Windows HID/SetupAPI -> vendor protocol decoding -> normalized backend events -> Monaka C1 `TrackerObservation` / `ObservationDeviceState` publication.
+This repository owns the VIVE Ultimate Tracker backend boundary for MonakaVR: official dongle -> Windows HID/SetupAPI -> vendor protocol decoding -> normalized backend events -> Monaka TrackerObservation / ObservationDeviceState publication.
+
+## Current coordinated Architecture Revision
+
+The older Task 3 document and its fixed C1/wire-1.0 handoff are historical baseline material for the delivered implementation. For the current coordinated revision, protocol/fallback/identity semantics are superseded by the Architecture Revision owned in `MonakaVR/MonakaProtocol` (`docs/architecture-revision.md` and `docs/C2.md`). Do not revert current v2 semantics merely to satisfy an older Task 3 paragraph.
+
+Protocol-dependent migration work must use an **actual generated and hash-pinned wire-v2 kit** from a clean committed MonakaProtocol source tree. Until that artifact and manifest are supplied to this workspace, inspect/plan freely but stop at the protocol dependency boundary; do not fabricate hashes, infer v2 fields from v1, or hand-roll a substitute codec.
+
+Where the current Architecture Revision does not conflict, the existing Task 3 hardware/backend constraints and historical evidence remain applicable.
 
 ## Codex task entry point
 
-For the current MonakaVR layer-separation work, read `docs/codex/Task3_VIVE_Backend.md` completely before making implementation changes. Also read `docs/codex/task3/00_task1_handoff_status.md` before any protocol-dependent work.
+For backend history and non-conflicting VIVE-specific constraints, read `docs/codex/Task3_VIVE_Backend.md` and `docs/codex/task3/00_task1_handoff_status.md` completely before implementation. Treat their fixed-C1 sections as historical once the coordinated v2 handoff is active.
 
 ## Codex Cloud branch handling
 
-The audited Task 3 base is `dev/vivehub-bypass` at `db7c6795055fc00054b43a64e3bbd658a3575932`.
+The audited historical Task 3 base is `dev/vivehub-bypass` at `db7c6795055fc00054b43a64e3bbd658a3575932`.
 
-The prepared GitHub work branch is `refactor/monaka-layer-separation`. Codex Cloud may expose its writable checkout as an internal branch named `work` rather than the GitHub branch name selected as the environment base. This is allowed if the checkout HEAD descends from the prepared Task 3 branch/base. Do not fail solely because the local writable branch is named `work`, and do not recreate/switch branches inside a Codex-managed checkout when remote branches are not exposed.
+For the current coordinated revision, continue from the prepared `refactor/monaka-layer-separation` lineage (or a managed `work` checkout derived from it). Codex Cloud may expose its writable checkout as `work`; this is allowed. Do not recreate/switch branches or rewrite history merely to match the GitHub branch name.
 
-If ancestry does not derive from the Task 3 prepared base, stop and report the mismatch instead of implementing against `main` or an unrelated branch.
+If ancestry does not derive from the prepared lineage, stop and report the mismatch instead of implementing against `main` or an unrelated branch.
 
 ## Repository-wide constraints
 
-- Work only in this repository unless the Task 3 specification explicitly states otherwise.
+- Work only in this repository unless the active coordinated task explicitly states otherwise.
 - Preserve the existing Windows HID/SetupAPI path, official dongle control, independent protocol decoder, backend event model, diagnostic CLI, and existing CMake targets.
-- Preserve `Backend::{start,stop,pollOnce,setEventCallback,snapshot}` and the existing `parsePairEvent`, `parseIncomingEnvelope`, `parsePose`, feature-command and ACK behavior unless Task 3 requires a narrowly scoped verified fix.
-- Do not add VIVE Hub startup/automation, Wi-Fi-only operation, tracker-count-limit bypass, SteamVR driver ownership, world/body calibration, Fusion/Fallback/IK, or body-role policy to this backend.
+- Preserve `Backend::{start,stop,pollOnce,setEventCallback,snapshot}` and the existing `parsePairEvent`, `parseIncomingEnvelope`, `parsePose`, feature-command and ACK behavior unless the active task requires a narrowly scoped verified fix.
+- Do not add VIVE Hub startup/automation, Wi-Fi-only operation, tracker-count-limit bypass, SteamVR driver ownership, world/body calibration, Main/Fallback policy, Fusion/Fallback/IK, or body-role policy to this backend.
 - Do not copy new third-party reverse-engineering source into this repository.
-- Do not invent battery normalization, acceleration semantics, angular-velocity frame/units, coordinate transforms, or liveness guarantees that have not been verified.
-- C1 belongs to MonakaProtocol. Use the fixed Task 1 protocol kit; do not redefine the schema or hand-roll an incompatible codec.
-- Treat slot/RF packet index as vendor diagnostic/addressing data, never as persistent identity or C1 sequence.
+- Do not invent battery normalization, acceleration semantics, angular-velocity frame/units, coordinate transforms, liveness guarantees, or rotation-only capability that has not been verified. Unsupported loss semantics fail closed.
+- MonakaProtocol owns the shared contract. Do not redefine the schema or hand-roll an incompatible codec.
+- Treat slot/RF packet index as vendor diagnostic/addressing data, never as persistent identity or protocol sequence.
 - Preserve unrelated existing work and uncommitted changes.
 - Do not delete branches/files, force-push, rebase, amend, reset away work, or otherwise rewrite history.
-- Keep implementation commits small and reviewable. The `halfToFloat()` subnormal correction must remain a separate small commit with regression fixtures.
+- Keep implementation commits small and reviewable.
 - Run applicable build/tests before reporting completion. Mark hardware and platform checks as PASS only when actually run.
 - Never claim Hub-bypass hardware operation, multi-tracker behavior, loss/recovery, map behavior, or Wi-Fi/count-limit behavior unless it was actually validated.
 
-If repository state, the fixed protocol kit, or observed hardware behavior conflicts with the task specification, inspect and report the difference rather than silently adapting the shared contract.
+If repository state, the active v2 kit, or observed hardware behavior conflicts with the current Architecture Revision, inspect and report the difference rather than silently adapting the shared contract.
