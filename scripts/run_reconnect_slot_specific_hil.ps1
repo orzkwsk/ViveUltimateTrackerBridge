@@ -8,6 +8,7 @@ $ErrorActionPreference = 'Stop'
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $RequiredCommit = '1c8f8a599dc92062bf44e3b79503f921d64636dd'
+$RequiredBuildMarker = 'VUT_RECONNECT_SLOT_SPECIFIC_DIAG_V1'
 $BuildDir = Join-Path $RepoRoot 'build/reconnect-slot-specific'
 
 Push-Location $RepoRoot
@@ -33,6 +34,7 @@ try {
     Write-Host "branch=$branch"
     Write-Host "HEAD=$head"
     Write-Host "required_slot_specific_commit=$RequiredCommit"
+    Write-Host "required_build_marker=$RequiredBuildMarker"
     Write-Host 'expected_cold_start_restart_rf=02 01 00 01 01 01 01'
     Write-Host 'expected_runtime_slot0_restart_rf=02 01 01 00 00 00 00'
     Write-Host 'expected_runtime_slot2_restart_rf=02 01 00 00 01 00 00'
@@ -54,8 +56,18 @@ try {
     $probe = Join-Path $BuildDir 'Release\vut_probe.exe'
     if (-not (Test-Path $probe)) { throw "probe executable not found: $probe" }
 
+    $probeHash = (Get-FileHash -Algorithm SHA256 -Path $probe).Hash.ToLowerInvariant()
+    $probeInfo = Get-Item $probe
+
     Write-Host "HIL_PROBE=$probe"
-    Write-Host 'Before runtime reconnect judgment, verify USBPcap shows slot0 payload 02 01 01 00 00 00 00 after DeviceUnpaired.'
+    Write-Host "HIL_PROBE_SHA256=$probeHash"
+    Write-Host "HIL_PROBE_LENGTH=$($probeInfo.Length)"
+    Write-Host "HIL_PROBE_MTIME_UTC=$($probeInfo.LastWriteTimeUtc.ToString('o'))"
+    Write-Host "EXPECTED_PROBE_BUILD_MARKER=$RequiredBuildMarker"
+    Write-Host 'Before runtime reconnect judgment:'
+    Write-Host "  1. Confirm the probe prints: [build] marker=$RequiredBuildMarker"
+    Write-Host '  2. Confirm USBPcap shows slot0 payload 02 01 01 00 00 00 00 after DeviceUnpaired.'
+    Write-Host 'If either check fails, STOP: the HIL run is invalid and reconnect behavior must not be judged.'
 
     if ($RunProbe) {
         & $probe
