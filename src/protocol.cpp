@@ -37,7 +37,10 @@ float readFloat32Le(const std::uint8_t* p) {
 
 std::span<const std::uint8_t> stripOptionalReportId(std::span<const std::uint8_t> report) {
     if (report.size() >= 2 && report[0] == 0x00 &&
-        (report[1] == kResponsePairEvent || report[1] == kResponseTrackerIncoming || report[1] == 0x1d || report[1] == 0x1e)) {
+        (report[1] == kResponsePairEvent ||
+         report[1] == kResponseTrackerIncoming ||
+         report[1] == kResponseRfStatusChanged ||
+         report[1] == kResponseRfStatus)) {
         return report.subspan(1);
     }
     return report;
@@ -94,6 +97,35 @@ std::optional<PairEvent> parsePairEvent(std::span<const std::uint8_t> rawReport)
     std::memcpy(event.device.mac.data(), payload.data() + 2, event.device.mac.size());
     event.device.slot = slotFromMac(event.device.mac);
     return event;
+}
+
+std::optional<RfStatusReport> parseRfStatus(std::span<const std::uint8_t> rawReport) {
+    const auto report = stripOptionalReportId(rawReport);
+    if (report.size() < 4 ||
+        (report[0] != kResponseRfStatusChanged && report[0] != kResponseRfStatus)) {
+        return std::nullopt;
+    }
+
+    const std::uint8_t declared = report[1];
+    if (declared < 4 || report.size() < declared) return std::nullopt;
+
+    const auto payload = report.subspan(4, declared - 4);
+    if (payload.size() < 2) return std::nullopt;
+
+    const std::size_t innerLength = payload[1];
+    constexpr std::size_t kRequiredInnerBytes = 1 + sizeof(std::uint16_t) + 5 * sizeof(std::uint32_t);
+    if (innerLength < kRequiredInnerBytes || payload.size() < 2 + innerLength) return std::nullopt;
+
+    const auto inner = payload.subspan(2, innerLength);
+
+    RfStatusReport status;
+    status.responseId = report[0];
+    status.innerTag = inner[0];
+    status.unknownHeader = readLe<std::uint16_t>(inner.data() + 1);
+    for (std::size_t slot = 0; slot < status.slotState.size(); ++slot) {
+        status.slotState[slot] = readLe<std::uint32_t>(inner.data() + 3 + slot * sizeof(std::uint32_t));
+    }
+    return status;
 }
 
 std::optional<IncomingEnvelope> parseIncomingEnvelope(std::span<const std::uint8_t> rawReport) {

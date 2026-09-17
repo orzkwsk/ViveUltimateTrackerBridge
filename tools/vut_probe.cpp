@@ -4,6 +4,7 @@
 #include <csignal>
 #include <iomanip>
 #include <iostream>
+#include <string_view>
 
 namespace {
 std::atomic_bool gRun{true};
@@ -21,6 +22,13 @@ int main() {
             std::cout << "[unpair] slot=" << event.device.slot << " mac=" << event.device.toString() << '\n';
         } else if (event.kind == vut::BackendEvent::Kind::Ack) {
             std::cout << "[ack] slot=" << event.device.slot << " " << event.text << '\n';
+        } else if (event.kind == vut::BackendEvent::Kind::Diagnostic) {
+            constexpr std::string_view kRfStatusPrefix = "rf-status";
+            if (event.text.compare(0, kRfStatusPrefix.size(), kRfStatusPrefix) == 0) {
+                std::cout << "[rf-status]" << event.text.substr(kRfStatusPrefix.size()) << '\n';
+            } else {
+                std::cout << "[diag] " << event.text << '\n';
+            }
         } else if (event.kind == vut::BackendEvent::Kind::Pose && event.pose) {
             const auto& p = *event.pose;
             std::cout << std::fixed << std::setprecision(4)

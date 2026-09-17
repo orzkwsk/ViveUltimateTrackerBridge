@@ -3,9 +3,11 @@
 
 #include <algorithm>
 #include <chrono>
+#include <iomanip>
 #include <map>
 #include <limits>
 #include <mutex>
+#include <sstream>
 #include <utility>
 
 #ifdef _WIN32
@@ -309,6 +311,22 @@ bool Backend::pollOnce() {
         return false;
     }
     if (report.empty()) return true;
+
+    if (auto rfStatus = protocol::parseRfStatus(report)) {
+        std::ostringstream text;
+        text << "rf-status"
+             << " report=0x" << std::hex << std::setw(2) << std::setfill('0')
+             << static_cast<unsigned>(rfStatus->responseId)
+             << " tag=0x" << std::setw(2) << static_cast<unsigned>(rfStatus->innerTag)
+             << " header=0x" << std::setw(4) << rfStatus->unknownHeader;
+        for (std::size_t slot = 0; slot < rfStatus->slotState.size(); ++slot) {
+            text << " slot" << std::dec << slot
+                 << "=0x" << std::hex << std::setw(8) << std::setfill('0')
+                 << rfStatus->slotState[slot];
+        }
+        impl_->emit({BackendEvent::Kind::Diagnostic, {}, std::nullopt, text.str()});
+        return true;
+    }
 
     if (auto pair = protocol::parsePairEvent(report)) {
         if (pair->device.slot >= 0) {

@@ -21,6 +21,12 @@ void putU16(std::vector<std::uint8_t>& b, std::size_t off, std::uint16_t value) 
     b[off] = static_cast<std::uint8_t>(value);
     b[off + 1] = static_cast<std::uint8_t>(value >> 8);
 }
+void putU32(std::vector<std::uint8_t>& b, std::size_t off, std::uint32_t value) {
+    b[off + 0] = static_cast<std::uint8_t>(value);
+    b[off + 1] = static_cast<std::uint8_t>(value >> 8);
+    b[off + 2] = static_cast<std::uint8_t>(value >> 16);
+    b[off + 3] = static_cast<std::uint8_t>(value >> 24);
+}
 bool near(float a, float b) { return std::fabs(a - b) < 1e-5f; }
 }
 
@@ -90,6 +96,38 @@ int main(int argc, char** argv) try {
     pair[5]=1; CHECK(vut::protocol::parsePairEvent(pair)->unpair);
     pair.insert(pair.begin(),0); CHECK(vut::protocol::parsePairEvent(pair));
     pair.resize(10); CHECK(!vut::protocol::parsePairEvent(pair));
+
+    std::vector<std::uint8_t> rfStatus(29, 0);
+    rfStatus[0] = vut::protocol::kResponseRfStatus;
+    rfStatus[1] = 29;
+    rfStatus[4] = 0x7a;
+    rfStatus[5] = 23;
+    rfStatus[6] = 0x55;
+    putU16(rfStatus, 7, 0x1234);
+    putU32(rfStatus, 9, 0x32000008);
+    putU32(rfStatus, 13, 0x0a000005);
+    putU32(rfStatus, 17, 0x04000003);
+    putU32(rfStatus, 21, 0x00000000);
+    putU32(rfStatus, 25, 0xffffffff);
+    const auto parsedRfStatus = vut::protocol::parseRfStatus(rfStatus);
+    CHECK(parsedRfStatus);
+    CHECK(parsedRfStatus->responseId == vut::protocol::kResponseRfStatus);
+    CHECK(parsedRfStatus->innerTag == 0x55);
+    CHECK(parsedRfStatus->unknownHeader == 0x1234);
+    CHECK(parsedRfStatus->slotState[0] == 0x32000008);
+    CHECK(parsedRfStatus->slotState[1] == 0x0a000005);
+    CHECK(parsedRfStatus->slotState[2] == 0x04000003);
+    CHECK(parsedRfStatus->slotState[3] == 0x00000000);
+    CHECK(parsedRfStatus->slotState[4] == 0xffffffff);
+
+    auto newRfStatus = rfStatus;
+    newRfStatus[0] = vut::protocol::kResponseRfStatusChanged;
+    CHECK(vut::protocol::parseRfStatus(newRfStatus));
+    newRfStatus.insert(newRfStatus.begin(), 0);
+    CHECK(vut::protocol::parseRfStatus(newRfStatus));
+    newRfStatus.resize(20);
+    CHECK(!vut::protocol::parseRfStatus(newRfStatus));
+
     const std::vector<std::uint8_t> payload{1,2,3};
     auto command=vut::protocol::buildFeatureCommand(0x18,payload);
     CHECK(command.size()==65 && command[0]==0 && command[1]==0x18 && command[2]==5 && command[3]==1);
