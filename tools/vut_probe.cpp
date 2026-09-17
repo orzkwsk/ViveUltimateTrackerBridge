@@ -14,6 +14,9 @@ void onSignal(int) { gRun = false; }
 int main() {
     std::signal(SIGINT, onSignal);
 
+    constexpr std::string_view kBuildMarker = "VUT_RECONNECT_SLOT_SPECIFIC_DIAG_V1";
+    std::cout << "[build] marker=" << kBuildMarker << '\n';
+
     vut::Backend backend;
     backend.setEventCallback([](const vut::BackendEvent& event) {
         if (event.kind == vut::BackendEvent::Kind::DevicePaired) {
