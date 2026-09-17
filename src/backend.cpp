@@ -313,11 +313,23 @@ bool Backend::pollOnce() {
     if (auto pair = protocol::parsePairEvent(report)) {
         if (pair->device.slot >= 0) {
             if (pair->unpair) {
-                std::scoped_lock lock(impl_->mutex);
-                impl_->devices.erase(pair->device.slot);
-                impl_->states.erase(pair->device.slot);
-                impl_->buttons.erase(pair->device.slot);
-                if (impl_->hostSlot == pair->device.slot) impl_->hostSlot = -1;
+                {
+                    std::scoped_lock lock(impl_->mutex);
+                    impl_->devices.erase(pair->device.slot);
+                    impl_->states.erase(pair->device.slot);
+                    impl_->buttons.erase(pair->device.slot);
+                    if (impl_->hostSlot == pair->device.slot) impl_->hostSlot = -1;
+                }
+                // Experiment: the Hub re-arms RF reconnect immediately after an
+                // unpair/power-off event. Reuse the same captured cold-start
+                // RestartRf payload that already restored automatic reconnect
+                // after backend restart. The trailing byte semantics remain
+                // intentionally unresolved until further hardware capture.
+                constexpr std::uint8_t kRfBehaviorRestartRf = 0x02;
+                const std::array<std::uint8_t, 7> restartRf = {
+                    kRfBehaviorRestartRf, 1, 0, 1, 1, 1, 1
+                };
+                (void)impl_->sendCommand(protocol::kCmdRequestRfChangeBehavior, restartRf);
             } else {
                 {
                     std::scoped_lock lock(impl_->mutex);
