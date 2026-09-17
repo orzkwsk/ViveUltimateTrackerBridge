@@ -251,10 +251,16 @@ bool Backend::start(const BackendConfig& config) {
     ++impl_->generation;
 #ifdef _WIN32
     if (!impl_->hid.open(protocol::kVendorIdVive, protocol::kProductIdUltimateTrackerDongle, impl_->error)) return false;
-    const std::array<std::uint8_t, 7> enablePairing = {
-        protocol::kRfBehaviorPairDevice, 1, 1, 1, 1, 0, 0
+    // Experiment: reproduce the VIVE Hub cold-start RF behavior captured during
+    // hardware testing. 0x02 is RestartRf; the remaining bytes are copied from
+    // the observed Hub payload and intentionally remain uninterpreted here.
+    // This branch exists to test whether RestartRf is the missing prerequisite
+    // for reconnecting an already paired tracker after power-cycle.
+    constexpr std::uint8_t kRfBehaviorRestartRf = 0x02;
+    const std::array<std::uint8_t, 7> restartRf = {
+        kRfBehaviorRestartRf, 1, 0, 1, 1, 1, 1
     };
-    (void)impl_->sendCommand(protocol::kCmdRequestRfChangeBehavior, enablePairing);
+    (void)impl_->sendCommand(protocol::kCmdRequestRfChangeBehavior, restartRf);
     impl_->isRunning = true;
     return true;
 #else
