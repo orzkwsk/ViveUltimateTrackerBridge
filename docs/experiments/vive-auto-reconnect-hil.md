@@ -134,9 +134,69 @@ It does **not** make runtime reconnect PASS.
 
 If no `[rf-status]` line appears during the full HIL sequence, preserve the result as `NOT OBSERVED`; do not infer slot state. The next diagnostic step would be an explicit read/query path for command `0x1E`, implemented separately so it does not contaminate this passive-observation baseline.
 
+## HIL result 2026-09-17 — reconnect observed, control path contaminated
+
+Capture: `vive_init2.pcapng`
+
+Runtime reconnect itself was observed successfully for slot0:
+
+```text
+22:43:15.948 JST  pair slot0 23:30:03:81:fe:ec
+22:43:19.614 JST  RF slot0 = 0x32000008
+22:43:22.828 JST  unpair slot0
+22:43:29.614 JST  RF slot0 = 0x0A000005
+22:43:34.829 JST  pair slot0 23:30:03:81:fe:ec
+22:43:39.615 JST  RF slot0 = 0x32000008
+```
+
+Therefore the RF/dongle/tracker path is capable of runtime reconnection without a physical dongle replug in this run.
+
+However this capture is **not a clean backend-only PASS**. USB control traffic shows at least two independent command sequences acting on the dongle.
+
+Around runtime unpair:
+
+```text
+22:43:22.825 JST  0x1D RestartRf  02 01 01 00 00 00 00
+22:43:22.828 JST  DeviceUnpaired slot0
+22:43:22.828 JST  0x1D RestartRf  02 01 00 01 01 01 01
+22:43:22.831 JST  0x1D RestartRf  02 01 01 00 00 00 00
+```
+
+The middle payload is the current experimental backend's cold-start-style runtime re-arm from `08290bb`/`fbc4f8e`. The slot0-specific payload appears immediately before and after it, even though the current backend code does not emit that form.
+
+A second controller is also visible after the initial pair. The backend emits its immediate bring-up sequence (`ARI1`, `ATM-1`, `WcJP`, `ATH1`, `AWH1`, `ANI0`, `ATM20`) directly after the pair event. Roughly 0.64 s later another initialization sequence begins (`FW1`, `ANI0`, `ATW`, `ACF60`, `ATS...`, `WcFR`, `ACF50`, `FW2`, ...), matching the delayed Hub/HTC-side behavior previously observed.
+
+Conclusion for this run:
+
+```text
+runtime reconnect capability: PASS (observed)
+RF status diagnostic: PASS (capture confirms expected raw slot transitions)
+current backend-only runtime RestartRf behavior: NOT PROVEN
+clean Hub-bypass reconnect: NOT YET PASS
+```
+
+Do not merge the experiment into the normal branch based on this capture alone.
+
+### Required isolation retest
+
+Repeat the runtime reconnect test with no HTC/VIVE controller other than `vut_probe`/the experimental backend owning the dongle.
+
+Before starting the capture:
+
+1. Exit VIVE Hub UI.
+2. Ensure related VIVE/HTC background processes/services that can access the Ultimate Tracker dongle are not actively controlling it.
+3. Physically unplug/replug the dongle.
+4. Start USBPcap first.
+5. Start only the experimental `vut_probe`.
+6. Verify the capture shows only the expected backend startup `0x1D` payload before continuing.
+
+For the runtime OFF -> ON phase, the clean-current-backend capture should contain only the backend-generated unpair RestartRf. If any slot-specific `02 01 01 00 00 00 00` appears while the code still contains only the cold-start payload, treat the test as contaminated and identify the second controller before judging reconnect behavior.
+
+No code behavior change is required before this isolation retest.
+
 ## Next behavior experiment
 
-Only after the RF-status baseline is captured should runtime unpair behavior be changed from the current cold-start payload to the slot-specific Hub-observed RestartRf payload.
+Only after a clean RF-status baseline is captured should runtime unpair behavior be changed from the current cold-start payload to the slot-specific Hub-observed RestartRf payload.
 
 Current observed examples:
 
