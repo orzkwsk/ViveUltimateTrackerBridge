@@ -338,15 +338,17 @@ bool Backend::pollOnce() {
                     impl_->buttons.erase(pair->device.slot);
                     if (impl_->hostSlot == pair->device.slot) impl_->hostSlot = -1;
                 }
-                // Experiment: the Hub re-arms RF reconnect immediately after an
-                // unpair/power-off event. Reuse the same captured cold-start
-                // RestartRf payload that already restored automatic reconnect
-                // after backend restart. The trailing byte semantics remain
-                // intentionally unresolved until further hardware capture.
+                // Experiment: runtime unpair uses the slot-specific RestartRf
+                // payload observed from VIVE Hub captures. The trailing five
+                // bytes follow the observed one-hot slot pattern (slot0 and
+                // slot2 captured; slot1/3/4 remain inferred on this branch).
+                // Do not promote that byte meaning to a stable protocol field
+                // until all slots are observed independently.
                 constexpr std::uint8_t kRfBehaviorRestartRf = 0x02;
-                const std::array<std::uint8_t, 7> restartRf = {
-                    kRfBehaviorRestartRf, 1, 0, 1, 1, 1, 1
+                std::array<std::uint8_t, 7> restartRf = {
+                    kRfBehaviorRestartRf, 1, 0, 0, 0, 0, 0
                 };
+                restartRf[2 + static_cast<std::size_t>(pair->device.slot)] = 1;
                 (void)impl_->sendCommand(protocol::kCmdRequestRfChangeBehavior, restartRf);
             } else {
                 {
