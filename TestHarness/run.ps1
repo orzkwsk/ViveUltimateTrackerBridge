@@ -259,10 +259,10 @@ function Start-ExternalLoggers {
         }
         $startArgs = @{
             FilePath = $exe
-            ArgumentList = $arguments
             WorkingDirectory = $workingDirectory
             PassThru = $true
         }
+        if ($arguments.Count -gt 0) { $startArgs.ArgumentList = $arguments }
         if ($logger.stdoutFile) { $startArgs.RedirectStandardOutput = Join-Path $script:RunDirectory ([string]$logger.stdoutFile) }
         if ($logger.stderrFile) { $startArgs.RedirectStandardError = Join-Path $script:RunDirectory ([string]$logger.stderrFile) }
         $process = Start-Process @startArgs
@@ -293,12 +293,12 @@ function Start-TargetApplication {
     }
     $startArgs = @{
         FilePath = $exe
-        ArgumentList = $arguments
         WorkingDirectory = $workingDirectory
         RedirectStandardOutput = (Join-Path $script:RunDirectory 'application.log')
         RedirectStandardError = (Join-Path $script:RunDirectory 'application.err.log')
         PassThru = $true
     }
+    if ($arguments.Count -gt 0) { $startArgs.ArgumentList = $arguments }
     $script:ApplicationProcess = Start-Process @startArgs
     Start-Sleep -Milliseconds ([int]$script:Config.timeouts.applicationStartMs)
     if ($script:ApplicationProcess.HasExited) {
@@ -514,6 +514,15 @@ function Write-Manifest {
 }
 
 function Write-SubmitMarkdown {
+    $repoInfo = $script:RepositoryInfo
+    if ($null -eq $repoInfo) {
+        $repoInfo = [pscustomobject]@{
+            remoteUrl = $null
+            branch = $null
+            commit = $null
+        }
+    }
+
     $lines = New-Object System.Collections.Generic.List[string]
     $lines.Add('# Dynamic Analysis Run')
     $lines.Add('')
@@ -523,9 +532,9 @@ function Write-SubmitMarkdown {
     $lines.Add('')
     $lines.Add('## Git')
     $lines.Add('')
-    $lines.Add(('Branch: {0}' -f $script:RepositoryInfo.branch))
-    $lines.Add(('Commit: {0}' -f $script:RepositoryInfo.commit))
-    $lines.Add(('Remote: {0}' -f $script:RepositoryInfo.remoteUrl))
+    $lines.Add(('Branch: {0}' -f $repoInfo.branch))
+    $lines.Add(('Commit: {0}' -f $repoInfo.commit))
+    $lines.Add(('Remote: {0}' -f $repoInfo.remoteUrl))
     $lines.Add('')
     $lines.Add('## Test Sequence')
     $lines.Add('')
