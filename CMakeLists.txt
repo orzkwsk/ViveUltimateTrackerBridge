@@ -25,6 +25,9 @@ endif()
 add_executable(vut_probe tools/vut_probe.cpp)
 target_link_libraries(vut_probe PRIVATE vut_backend)
 
+add_executable(vut_debug_console tools/vut_debug_console.cpp)
+target_link_libraries(vut_debug_console PRIVATE vut_backend)
+
 include(CTest)
 if(BUILD_TESTING)
  add_test(NAME protocol_v2_integrity COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_protocol_v2.py")

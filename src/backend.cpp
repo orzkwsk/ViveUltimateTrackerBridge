@@ -8,6 +8,7 @@
 #include <limits>
 #include <mutex>
 #include <sstream>
+#include <thread>
 #include <utility>
 
 #ifdef _WIN32
@@ -194,19 +195,160 @@ struct Backend::Impl {
     }
 
 #ifdef _WIN32
-    std::vector<std::uint8_t> sendCommand(std::uint8_t command, std::span<const std::uint8_t> payload) {
+    static std::string bytesToHex(std::span<const std::uint8_t> bytes) {
+        std::ostringstream out;
+        out << std::hex << std::setfill('0');
+        for (std::size_t i = 0; i < bytes.size(); ++i) {
+            if (i != 0) out << ' ';
+            out << std::setw(2) << static_cast<unsigned>(bytes[i]);
+        }
+        return out.str();
+    }
+
+    DebugCommandResult sendCommandDetailed(std::uint8_t command, std::span<const std::uint8_t> payload) {
+        DebugCommandResult result;
+        result.command = command;
+        result.payload.assign(payload.begin(), payload.end());
+
         auto packet = protocol::buildFeatureCommand(command, payload, hid.featureLength());
-        if (packet.empty() || !hid.setFeature(packet)) return {};
+        if (packet.empty()) {
+            result.error = "feature command does not fit report length";
+            return result;
+        }
+        if (!hid.setFeature(packet)) {
+            result.error = "HidD_SetFeature failed";
+            return result;
+        }
+        result.sent = true;
+
         for (int i = 0; i < 10; ++i) {
             auto response = hid.getFeature();
             if (response.size() < 5) continue;
             if (response[1] != command) continue;
             const std::size_t declared = response[2];
-            if (declared < 4) return {};
+            if (declared < 4) {
+                result.error = "matching feature response had invalid declared length";
+                return result;
+            }
             const std::size_t len = std::min<std::size_t>(declared - 4, response.size() - 5);
-            return {response.begin() + 5, response.begin() + 5 + len};
+            result.response.assign(response.begin() + 5, response.begin() + 5 + len);
+            result.responseMatched = true;
+            return result;
         }
-        return {};
+
+        result.error = "feature write succeeded but no matching feature response was observed";
+        return result;
+    }
+
+    std::vector<std::uint8_t> sendCommand(std::uint8_t command, std::span<const std::uint8_t> payload) {
+        return sendCommandDetailed(command, payload).response;
+    }
+
+    DebugCommandResult runDebugCommand(std::uint8_t command, std::span<const std::uint8_t> payload) {
+        receivedNs = monotonicNs();
+        auto result = sendCommandDetailed(command, payload);
+
+        std::ostringstream text;
+        text << "debug-command tx_cmd=0x"
+             << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(command)
+             << " payload=[" << bytesToHex(payload) << ']'
+             << " sent=" << std::dec << result.sent
+             << " response_matched=" << result.responseMatched;
+        if (!result.response.empty()) text << " response=[" << bytesToHex(result.response) << ']';
+        if (!result.error.empty()) text << " note=" << result.error;
+        emit({BackendEvent::Kind::Diagnostic, {}, std::nullopt, text.str()});
+        return result;
+    }
+
+    DebugCommandResult sendRfBehavior(DebugRfBehavior behavior, bool enabled, int slot) {
+        DebugCommandResult invalid;
+        invalid.command = protocol::kCmdRequestRfChangeBehavior;
+
+        if (slot < -1 || slot >= 5) {
+            invalid.error = "slot must be 0..4 or -1 for all selectors";
+            return invalid;
+        }
+
+        // Public RE and observed Hub captures agree on:
+        //   byte0 = RF behavior
+        //   byte1 = enable
+        //   byte2..6 = five CR selectors.
+        // Slot0 and slot2 RestartRf selectors are HIL-observed. The other
+        // one-hot selectors remain inference until captured independently.
+        std::array<std::uint8_t, 7> payload = {
+            static_cast<std::uint8_t>(behavior),
+            static_cast<std::uint8_t>(enabled ? 1 : 0),
+            0, 0, 0, 0, 0
+        };
+        if (slot == -1) {
+            std::fill(payload.begin() + 2, payload.end(), 1);
+        } else {
+            payload[2 + static_cast<std::size_t>(slot)] = 1;
+        }
+        return runDebugCommand(protocol::kCmdRequestRfChangeBehavior, payload);
+    }
+
+    void debugDelay() const {
+        const int delayMs = std::max(config.debugInterCommandDelayMs, 0);
+        if (delayMs > 0) std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+    }
+
+    void applyUnpairRecovery(int slot) {
+        constexpr std::uint8_t kRfBehaviorRestartRf = 0x02;
+
+        switch (config.unpairRecoveryMode) {
+        case UnpairRecoveryMode::None:
+            return;
+
+        case UnpairRecoveryMode::ColdStartRestartRf: {
+            const std::array<std::uint8_t, 7> payload = {
+                kRfBehaviorRestartRf, 1, 0, 1, 1, 1, 1
+            };
+            (void)runDebugCommand(protocol::kCmdRequestRfChangeBehavior, payload);
+            return;
+        }
+
+        case UnpairRecoveryMode::SlotSpecificRestartRf:
+            (void)sendRfBehavior(DebugRfBehavior::RestartRf, true, slot);
+            return;
+
+        case UnpairRecoveryMode::DisablePwsThenRestartRf:
+            (void)sendRfBehavior(DebugRfBehavior::RxPowerSaving, false, slot);
+            debugDelay();
+            (void)sendRfBehavior(DebugRfBehavior::RestartRf, true, slot);
+            return;
+
+        case UnpairRecoveryMode::DisablePairThenRestartRf:
+            (void)sendRfBehavior(DebugRfBehavior::PairDevice, false, slot);
+            debugDelay();
+            (void)sendRfBehavior(DebugRfBehavior::RestartRf, true, slot);
+            return;
+
+        case UnpairRecoveryMode::DisablePairAndPwsThenRestartRf:
+            (void)sendRfBehavior(DebugRfBehavior::PairDevice, false, slot);
+            debugDelay();
+            (void)sendRfBehavior(DebugRfBehavior::RxPowerSaving, false, slot);
+            debugDelay();
+            (void)sendRfBehavior(DebugRfBehavior::RestartRf, true, slot);
+            return;
+
+        case UnpairRecoveryMode::RfRebootApp: {
+            // Public RE/USBTool-informed candidate: direct dongle command 0x1C
+            // with payload {0, 3} selects the APP side. This is not a vendor-
+            // confirmed semantic and remains experiment-only.
+            const std::array<std::uint8_t, 2> payload = {0, 3};
+            (void)runDebugCommand(0x1c, payload);
+            return;
+        }
+
+        case UnpairRecoveryMode::RfRebootAppThenRestartRf: {
+            const std::array<std::uint8_t, 2> payload = {0, 3};
+            (void)runDebugCommand(0x1c, payload);
+            debugDelay();
+            (void)sendRfBehavior(DebugRfBehavior::RestartRf, true, slot);
+            return;
+        }
+        }
     }
 
     bool sendAck(const DeviceId& device, const std::string& ack) {
@@ -300,6 +442,66 @@ std::vector<TrackerState> Backend::snapshot() const {
     return result;
 }
 
+DebugCommandResult Backend::debugSendRaw(std::uint8_t command, std::span<const std::uint8_t> payload) {
+#ifdef _WIN32
+    if (!impl_->isRunning) {
+        DebugCommandResult result;
+        result.command = command;
+        result.payload.assign(payload.begin(), payload.end());
+        result.error = "backend is not running";
+        return result;
+    }
+    return impl_->runDebugCommand(command, payload);
+#else
+    DebugCommandResult result;
+    result.command = command;
+    result.payload.assign(payload.begin(), payload.end());
+    result.error = "debug dongle commands require the Windows HID backend";
+    return result;
+#endif
+}
+
+DebugCommandResult Backend::debugSendRfBehavior(DebugRfBehavior behavior, bool enabled, int slot) {
+#ifdef _WIN32
+    if (!impl_->isRunning) {
+        DebugCommandResult result;
+        result.command = protocol::kCmdRequestRfChangeBehavior;
+        result.error = "backend is not running";
+        return result;
+    }
+    return impl_->sendRfBehavior(behavior, enabled, slot);
+#else
+    DebugCommandResult result;
+    result.command = protocol::kCmdRequestRfChangeBehavior;
+    result.error = "debug dongle commands require the Windows HID backend";
+    return result;
+#endif
+}
+
+DebugCommandResult Backend::debugQueryRfStatus() {
+    constexpr std::uint8_t kCmdQueryRfStatus = 0x1e;
+    return debugSendRaw(kCmdQueryRfStatus, {});
+}
+
+DebugCommandResult Backend::debugRfRebootApp() {
+    constexpr std::uint8_t kCmdRfRebootCandidate = 0x1c;
+    const std::array<std::uint8_t, 2> payload = {0, 3};
+    return debugSendRaw(kCmdRfRebootCandidate, payload);
+}
+
+void Backend::setUnpairRecoveryMode(UnpairRecoveryMode mode, int interCommandDelayMs) {
+    impl_->config.unpairRecoveryMode = mode;
+    impl_->config.debugInterCommandDelayMs = std::max(interCommandDelayMs, 0);
+}
+
+UnpairRecoveryMode Backend::unpairRecoveryMode() const noexcept {
+    return impl_->config.unpairRecoveryMode;
+}
+
+int Backend::debugInterCommandDelayMs() const noexcept {
+    return impl_->config.debugInterCommandDelayMs;
+}
+
 bool Backend::pollOnce() {
     if (!impl_->isRunning) return false;
 #ifdef _WIN32
@@ -338,18 +540,7 @@ bool Backend::pollOnce() {
                     impl_->buttons.erase(pair->device.slot);
                     if (impl_->hostSlot == pair->device.slot) impl_->hostSlot = -1;
                 }
-                // Experiment: runtime unpair uses the slot-specific RestartRf
-                // payload observed from VIVE Hub captures. The trailing five
-                // bytes follow the observed one-hot slot pattern (slot0 and
-                // slot2 captured; slot1/3/4 remain inferred on this branch).
-                // Do not promote that byte meaning to a stable protocol field
-                // until all slots are observed independently.
-                constexpr std::uint8_t kRfBehaviorRestartRf = 0x02;
-                std::array<std::uint8_t, 7> restartRf = {
-                    kRfBehaviorRestartRf, 1, 0, 0, 0, 0, 0
-                };
-                restartRf[2 + static_cast<std::size_t>(pair->device.slot)] = 1;
-                (void)impl_->sendCommand(protocol::kCmdRequestRfChangeBehavior, restartRf);
+                impl_->applyUnpairRecovery(pair->device.slot);
             } else {
                 {
                     std::scoped_lock lock(impl_->mutex);
