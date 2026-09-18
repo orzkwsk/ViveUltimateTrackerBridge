@@ -24,6 +24,7 @@ $script:Config = $null
 $script:ConfigBase = $null
 $script:RunsDirectory = $null
 $script:PackageStatus = 'not-requested'
+$script:LoggingActivated = $false
 
 function Get-IsoTimestamp {
     return (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
@@ -355,7 +356,10 @@ function Stop-LoggingAndApplication {
         Stop-ManagedProcess $record ([int]$script:Config.timeouts.loggerStopMs)
         $script:ApplicationStopInfo = $record
     }
-    Add-HarnessEvent -Event 'LoggingStopped' -Source 'harness' -Details @{}
+    if ($script:LoggingActivated) {
+        Add-HarnessEvent -Event 'LoggingStopped' -Source 'harness' -Details @{}
+        $script:LoggingActivated = $false
+    }
 }
 
 function Wait-Operator {
@@ -427,6 +431,18 @@ function Get-FirstEventTime {
 }
 
 function Write-Manifest {
+    $repoInfo = $script:RepositoryInfo
+    if ($null -eq $repoInfo) {
+        $repoInfo = [pscustomobject]@{
+            path = $(if ($script:Config) { [string]$script:Config.repository.path } else { $null })
+            remoteUrl = $null
+            branch = $null
+            commit = $null
+            shortCommit = $null
+            dirty = $null
+        }
+    }
+
     $loggerInfo = @()
     foreach ($record in $script:LoggerProcesses) {
         $pidValue = $null
@@ -455,12 +471,12 @@ function Write-Manifest {
         result = $script:Result
         failureMessage = $script:FailureMessage
         repository = [ordered]@{
-            path = $script:RepositoryInfo.path
-            remoteUrl = $script:RepositoryInfo.remoteUrl
-            branch = $script:RepositoryInfo.branch
-            commit = $script:RepositoryInfo.commit
-            shortCommit = $script:RepositoryInfo.shortCommit
-            dirty = $script:RepositoryInfo.dirty
+            path = $repoInfo.path
+            remoteUrl = $repoInfo.remoteUrl
+            branch = $repoInfo.branch
+            commit = $repoInfo.commit
+            shortCommit = $repoInfo.shortCommit
+            dirty = $repoInfo.dirty
             remote = [string]$script:Config.repository.remote
             pullResult = 'ff-only'
         }
@@ -598,6 +614,7 @@ function Run-StateMachine {
                     $repo = Resolve-ConfiguredPath ([string]$script:Config.repository.path) $script:ConfigBase
                     if (-not (Test-Path -LiteralPath (Join-Path $repo '.git'))) { throw "Not a Git worktree: $repo" }
                     $pre = Get-RepositorySnapshot $repo
+                    $script:RepositoryInfo = $pre
                     if ($pre.dirty) { throw 'Repository has uncommitted changes. No automatic stash/reset/clean is permitted.' }
                     if ($pre.branch -ne [string]$script:Config.repository.branch) {
                         throw ("Branch mismatch. Expected '{0}', actual '{1}'. No automatic branch switch is permitted." -f $script:Config.repository.branch, $pre.branch)
@@ -618,6 +635,7 @@ function Run-StateMachine {
                 }
                 'START_LOGGING' {
                     Start-ExternalLoggers
+                    $script:LoggingActivated = $true
                     Add-HarnessEvent -Event 'LoggingStarted' -Source 'harness' -Details @{}
                     Set-HarnessState 'START_APPLICATION'
                 }
@@ -672,6 +690,11 @@ function Run-StateMachine {
                     Set-HarnessState 'PACKAGE'
                 }
                 'PACKAGE' {
+                    if ($script:Config.output.createZip) {
+                        $script:PackageStatus = 'created'
+                    } else {
+                        $script:PackageStatus = 'disabled'
+                    }
                     $script:EndTime = Get-IsoTimestamp
                     Write-Manifest
                     Write-SubmitMarkdown
