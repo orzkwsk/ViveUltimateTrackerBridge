@@ -144,22 +144,43 @@ struct InputState {
 
 } // namespace
 
-int main() {
+int main(int argc, char** argv) {
     std::signal(SIGINT, onSignal);
+
+    bool waitForDongle = false;
+    bool noStdin = false;
+    for (int i = 1; i < argc; ++i) {
+        const std::string arg = argv[i] ? argv[i] : "";
+        if (arg == "--wait-for-dongle") {
+            waitForDongle = true;
+        } else if (arg == "--no-stdin") {
+            noStdin = true;
+        } else if (arg == "--help" || arg == "-h") {
+            printLine("Options: --wait-for-dongle --no-stdin");
+            return 0;
+        } else {
+            printLine("unknown option: " + arg);
+            return 2;
+        }
+    }
 
     constexpr const char* kBuildMarker = "VUT_DEBUG_CONSOLE_V1";
     printLine(std::string("[build] marker=") + kBuildMarker);
 
     auto input = std::make_shared<InputState>();
-    std::thread([input] {
-        std::string line;
-        while (std::getline(std::cin, line)) {
+    if (!noStdin) {
+        std::thread([input] {
+            std::string line;
+            while (std::getline(std::cin, line)) {
+                std::scoped_lock lock(input->mutex);
+                input->lines.push(line);
+            }
             std::scoped_lock lock(input->mutex);
-            input->lines.push(line);
-        }
-        std::scoped_lock lock(input->mutex);
-        input->lines.push("quit");
-    }).detach();
+            input->lines.push("quit");
+        }).detach();
+    } else {
+        printLine("[config] stdin command reader=disabled");
+    }
 
     std::atomic_bool showPose{false};
     const auto started = std::chrono::steady_clock::now();
@@ -197,12 +218,23 @@ int main() {
     config.unpairRecoveryMode = vut::UnpairRecoveryMode::None;
     config.debugInterCommandDelayMs = 250;
 
-    if (!backend.start(config)) {
-        printLine("start failed: " + backend.lastError());
-        return 1;
+    bool waitMessagePrinted = false;
+    while (gRun && !backend.start(config)) {
+        if (!waitForDongle) {
+            printLine("start failed: " + backend.lastError());
+            return 1;
+        }
+        if (!waitMessagePrinted) {
+            printLine("[wait] dongle unavailable; retrying backend start every 250 ms");
+            waitMessagePrinted = true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
+    if (!gRun) return 130;
 
-    printLine("DebugConsole started with policy=none. Type 'help'.");
+    printLine(noStdin
+        ? "DebugConsole started with policy=none; stdin disabled."
+        : "DebugConsole started with policy=none. Type 'help'.");
     printLine("USBPcap remains the primary evidence source; console logs are diagnostic convenience.");
 
     auto currentMode = vut::UnpairRecoveryMode::None;
