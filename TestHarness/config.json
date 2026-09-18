@@ -38,7 +38,10 @@
         "workingDirectory": "C:\\Program Files\\USBPcap",
         "stdoutFile": "capture.log",
         "stderrFile": "capture.err.log",
-        "stopMode": "CloseMainWindow"
+        "stopMode": "CloseMainWindow",
+        "expectedFiles": [
+          "capture.pcapng"
+        ]
       }
     ]
   },
