@@ -1,0 +1,9 @@
+{
+  "repository":{"path":"..","branch":"experiment/vive-debug-console","remote":"origin"},
+  "application":{"path":"../build/debug-console/Release/vut_debug_console.exe","arguments":"","workingDirectory":"../build/debug-console/Release","processName":"vut_debug_console","startWaitMs":500,"stopOnFinish":true,"stopTimeoutMs":1500,"allowForceStop":true},
+  "dongle":{"instanceIdPattern":"USB\\VID_0BB4&PID_0350*","pollIntervalMs":250},
+  "logging":{"flushWaitMs":1000,"stopTimeoutMs":1500,"processes":[]},
+  "timeouts":{"dongleConnectMs":0,"dongleDisconnectMs":0},
+  "output":{"runsDirectory":"./runs","createZip":true},
+  "analysisPoints":["Initial pairing sequence","Disconnect detection","Runtime RF state after tracker power-off","Reconnection or re-pair sequence","Difference between first and second pairing","RestartRf/PWS/pair-control commands around reconnect","RF status transitions","Unexpected retries or stuck states"]
+}
