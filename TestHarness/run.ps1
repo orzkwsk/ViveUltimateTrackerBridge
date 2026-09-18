@@ -25,6 +25,10 @@ $script:ConfigBase = $null
 $script:RunsDirectory = $null
 $script:PackageStatus = 'not-requested'
 $script:LoggingActivated = $false
+$script:DongleWatchJob = $null
+$script:DeviceWatchPath = $null
+$script:ApplicationFileInfo = $null
+$script:HarnessScriptSha256 = $null
 
 function Get-IsoTimestamp {
     return (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
@@ -209,6 +213,96 @@ function Wait-ForDonglePresent {
     }
 }
 
+function Start-DongleWatcher {
+    if ($script:DongleWatchJob) { return }
+
+    $script:DeviceWatchPath = Join-Path $script:RunDirectory 'device_watch.jsonl'
+    New-Item -ItemType File -Path $script:DeviceWatchPath -Force | Out-Null
+
+    $pattern = [string]$script:Config.dongle.instanceIdPattern
+    $interval = [int]$script:Config.dongle.pollIntervalMs
+    $outputPath = $script:DeviceWatchPath
+
+    $script:DongleWatchJob = Start-Job -ArgumentList $pattern, $interval, $outputPath -ScriptBlock {
+        param($Pattern, $IntervalMs, $OutputPath)
+
+        function Get-Present {
+            try {
+                return (@(Get-PnpDevice -PresentOnly -ErrorAction Stop |
+                    Where-Object { $_.InstanceId -like $Pattern }).Count -gt 0)
+            }
+            catch {
+                return $null
+            }
+        }
+
+        $last = Get-Present
+        while ($true) {
+            Start-Sleep -Milliseconds $IntervalMs
+            $present = Get-Present
+            if ($null -eq $present) { continue }
+
+            if ($null -ne $last -and $present -ne $last) {
+                $eventName = $(if ($present) { 'DongleConnected' } else { 'DongleDisconnected' })
+                $record = [ordered]@{
+                    timestamp = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.fffK')
+                    event = $eventName
+                    source = 'device'
+                    state = 'ASYNC_MONITOR'
+                }
+                $record | ConvertTo-Json -Compress |
+                    Add-Content -LiteralPath $OutputPath -Encoding UTF8
+            }
+            $last = $present
+        }
+    }
+
+    Write-HarnessLog ('Dongle background watcher started, JobId=' + $script:DongleWatchJob.Id)
+}
+
+function Stop-DongleWatcher {
+    if (-not $script:DongleWatchJob) { return }
+    try {
+        Stop-Job -Job $script:DongleWatchJob -ErrorAction SilentlyContinue
+        Receive-Job -Job $script:DongleWatchJob -ErrorAction SilentlyContinue | Out-Null
+        Remove-Job -Job $script:DongleWatchJob -Force -ErrorAction SilentlyContinue
+    }
+    catch {
+        Write-HarnessLog ('Failed to stop dongle watcher: ' + $_.Exception.Message) 'WARN'
+    }
+    finally {
+        $script:DongleWatchJob = $null
+    }
+}
+
+function Merge-DeviceEvents {
+    if (-not $script:DeviceWatchPath -or -not (Test-Path -LiteralPath $script:DeviceWatchPath)) { return }
+
+    $all = New-Object System.Collections.ArrayList
+
+    foreach ($path in @($script:EventsPath, $script:DeviceWatchPath)) {
+        foreach ($line in @(Get-Content -LiteralPath $path -ErrorAction SilentlyContinue)) {
+            if ([string]::IsNullOrWhiteSpace($line)) { continue }
+            try {
+                [void]$all.Add(($line | ConvertFrom-Json))
+            }
+            catch {
+                Write-HarnessLog ('Ignoring malformed event line from ' + $path) 'WARN'
+            }
+        }
+    }
+
+    $sorted = @($all | Sort-Object { [DateTimeOffset]::Parse($_.timestamp) })
+    Set-Content -LiteralPath $script:EventsPath -Value @() -Encoding UTF8
+    foreach ($record in $sorted) {
+        $record | ConvertTo-Json -Compress -Depth 12 |
+            Add-Content -LiteralPath $script:EventsPath -Encoding UTF8
+    }
+
+    $script:Events = New-Object System.Collections.ArrayList
+    foreach ($record in $sorted) { [void]$script:Events.Add($record) }
+}
+
 function Assert-NoResidualProcesses {
     $names = New-Object System.Collections.Generic.List[string]
     if ($script:Config.application.residualProcessNames) {
@@ -299,6 +393,15 @@ function Start-TargetApplication {
         PassThru = $true
     }
     if ($arguments.Count -gt 0) { $startArgs.ArgumentList = $arguments }
+    $file = Get-Item -LiteralPath $exe
+    $hash = Get-FileHash -LiteralPath $exe -Algorithm SHA256
+    $script:ApplicationFileInfo = [pscustomobject]@{
+        path = $file.FullName
+        sha256 = $hash.Hash
+        length = $file.Length
+        mtimeUtc = $file.LastWriteTimeUtc.ToString('o')
+    }
+
     $script:ApplicationProcess = Start-Process @startArgs
     Start-Sleep -Milliseconds ([int]$script:Config.timeouts.applicationStartMs)
     if ($script:ApplicationProcess.HasExited) {
@@ -335,6 +438,8 @@ function Stop-ManagedProcess {
 }
 
 function Stop-LoggingAndApplication {
+    Stop-DongleWatcher
+
     $captures = @($script:LoggerProcesses | Where-Object { $_.Kind -eq 'capture' })
     for ($i = $captures.Count - 1; $i -ge 0; $i--) {
         Stop-ManagedProcess $captures[$i] ([int]$script:Config.timeouts.loggerStopMs)
@@ -480,8 +585,16 @@ function Write-Manifest {
             remote = [string]$script:Config.repository.remote
             pullResult = 'ff-only'
         }
+        harness = [ordered]@{
+            scriptPath = $PSCommandPath
+            scriptSha256 = $script:HarnessScriptSha256
+        }
         application = [ordered]@{
             path = [string]$script:Config.application.path
+            resolvedPath = $(if ($script:ApplicationFileInfo) { $script:ApplicationFileInfo.path } else { $null })
+            sha256 = $(if ($script:ApplicationFileInfo) { $script:ApplicationFileInfo.sha256 } else { $null })
+            length = $(if ($script:ApplicationFileInfo) { $script:ApplicationFileInfo.length } else { $null })
+            mtimeUtc = $(if ($script:ApplicationFileInfo) { $script:ApplicationFileInfo.mtimeUtc } else { $null })
             startTiming = [string]$script:Config.application.startTiming
             pid = $appPid
             forcedStop = $appForced
@@ -587,6 +700,7 @@ function Create-RunZip {
 }
 
 function Collect-Artifacts {
+    try { Merge-DeviceEvents } catch { Write-HarnessLog ('Failed to merge device events: ' + $_.Exception.Message) 'WARN' }
     try { Save-GitStatusFile } catch { Write-HarnessLog ('Failed git snapshot: ' + $_.Exception.Message) 'WARN' }
     try { Save-EnvironmentInfo } catch { Write-HarnessLog ('Failed environment snapshot: ' + $_.Exception.Message) 'WARN' }
     try { Save-DeviceSnapshot (Join-Path $script:RunDirectory 'device_after.txt') } catch { Write-HarnessLog ('Failed device snapshot: ' + $_.Exception.Message) 'WARN' }
@@ -607,7 +721,8 @@ function Initialize-Harness {
     New-Item -ItemType File -Path $script:EventsPath -Force | Out-Null
     New-Item -ItemType File -Path $script:HarnessLogPath -Force | Out-Null
     $script:StartTime = Get-IsoTimestamp
-    Add-HarnessEvent -Event 'RunStarted' -Source 'harness' -Details @{ runId = $script:RunId }
+    $script:HarnessScriptSha256 = (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash
+    Add-HarnessEvent -Event 'RunStarted' -Source 'harness' -Details @{ runId = $script:RunId; harnessSha256 = $script:HarnessScriptSha256 }
     Write-HarnessLog ('Run directory: ' + $script:RunDirectory)
 }
 
@@ -658,6 +773,7 @@ function Run-StateMachine {
                 }
                 'WAIT_DONGLE' {
                     Wait-ForDonglePresent
+                    Start-DongleWatcher
                     if ([string]$script:Config.application.startTiming -eq 'afterDongle') { Start-TargetApplication }
                     Set-HarnessState 'WAIT_PAIR_1'
                 }
