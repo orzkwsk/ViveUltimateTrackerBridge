@@ -42,8 +42,24 @@ captures. Slot1/3/4 one-hot behavior remains inferred.
 
 ## Build
 
-From a VS developer shell, or after importing the VS environment used by the
-existing HIL instructions:
+Recommended one-command fresh build/test/run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_vive_debug_console.ps1
+```
+
+Build/test only:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_vive_debug_console.ps1 -NoRun
+```
+
+The runner refuses to run from a branch other than
+`experiment/vive-debug-console`, uses a fresh dedicated build directory,
+runs `vut_protocol_tests`, and prints the resulting executable SHA-256.
+
+Manual build from a VS developer shell, or after importing the VS environment
+used by the existing HIL instructions:
 
 ```powershell
 cmake --fresh -S . -B build/debug-console -A x64 -DBUILD_TESTING=ON -DVUT_BUILD_OBSERVATION=OFF
