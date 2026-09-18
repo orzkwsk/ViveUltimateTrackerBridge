@@ -1,0 +1,63 @@
+{
+  "repository": {
+    "path": "..",
+    "branch": "experiment/vive-test-harness",
+    "remote": "origin"
+  },
+  "application": {
+    "path": "../build/debug-console/Release/vut_debug_console.exe",
+    "arguments": [],
+    "workingDirectory": "../build/debug-console/Release",
+    "startTiming": "afterDongle",
+    "stopOnComplete": true,
+    "stopMode": "StopProcess",
+    "residualProcessNames": [
+      "vut_debug_console",
+      "vut_probe"
+    ]
+  },
+  "dongle": {
+    "instanceIdPattern": "USB\\VID_0BB4&PID_0350*",
+    "pollIntervalMs": 250
+  },
+  "logging": {
+    "flushWaitMs": 1000,
+    "processes": [
+      {
+        "name": "usbpcap-example",
+        "kind": "capture",
+        "enabled": false,
+        "processName": "USBPcapCMD",
+        "executable": "C:\\Program Files\\USBPcap\\USBPcapCMD.exe",
+        "arguments": [
+          "-d",
+          "\\\\.\\USBPcap1",
+          "-o",
+          "{runDir}\\capture.pcapng"
+        ],
+        "workingDirectory": "C:\\Program Files\\USBPcap",
+        "stdoutFile": "capture.log",
+        "stderrFile": "capture.err.log",
+        "stopMode": "CloseMainWindow"
+      }
+    ]
+  },
+  "timeouts": {
+    "applicationStartMs": 500,
+    "dongleConnectMs": 0,
+    "loggerStopMs": 5000
+  },
+  "output": {
+    "runsDirectory": "./runs",
+    "createZip": true
+  },
+  "analysisPoints": [
+    "Initial pairing sequence",
+    "Disconnect detection",
+    "Reconnect / second pairing sequence",
+    "Difference between first and second pairing",
+    "RF status transitions around disconnect and reconnect",
+    "Unexpected retries or restart commands",
+    "Errors immediately before and after reconnect"
+  ]
+}
