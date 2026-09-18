@@ -28,6 +28,8 @@ $script:LoggingActivated = $false
 $script:DongleWatchJob = $null
 $script:DeviceWatchPath = $null
 $script:ApplicationFileInfo = $null
+$script:ApplicationLaunchInfo = $null
+$script:GitUpdateInfo = $null
 $script:HarnessScriptSha256 = $null
 
 function Get-IsoTimestamp {
@@ -402,6 +404,11 @@ function Start-TargetApplication {
         mtimeUtc = $file.LastWriteTimeUtc.ToString('o')
     }
 
+    $script:ApplicationLaunchInfo = [pscustomobject]@{
+        arguments = $arguments
+        workingDirectory = $workingDirectory
+    }
+
     $script:ApplicationProcess = Start-Process @startArgs
     Start-Sleep -Milliseconds ([int]$script:Config.timeouts.applicationStartMs)
     if ($script:ApplicationProcess.HasExited) {
@@ -583,7 +590,7 @@ function Write-Manifest {
             shortCommit = $repoInfo.shortCommit
             dirty = $repoInfo.dirty
             remote = [string]$script:Config.repository.remote
-            pullResult = 'ff-only'
+            update = $script:GitUpdateInfo
         }
         harness = [ordered]@{
             scriptPath = $PSCommandPath
@@ -595,6 +602,8 @@ function Write-Manifest {
             sha256 = $(if ($script:ApplicationFileInfo) { $script:ApplicationFileInfo.sha256 } else { $null })
             length = $(if ($script:ApplicationFileInfo) { $script:ApplicationFileInfo.length } else { $null })
             mtimeUtc = $(if ($script:ApplicationFileInfo) { $script:ApplicationFileInfo.mtimeUtc } else { $null })
+            arguments = $(if ($script:ApplicationLaunchInfo) { $script:ApplicationLaunchInfo.arguments } else { @() })
+            workingDirectory = $(if ($script:ApplicationLaunchInfo) { $script:ApplicationLaunchInfo.workingDirectory } else { $null })
             startTiming = [string]$script:Config.application.startTiming
             pid = $appPid
             forcedStop = $appForced
@@ -692,14 +701,49 @@ function Create-RunZip {
     $parent = Split-Path -Parent $script:RunDirectory
     $temporaryZip = Join-Path $parent ($script:RunId + '.package.zip')
     $finalZip = Join-Path $script:RunDirectory 'run.zip'
-    if (Test-Path -LiteralPath $temporaryZip) { Remove-Item -LiteralPath $temporaryZip -Force }
-    if (Test-Path -LiteralPath $finalZip) { Remove-Item -LiteralPath $finalZip -Force }
+    if (Test-Path -LiteralPath $temporaryZip) { throw "Temporary ZIP already exists: $temporaryZip" }
+    if (Test-Path -LiteralPath $finalZip) { throw "Run ZIP already exists: $finalZip" }
     Compress-Archive -Path (Join-Path $script:RunDirectory '*') -DestinationPath $temporaryZip -CompressionLevel Optimal
     Move-Item -LiteralPath $temporaryZip -Destination $finalZip
     $script:PackageStatus = 'created'
 }
 
+function Validate-ExpectedArtifacts {
+    $missing = New-Object System.Collections.Generic.List[string]
+
+    if ($script:ApplicationProcess) {
+        foreach ($name in @('application.log','application.err.log')) {
+            $path = Join-Path $script:RunDirectory $name
+            if (-not (Test-Path -LiteralPath $path)) { $missing.Add($name) }
+        }
+    }
+
+    if ($script:Config.logging.processes) {
+        foreach ($logger in $script:Config.logging.processes) {
+            if (-not $logger.enabled -or -not $logger.expectedFiles) { continue }
+            foreach ($expected in $logger.expectedFiles) {
+                $expanded = Expand-LoggerArgument ([string]$expected)
+                $path = $expanded
+                if (-not [System.IO.Path]::IsPathRooted($path)) {
+                    $path = Join-Path $script:RunDirectory $path
+                }
+                if (-not (Test-Path -LiteralPath $path)) {
+                    $missing.Add([string]$expected)
+                }
+            }
+        }
+    }
+
+    if ($missing.Count -gt 0) {
+        $message = 'Expected artifact(s) missing: ' + (($missing | Select-Object -Unique) -join ', ')
+        Write-HarnessLog $message 'WARN'
+        Add-HarnessEvent -Event 'ArtifactMissing' -Source 'harness' -Details @{ message = $message }
+        if ($script:Result -eq 'completed') { $script:Result = 'partial' }
+    }
+}
+
 function Collect-Artifacts {
+    try { Validate-ExpectedArtifacts } catch { Write-HarnessLog ('Artifact validation failed: ' + $_.Exception.Message) 'WARN' }
     try { Merge-DeviceEvents } catch { Write-HarnessLog ('Failed to merge device events: ' + $_.Exception.Message) 'WARN' }
     try { Save-GitStatusFile } catch { Write-HarnessLog ('Failed git snapshot: ' + $_.Exception.Message) 'WARN' }
     try { Save-EnvironmentInfo } catch { Write-HarnessLog ('Failed environment snapshot: ' + $_.Exception.Message) 'WARN' }
@@ -715,11 +759,12 @@ function Initialize-Harness {
     New-Item -ItemType Directory -Path $script:RunsDirectory -Force | Out-Null
     $script:RunId = New-RunId $script:RunsDirectory
     $script:RunDirectory = Join-Path $script:RunsDirectory $script:RunId
-    New-Item -ItemType Directory -Path $script:RunDirectory -Force | Out-Null
+    if (Test-Path -LiteralPath $script:RunDirectory) { throw "Run directory already exists: $($script:RunDirectory)" }
+    New-Item -ItemType Directory -Path $script:RunDirectory | Out-Null
     $script:EventsPath = Join-Path $script:RunDirectory 'events.jsonl'
     $script:HarnessLogPath = Join-Path $script:RunDirectory 'harness.log'
-    New-Item -ItemType File -Path $script:EventsPath -Force | Out-Null
-    New-Item -ItemType File -Path $script:HarnessLogPath -Force | Out-Null
+    New-Item -ItemType File -Path $script:EventsPath | Out-Null
+    New-Item -ItemType File -Path $script:HarnessLogPath | Out-Null
     $script:StartTime = Get-IsoTimestamp
     $script:HarnessScriptSha256 = (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash
     Add-HarnessEvent -Event 'RunStarted' -Source 'harness' -Details @{ runId = $script:RunId; harnessSha256 = $script:HarnessScriptSha256 }
@@ -750,8 +795,16 @@ function Run-StateMachine {
                 }
                 'UPDATE' {
                     $repo = Resolve-ConfiguredPath ([string]$script:Config.repository.path) $script:ConfigBase
-                    [void](Invoke-Git $repo @('fetch',[string]$script:Config.repository.remote) -ThrowOnFailure)
-                    [void](Invoke-Git $repo @('pull','--ff-only',[string]$script:Config.repository.remote,[string]$script:Config.repository.branch) -ThrowOnFailure)
+                    $fetchResult = Invoke-Git $repo @('fetch',[string]$script:Config.repository.remote) -ThrowOnFailure
+                    $pullResult = Invoke-Git $repo @('pull','--ff-only',[string]$script:Config.repository.remote,[string]$script:Config.repository.branch) -ThrowOnFailure
+                    $script:GitUpdateInfo = [ordered]@{
+                        fetchExitCode = $fetchResult.ExitCode
+                        fetchOutput = $fetchResult.Output
+                        pullExitCode = $pullResult.ExitCode
+                        pullOutput = $pullResult.Output
+                        mode = 'ff-only'
+                        timestamp = Get-IsoTimestamp
+                    }
                     $script:RepositoryInfo = Get-RepositorySnapshot $repo
                     if ($script:RepositoryInfo.dirty) { throw 'Repository became dirty after update.' }
                     Add-HarnessEvent -Event 'RepositoryUpdated' -Source 'git' -Details @{ branch = $script:RepositoryInfo.branch; commit = $script:RepositoryInfo.commit; result = 'ff-only' }
