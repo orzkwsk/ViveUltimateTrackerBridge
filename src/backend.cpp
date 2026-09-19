@@ -312,6 +312,14 @@ struct Backend::Impl {
             (void)sendRfBehavior(DebugRfBehavior::RestartRf, true, slot);
             return;
 
+        case UnpairRecoveryMode::DisablePws:
+            // HIL 2026-09-19: RxPowerSaving(false) alone moved slot0 from
+            // 0x320fa008 to the normal unpaired/reconnect-ready 0x0a000005
+            // state, after which normal tracker power-on re-paired without
+            // RestartRf. Keep this policy deliberately single-action.
+            (void)sendRfBehavior(DebugRfBehavior::RxPowerSaving, false, slot);
+            return;
+
         case UnpairRecoveryMode::DisablePwsThenRestartRf:
             (void)sendRfBehavior(DebugRfBehavior::RxPowerSaving, false, slot);
             debugDelay();
