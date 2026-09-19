@@ -94,6 +94,14 @@ int main(int argc, char** argv) try {
     auto command=vut::protocol::buildFeatureCommand(0x18,payload);
     CHECK(command.size()==65 && command[0]==0 && command[1]==0x18 && command[2]==5 && command[3]==1);
     CHECK(vut::protocol::buildFeatureCommand(0x18,payload,5).empty());
+    auto pws0=vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorRxPowerSaving,false,0);
+    CHECK(pws0 && *pws0==std::array<std::uint8_t,7>{1,0,1,0,0,0,0});
+    auto pws2=vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorRxPowerSaving,false,2);
+    CHECK(pws2 && *pws2==std::array<std::uint8_t,7>{1,0,0,0,1,0,0});
+    auto pwsAll=vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorRxPowerSaving,false,-1);
+    CHECK(pwsAll && *pwsAll==std::array<std::uint8_t,7>{1,0,1,1,1,1,1});
+    CHECK(!vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorRxPowerSaving,false,5));
+    CHECK(!vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorRxPowerSaving,false,-2));
     auto ack=vut::protocol::buildAckTx(paired->device,"ARI1");
     CHECK(ack.size()==14 && ack[0]==4 && ack[10]=='A' && ack[13]=='1');
     CHECK(vut::protocol::buildAckTx(paired->device,std::string(45,'x')).empty());
