@@ -137,6 +137,15 @@ int main(int argc,char** argv) try {
         vut::ViveObservationAdapter adapter(c);
         vut::ObservationPublisher publisher(c.sessionId,[&](auto bytes){return sender.send(bytes);},[&]{return nowNs()-c.epochNs;});
         backend.setEventCallback([&](const auto& event) {
+            if(event.kind == vut::BackendEvent::Kind::Diagnostic) {
+                std::cerr << "[tracking-diagnostic] device=" << event.device.toString()
+                          << " " << event.text << '\n';
+            } else if(event.kind == vut::BackendEvent::Kind::Ack &&
+                      (event.text.rfind("P61:",0)==0 || event.text.rfind("LP",0)==0 ||
+                       event.text.rfind("MS",0)==0 || event.text.rfind("DEC",0)==0)) {
+                std::cerr << "[tracking-ack] device=" << event.device.toString()
+                          << " " << event.text << '\n';
+            }
             if(auto observation=adapter.admit(event)) publisher.enqueue(std::move(*observation));
         });
         std::cerr << "session=" << c.sessionId << " revision=" << c.revision << '\n';
