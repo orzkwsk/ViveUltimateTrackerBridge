@@ -2,8 +2,10 @@
 
 #include "vut/types.hpp"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -22,6 +24,7 @@ constexpr std::uint16_t kIncomingPose = 0x0110;
 constexpr std::uint8_t kCmdTx = 0x18;
 constexpr std::uint8_t kCmdRequestRfChangeBehavior = 0x1d;
 constexpr std::uint8_t kRfBehaviorPairDevice = 0x00;
+constexpr std::uint8_t kRfBehaviorRxPowerSaving = 0x01;
 constexpr std::uint8_t kTxAckToPartialMac = 0x04;
 
 struct PairEvent {
@@ -43,6 +46,7 @@ struct IncomingEnvelope {
 [[nodiscard]] std::optional<IncomingEnvelope> parseIncomingEnvelope(std::span<const std::uint8_t> report);
 [[nodiscard]] std::optional<TrackerState> parsePose(const IncomingEnvelope& envelope, std::int64_t observedMonotonicNs);
 [[nodiscard]] std::vector<std::uint8_t> buildFeatureCommand(std::uint8_t command, std::span<const std::uint8_t> payload, std::size_t reportLength = 65);
+[[nodiscard]] std::optional<std::array<std::uint8_t, 7>> buildRfBehaviorPayload(std::uint8_t behavior, bool enabled, int slot);
 [[nodiscard]] std::vector<std::uint8_t> buildAckTx(const DeviceId& device, const std::string& ack);
 
 } // namespace vut::protocol
