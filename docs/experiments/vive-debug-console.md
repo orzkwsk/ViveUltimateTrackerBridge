@@ -117,6 +117,7 @@ Automatic unpair policies:
 
 ```text
 none
+pws-off
 slot-restart
 cold-restart
 pws-restart
@@ -185,3 +186,72 @@ Pair/unpair/RF status/ACK events continue to be emitted by the backend.
 For final HIL decisions, use the USBPcap bytes and event sequence rather than
 assuming that a successful feature write means the RF subsystem accepted the
 semantic operation.
+
+
+## Automatic PWS-off reconnect validation
+
+HIL on 2026-09-19 observed the following sequence without RestartRf:
+
+```text
+connected          slot0=0x32000008
+tracker power off
+DeviceUnpaired
+                   slot0=0x320fa008
+RxPowerSaving(false)
+                   slot0=0x0a000005
+tracker power on
+DevicePaired
+                   slot0=0x32000008
+```
+
+The dedicated automatic policy is:
+
+```text
+policy pws-off
+```
+
+It sends exactly one RF behavior request when a DeviceUnpaired event is
+decoded:
+
+```text
+command: 0x1d
+payload for slot0: 01 00 01 00 00 00 00
+```
+
+No RestartRf, PairDevice, RF reboot, or destructive command is appended.
+
+### Repeated validation procedure
+
+1. Start USBPcap before starting the DebugConsole.
+2. Start the DebugConsole and confirm the build marker.
+3. Enter:
+
+```text
+policy pws-off
+policy-show
+pose on
+```
+
+4. Confirm `policy-show` reports `policy=pws-off`.
+5. Power tracker slot0 on and wait for pair, normal RF status, and pose.
+6. Power the tracker off normally.
+7. Confirm the capture/log contains:
+   - DeviceUnpaired;
+   - exactly one `0x1d` RF behavior request with
+     `01 00 01 00 00 00 00`;
+   - RF status transition from `0x320fa008` to `0x0a000005`;
+   - no runtime RestartRf request.
+8. Power the tracker on normally without pressing the pairing action.
+9. Wait up to 30 seconds and confirm:
+   - DevicePaired reappears;
+   - slot0 returns to `0x32xxxx08`;
+   - pose resumes.
+10. Repeat steps 6-9 for at least five consecutive cycles without restarting
+    the DebugConsole or re-enumerating the dongle.
+
+A cycle is a PASS only when reconnect occurs after ordinary tracker power-on
+without manual pairing, backend restart, dongle re-enumeration, or additional
+recovery commands.
+
+Preserve the PCAP for any failed cycle. A failure after several successful
+cycles is more informative than restarting the environment immediately.
