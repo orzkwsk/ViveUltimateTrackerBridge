@@ -66,6 +66,10 @@ int main(int argc,char** argv) try {
     CHECK(std::get<c1::TrackerObservation>(*first).sequence==0);
     CHECK(!adapter.admit(e)); advance(e,0); CHECK(!adapter.admit(e));
     advance(e,-1); CHECK(!adapter.admit(e)); advance(e,2); CHECK(adapter.admit(e));
+    CHECK(adapter.diagnostics().acceptedPose==2);
+    CHECK(adapter.diagnostics().rejectPoseNonMonotonic==1);
+    CHECK(adapter.diagnostics().rejectDuplicateRf==1);
+    CHECK(adapter.diagnostics().rejectOldOrAmbiguousRf==1);
     // Repeated identical numeric values are fresh when packet receipt advances.
     e=fixture(); e.pose->packetIndex=254;
     vut::ViveObservationAdapter wrap(c);
@@ -87,6 +91,10 @@ int main(int argc,char** argv) try {
     CHECK(std::get<c1::TrackerObservation>(*other).coordinate_space.id=="map-b");
     auto gap=fixture(); vut::ViveObservationAdapter gaps(c); CHECK(gaps.admit(gap));
     gap.observedMonotonicNs=gap.pose->observedMonotonicNs=600000110; ++gap.pose->packetIndex; CHECK(!gaps.admit(gap));
+    CHECK(gaps.diagnostics().acceptedPose==1);
+    CHECK(gaps.diagnostics().rejectPoseGap==1);
+    CHECK(gaps.diagnostics().lastRejectedRf==static_cast<int>(gap.pose->packetIndex));
+    CHECK(gaps.diagnostics().lastRejectedGapNs==600000000);
     auto unknown=fixture(); unknown.device.mac[0]=0x25; unknown.pose->device=unknown.device; CHECK(!streams.admit(unknown));
     std::vector<std::string> sent; std::int64_t sendTime=100;
     vut::ObservationPublisher pub(sid,[&](auto b){sent.emplace_back(b);return true;},[&]{return sendTime;},2);
