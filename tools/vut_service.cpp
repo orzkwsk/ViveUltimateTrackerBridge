@@ -51,6 +51,7 @@ void printAdmissionDiagnostics(const vut::ViveObservationAdapter& adapter, const
               << " last_rejected_rf=" << d.lastRejectedRf
               << " last_rejected_gap_ms="
               << (d.lastRejectedGapNs < 0 ? -1.0 : static_cast<double>(d.lastRejectedGapNs) / 1000000.0)
+              << " last_rejected_device=" << (d.lastRejectedDevice.empty() ? "-" : d.lastRejectedDevice)
               << '\n';
 }
 vut::ObservationContext config(const char* path) {
