@@ -69,6 +69,10 @@ historical service path. Do not treat that address as persistent hardware identi
 update the local config and restart for validation. This launcher does not fabricate or persist a
 hardware identity.
 
+Normal `vut_service` startup does **not** enter dongle pairing mode. It assumes the tracker is
+already paired and only observes the existing relationship. Pairing/re-pairing is an explicit
+diagnostic/setup action; restarting the service must not change pairing state.
+
 ## Hardware probe
 
 Do not run VIVE Hub at the same time because it may already own/use the same dongle interface.
