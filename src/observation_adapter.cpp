@@ -62,32 +62,64 @@ c1::TrackerObservation ViveObservationAdapter::mapPose(const TrackerState& p, co
     return out;
 }
 std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& event) {
-    const auto reject = [&]() -> std::optional<c1::Envelope> { ++rejected_; return {}; };
+    const auto reject = [&](std::uint64_t& reason) -> std::optional<c1::Envelope> {
+        ++rejected_;
+        ++reason;
+        return {};
+    };
     if (event.kind != BackendEvent::Kind::Pose && event.kind != BackendEvent::Kind::DevicePaired &&
         event.kind != BackendEvent::Kind::DeviceUnpaired) return {};
-    if (event.transportGeneration != context_.generation || event.observedMonotonicNs < context_.epochNs ||
-        !context_.spaces.contains(event.device.toString())) return reject();
+    if (event.transportGeneration != context_.generation) return reject(diagnostics_.rejectGeneration);
+    if (event.observedMonotonicNs < context_.epochNs) return reject(diagnostics_.rejectBeforeEpoch);
+    if (!context_.spaces.contains(event.device.toString())) return reject(diagnostics_.rejectUnknownDevice);
+
     auto& stream = streams_[event.device.toString()];
     if (event.kind == BackendEvent::Kind::Pose) {
-        if (!event.pose || event.pose->device.toString() != event.device.toString() || stream.absent) return reject();
+        if (!event.pose) return reject(diagnostics_.rejectMissingPose);
+        if (event.pose->device.toString() != event.device.toString()) return reject(diagnostics_.rejectPoseDeviceMismatch);
+        if (stream.absent) return reject(diagnostics_.rejectAbsent);
+
         const auto& p = *event.pose;
-        if (p.observedMonotonicNs != event.observedMonotonicNs || p.observedMonotonicNs <= stream.lastPoseNs) return reject();
+        if (p.observedMonotonicNs != event.observedMonotonicNs)
+            return reject(diagnostics_.rejectPoseTimestampMismatch);
+        if (p.observedMonotonicNs <= stream.lastPoseNs)
+            return reject(diagnostics_.rejectPoseNonMonotonic);
+
         if (stream.lastPoseNs >= 0) {
+            const auto gapNs = p.observedMonotonicNs - stream.lastPoseNs;
             const auto delta = static_cast<std::uint8_t>(p.packetIndex - stream.rf);
+            diagnostics_.lastRejectedRf = static_cast<int>(p.packetIndex);
+            diagnostics_.lastRejectedGapNs = gapNs;
             // Half-range serial arithmetic. Ambiguous gaps require explicit session restart.
-            if (delta == 0 || delta >= 128 || p.observedMonotonicNs - stream.lastPoseNs > 500000000) return reject();
+            if (delta == 0) return reject(diagnostics_.rejectDuplicateRf);
+            if (delta >= 128) return reject(diagnostics_.rejectOldOrAmbiguousRf);
+            if (gapNs > 500000000) return reject(diagnostics_.rejectPoseGap);
         }
-        if (stream.poseSequence == std::numeric_limits<std::int64_t>::max()) { restartRequired_ = true; return reject(); }
+        if (stream.poseSequence == std::numeric_limits<std::int64_t>::max()) {
+            restartRequired_ = true;
+            return reject(diagnostics_.rejectPoseSequenceExhausted);
+        }
+
         auto out = mapPose(p, context_, stream.poseSequence++);
-        stream.lastPoseNs = p.observedMonotonicNs; stream.rf = p.packetIndex;
+        stream.lastPoseNs = p.observedMonotonicNs;
+        stream.rf = p.packetIndex;
+        diagnostics_.lastAcceptedRf = static_cast<int>(p.packetIndex);
+        ++diagnostics_.acceptedPose;
         return out;
     }
-    if (stream.stateSequence == std::numeric_limits<std::int64_t>::max()) { restartRequired_ = true; return reject(); }
-    if (event.observedMonotonicNs <= stream.lastStateNs) return reject();
+
+    if (stream.stateSequence == std::numeric_limits<std::int64_t>::max()) {
+        restartRequired_ = true;
+        return reject(diagnostics_.rejectStateSequenceExhausted);
+    }
+    if (event.observedMonotonicNs <= stream.lastStateNs)
+        return reject(diagnostics_.rejectStateNonMonotonic);
     if (event.kind == BackendEvent::Kind::DevicePaired && stream.absent) {
         // Re-pair may establish a new map origin. Reserve a new source session/revision.
-        restartRequired_ = true; return reject();
+        restartRequired_ = true;
+        return reject(diagnostics_.rejectRepairAfterAbsent);
     }
+
     c1::ObservationDeviceState out;
     header(out, event.device, context_, stream.stateSequence++, event.observedMonotonicNs);
     stream.lastStateNs = event.observedMonotonicNs;
@@ -96,6 +128,7 @@ std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& ev
     stream.absent = absent;
     out.presence = absent ? "absent" : "present";
     out.tracking_state = absent ? "disconnected" : "initializing";
+    ++diagnostics_.acceptedState;
     return out;
 }
 }
