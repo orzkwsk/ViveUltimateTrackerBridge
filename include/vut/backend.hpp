@@ -15,6 +15,7 @@ enum class UnpairRecoveryMode : std::uint8_t {
     SlotSpecificRestartRf,
     None,
     ColdStartRestartRf,
+    DisablePws,
     DisablePwsThenRestartRf,
     DisablePairThenRestartRf,
     DisablePairAndPwsThenRestartRf,
