@@ -70,6 +70,7 @@ const char* modeName(vut::UnpairRecoveryMode mode) {
     case M::SlotSpecificRestartRf: return "slot-restart";
     case M::None: return "none";
     case M::ColdStartRestartRf: return "cold-restart";
+    case M::DisablePws: return "pws-off";
     case M::DisablePwsThenRestartRf: return "pws-restart";
     case M::DisablePairThenRestartRf: return "pairoff-restart";
     case M::DisablePairAndPwsThenRestartRf: return "pairoff-pws-restart";
@@ -85,6 +86,7 @@ std::optional<vut::UnpairRecoveryMode> parseMode(const std::string& token) {
     if (value == "none") return M::None;
     if (value == "slot-restart") return M::SlotSpecificRestartRf;
     if (value == "cold-restart") return M::ColdStartRestartRf;
+    if (value == "pws-off") return M::DisablePws;
     if (value == "pws-restart") return M::DisablePwsThenRestartRf;
     if (value == "pairoff-restart") return M::DisablePairThenRestartRf;
     if (value == "pairoff-pws-restart") return M::DisablePairAndPwsThenRestartRf;
@@ -126,8 +128,8 @@ void printHelp() {
         "  quit\n"
         "\n"
         "Policy names:\n"
-        "  none | slot-restart | cold-restart | pws-restart | pairoff-restart |\n"
-        "  pairoff-pws-restart | rfreboot | rfreboot-restart\n"
+        "  none | pws-off | slot-restart | cold-restart | pws-restart |\n"
+        "  pairoff-restart | pairoff-pws-restart | rfreboot | rfreboot-restart\n"
         "\n"
         "Notes:\n"
         "  - DebugConsole starts with policy=none so a stuck state is not changed automatically.\n"
