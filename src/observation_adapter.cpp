@@ -71,7 +71,10 @@ std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& ev
         event.kind != BackendEvent::Kind::DeviceUnpaired) return {};
     if (event.transportGeneration != context_.generation) return reject(diagnostics_.rejectGeneration);
     if (event.observedMonotonicNs < context_.epochNs) return reject(diagnostics_.rejectBeforeEpoch);
-    if (!context_.spaces.contains(event.device.toString())) return reject(diagnostics_.rejectUnknownDevice);
+    if (!context_.spaces.contains(event.device.toString())) {
+        diagnostics_.lastRejectedDevice = event.device.toString();
+        return reject(diagnostics_.rejectUnknownDevice);
+    }
 
     auto& stream = streams_[event.device.toString()];
     if (event.kind == BackendEvent::Kind::Pose) {
