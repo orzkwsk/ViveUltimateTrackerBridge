@@ -71,7 +71,7 @@ cmake --build build/debug-console --config Release --target vut_debug_console vu
 Expected marker:
 
 ```text
-[build] marker=VUT_DEBUG_CONSOLE_V1
+[build] marker=VUT_DEBUG_CONSOLE_PWS_OFF_V2
 ```
 
 ## Default behavior
