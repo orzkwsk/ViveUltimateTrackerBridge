@@ -34,6 +34,7 @@ struct ObservationAdmissionDiagnostics {
     int lastAcceptedRf = -1;
     int lastRejectedRf = -1;
     std::int64_t lastRejectedGapNs = -1;
+    std::string lastRejectedDevice;
 };
 
 class ViveObservationAdapter {
