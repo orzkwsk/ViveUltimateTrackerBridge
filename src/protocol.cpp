@@ -143,7 +143,12 @@ std::optional<TrackerState> parsePose(const IncomingEnvelope& envelope, std::int
     }
 
     const auto statusRaw = data[36];
-    state.trackingStatus = statusRaw <= 5 ? static_cast<TrackingStatus>(statusRaw) : TrackingStatus::Unknown;
+    // HIL captures show the tracker ORs auxiliary flags into the high nibble:
+    // 0x12 carries a valid moving 6DoF pose and 0x13 carries the same
+    // rotation-only LOST semantics as 0x03. The low nibble remains the
+    // documented/observed pose-state value (0..5).
+    const auto poseStatus = static_cast<std::uint8_t>(statusRaw & 0x0f);
+    state.trackingStatus = poseStatus <= 5 ? static_cast<TrackingStatus>(poseStatus) : TrackingStatus::Unknown;
     state.positionValid = state.trackingStatus == TrackingStatus::Ok;
     state.orientationValid = state.trackingStatus == TrackingStatus::Ok ||
                              state.trackingStatus == TrackingStatus::Lost ||
