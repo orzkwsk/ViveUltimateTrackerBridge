@@ -136,15 +136,21 @@ int main(int argc,char** argv) try {
         c.sessionId=uuid(); c.epochNs=nowNs(); c.revision=journal.advance(); c.generation=backend.transportGeneration();
         vut::ViveObservationAdapter adapter(c);
         vut::ObservationPublisher publisher(c.sessionId,[&](auto bytes){return sender.send(bytes);},[&]{return nowNs()-c.epochNs;});
+        auto trackingDiagnosticLogUntil = std::chrono::steady_clock::time_point::min();
         backend.setEventCallback([&](const auto& event) {
+            const auto callbackNow = std::chrono::steady_clock::now();
             if(event.kind == vut::BackendEvent::Kind::Diagnostic) {
+                trackingDiagnosticLogUntil = callbackNow + std::chrono::seconds(5);
                 std::cerr << "[tracking-diagnostic] device=" << event.device.toString()
                           << " " << event.text << '\n';
-            } else if(event.kind == vut::BackendEvent::Kind::Ack &&
-                      (event.text.rfind("P61:",0)==0 || event.text.rfind("LP",0)==0 ||
-                       event.text.rfind("MS",0)==0 || event.text.rfind("DEC",0)==0)) {
-                std::cerr << "[tracking-ack] device=" << event.device.toString()
-                          << " " << event.text << '\n';
+            } else if(event.kind == vut::BackendEvent::Kind::Ack) {
+                const bool normallyInteresting =
+                    event.text.rfind("P61:",0)==0 || event.text.rfind("LP",0)==0 ||
+                    event.text.rfind("MS",0)==0 || event.text.rfind("DEC",0)==0;
+                if(normallyInteresting || callbackNow <= trackingDiagnosticLogUntil) {
+                    std::cerr << "[tracking-ack] device=" << event.device.toString()
+                              << " " << event.text << '\n';
+                }
             }
             if(auto observation=adapter.admit(event)) publisher.enqueue(std::move(*observation));
         });
