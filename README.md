@@ -48,6 +48,27 @@ ctest --test-dir build -C Release --output-on-failure
 
 No external HID library is required; the backend uses Windows HID/SetupAPI directly.
 
+## Quick start
+
+For normal bridge validation on Windows, use the repository-root launcher:
+
+```cmd
+Start_VIVE_Backend.cmd
+```
+
+The launcher configures/builds `vut_service` in `build/runtime` and starts it in the foreground.
+It uses `config/vut-service.conf` and stores the persistent revision journal under
+`%LOCALAPPDATA%\\MonakaVR\\ViveUltimateTrackerBridge\\vut-service.revision.log`.
+
+Before first use, copy `config/vut-service.example.conf` to `config/vut-service.conf` and replace
+all example source/map values. The local config is gitignored. Close VIVE Hub / VIVE Streaming Hub
+before opening the official dongle. Ctrl+C stops the service.
+
+The current service configuration still keys mappings by the full RF address accepted by the
+historical service path. Do not treat that address as persistent hardware identity; if it changes,
+update the local config and restart for validation. This launcher does not fabricate or persist a
+hardware identity.
+
 ## Hardware probe
 
 Do not run VIVE Hub at the same time because it may already own/use the same dongle interface.
