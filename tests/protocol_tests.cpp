@@ -73,6 +73,22 @@ int main(int argc, char** argv) try {
     CHECK(near(pose->orientationXyzw.w, 1.0f));
     CHECK(pose->observedMonotonicNs == 1234);
 
+    // HIL: the high nibble may contain auxiliary flags while the low nibble
+    // remains the pose state. 0x12 must behave as OK and 0x13 as LOST.
+    report[48] = 0x12;
+    const auto flaggedOkEnv = vut::protocol::parseIncomingEnvelope(report); CHECK(flaggedOkEnv);
+    const auto flaggedOk = vut::protocol::parsePose(*flaggedOkEnv, 1234); CHECK(flaggedOk);
+    CHECK(flaggedOk->trackingStatus == vut::TrackingStatus::Ok);
+    CHECK(flaggedOk->positionValid);
+    CHECK(flaggedOk->orientationValid);
+    report[48] = 0x13;
+    const auto flaggedLostEnv = vut::protocol::parseIncomingEnvelope(report); CHECK(flaggedLostEnv);
+    const auto flaggedLost = vut::protocol::parsePose(*flaggedLostEnv, 1234); CHECK(flaggedLost);
+    CHECK(flaggedLost->trackingStatus == vut::TrackingStatus::Lost);
+    CHECK(!flaggedLost->positionValid);
+    CHECK(flaggedLost->orientationValid);
+    report[48] = 2;
+
     report.resize(51); report[11]=39;
     auto extended=vut::protocol::parseIncomingEnvelope(report); CHECK(extended);
     CHECK(vut::protocol::parsePose(*extended,1234));
