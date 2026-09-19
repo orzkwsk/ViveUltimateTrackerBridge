@@ -12,6 +12,30 @@ struct ObservationContext {
     // Explicit per-MAC map identities; no axis-name or slot based fallback.
     std::map<std::string, std::string> spaces;
 };
+
+struct ObservationAdmissionDiagnostics {
+    std::uint64_t acceptedPose = 0;
+    std::uint64_t acceptedState = 0;
+    std::uint64_t rejectGeneration = 0;
+    std::uint64_t rejectBeforeEpoch = 0;
+    std::uint64_t rejectUnknownDevice = 0;
+    std::uint64_t rejectMissingPose = 0;
+    std::uint64_t rejectPoseDeviceMismatch = 0;
+    std::uint64_t rejectAbsent = 0;
+    std::uint64_t rejectPoseTimestampMismatch = 0;
+    std::uint64_t rejectPoseNonMonotonic = 0;
+    std::uint64_t rejectDuplicateRf = 0;
+    std::uint64_t rejectOldOrAmbiguousRf = 0;
+    std::uint64_t rejectPoseGap = 0;
+    std::uint64_t rejectPoseSequenceExhausted = 0;
+    std::uint64_t rejectStateSequenceExhausted = 0;
+    std::uint64_t rejectStateNonMonotonic = 0;
+    std::uint64_t rejectRepairAfterAbsent = 0;
+    int lastAcceptedRf = -1;
+    int lastRejectedRf = -1;
+    std::int64_t lastRejectedGapNs = -1;
+};
+
 class ViveObservationAdapter {
 public:
     explicit ViveObservationAdapter(ObservationContext context);
@@ -20,6 +44,7 @@ public:
     std::optional<monaka::protocol::v2::Envelope> admit(const BackendEvent&);
     bool restartRequired() const { return restartRequired_; }
     std::uint64_t rejected() const { return rejected_; }
+    const ObservationAdmissionDiagnostics& diagnostics() const { return diagnostics_; }
 private:
     struct Stream {
         std::int64_t poseSequence = 0, stateSequence = 0, lastPoseNs = -1, lastStateNs = -1;
@@ -29,6 +54,7 @@ private:
     ObservationContext context_;
     std::map<std::string, Stream> streams_;
     std::uint64_t rejected_ = 0;
+    ObservationAdmissionDiagnostics diagnostics_;
     bool restartRequired_ = false;
 };
 }
