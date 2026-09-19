@@ -207,6 +207,12 @@ struct Backend::Impl {
         return {};
     }
 
+    void setRxPowerSaving(bool enabled, int slot) {
+        const auto payload = protocol::buildRfBehaviorPayload(protocol::kRfBehaviorRxPowerSaving, enabled, slot);
+        if (!payload) return;
+        (void)sendCommand(protocol::kCmdRequestRfChangeBehavior, *payload);
+    }
+
     bool sendAck(const DeviceId& device, const std::string& ack) {
         auto tx = protocol::buildAckTx(device, ack);
         if (tx.empty()) return false;
@@ -255,6 +261,16 @@ bool Backend::start(const BackendConfig& config) {
         protocol::kRfBehaviorPairDevice, 1, 1, 1, 1, 0, 0
     };
     (void)impl_->sendCommand(protocol::kCmdRequestRfChangeBehavior, enablePairing);
+
+    // HIL 2026-09-19: RxPowerSaving(false) alone recovered a native
+    // post-unpair dongle state without RestartRf, PairDevice replay, reboot,
+    // backend restart, or USB re-enumeration. Apply it at startup as well so
+    // an unpair/sleep that happened while the backend was stopped cannot leave
+    // the receiver stuck. The five selector positions follow the observed RF
+    // behavior layout; per-slot coverage beyond the exercised slots remains
+    // subject to multi-tracker HIL validation.
+    impl_->setRxPowerSaving(false, -1);
+
     impl_->isRunning = true;
     return true;
 #else
@@ -322,6 +338,11 @@ bool Backend::pollOnce() {
         }
         impl_->emit({pair->unpair ? BackendEvent::Kind::DeviceUnpaired : BackendEvent::Kind::DevicePaired,
                      pair->device, std::nullopt, {}});
+        if (pair->unpair && pair->device.slot >= 0) {
+            // Keep recovery single-action: no RestartRf, no PairDevice replay,
+            // and no reboot. Normal tracker power-on should reconnect afterward.
+            impl_->setRxPowerSaving(false, pair->device.slot);
+        }
         return true;
     }
 
