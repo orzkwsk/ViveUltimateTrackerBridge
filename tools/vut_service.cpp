@@ -140,6 +140,9 @@ int main(int argc,char** argv) try {
             if(auto observation=adapter.admit(event)) publisher.enqueue(std::move(*observation));
         });
         std::cerr << "session=" << c.sessionId << " revision=" << c.revision << '\n';
+        std::cerr << "source=" << c.sourceId << " configured_maps=" << c.spaces.size() << '\n';
+        for(const auto& [deviceId, mapId] : c.spaces)
+            std::cerr << "configured_map device=" << deviceId << " map=" << mapId << '\n';
         auto nextAdmissionReport = std::chrono::steady_clock::now() + std::chrono::seconds(5);
         while(run && backend.running() && !adapter.restartRequired()) {
             if(!backend.pollOnce()) break;
