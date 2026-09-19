@@ -1,6 +1,7 @@
 #include "vut/protocol.hpp"
 
 #include <bit>
+#include <algorithm>
 #include <cstring>
 #include <iomanip>
 #include <sstream>
@@ -159,6 +160,19 @@ std::vector<std::uint8_t> buildFeatureCommand(std::uint8_t command, std::span<co
     out[2] = static_cast<std::uint8_t>(payload.size() + 2);
     std::memcpy(out.data() + 3, payload.data(), payload.size());
     return out;
+}
+
+std::optional<std::array<std::uint8_t, 7>> buildRfBehaviorPayload(std::uint8_t behavior, bool enabled, int slot) {
+    if (slot < -1 || slot >= 5) return std::nullopt;
+    std::array<std::uint8_t, 7> payload = {
+        behavior, static_cast<std::uint8_t>(enabled ? 1 : 0), 0, 0, 0, 0, 0
+    };
+    if (slot == -1) {
+        std::fill(payload.begin() + 2, payload.end(), 1);
+    } else {
+        payload[2 + static_cast<std::size_t>(slot)] = 1;
+    }
+    return payload;
 }
 
 std::vector<std::uint8_t> buildAckTx(const DeviceId& device, const std::string& ack) {
