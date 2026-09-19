@@ -262,14 +262,10 @@ bool Backend::start(const BackendConfig& config) {
     };
     (void)impl_->sendCommand(protocol::kCmdRequestRfChangeBehavior, enablePairing);
 
-    // HIL 2026-09-19: RxPowerSaving(false) alone recovered a native
-    // post-unpair dongle state without RestartRf, PairDevice replay, reboot,
-    // backend restart, or USB re-enumeration. Apply it at startup as well so
-    // an unpair/sleep that happened while the backend was stopped cannot leave
-    // the receiver stuck. The five selector positions follow the observed RF
-    // behavior layout; per-slot coverage beyond the exercised slots remains
-    // subject to multi-tracker HIL validation.
-    impl_->setRxPowerSaving(false, -1);
+    // Do not issue RxPowerSaving here. Startup may need PairDevice behavior for
+    // an initial/re-pair operation, and a subsequent RF-behavior command can
+    // interfere with that state. PWS-off is HIL-validated only after a concrete
+    // DeviceUnpaired event for the affected slot.
 
     impl_->isRunning = true;
     return true;
