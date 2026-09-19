@@ -25,6 +25,7 @@ int main() {
             const auto& p = *event.pose;
             std::cout << std::fixed << std::setprecision(4)
                       << "[pose] slot=" << p.device.slot
+                      << " rf=" << static_cast<unsigned>(p.packetIndex)
                       << " status=" << static_cast<int>(p.trackingStatus)
                       << " pvalid=" << p.positionValid
                       << " ovalid=" << p.orientationValid
