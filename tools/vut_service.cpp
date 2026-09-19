@@ -26,6 +26,33 @@ std::string uuid() {
         id.Data1, id.Data2, id.Data3, id.Data4[0],id.Data4[1],id.Data4[2],id.Data4[3],id.Data4[4],id.Data4[5],id.Data4[6],id.Data4[7]);
     return result;
 }
+void printAdmissionDiagnostics(const vut::ViveObservationAdapter& adapter, const char* prefix) {
+    const auto& d = adapter.diagnostics();
+    std::cerr << prefix
+              << " accepted_pose=" << d.acceptedPose
+              << " accepted_state=" << d.acceptedState
+              << " rejected_total=" << adapter.rejected()
+              << " generation=" << d.rejectGeneration
+              << " before_epoch=" << d.rejectBeforeEpoch
+              << " unknown_device=" << d.rejectUnknownDevice
+              << " missing_pose=" << d.rejectMissingPose
+              << " pose_device_mismatch=" << d.rejectPoseDeviceMismatch
+              << " absent=" << d.rejectAbsent
+              << " pose_timestamp_mismatch=" << d.rejectPoseTimestampMismatch
+              << " pose_nonmonotonic=" << d.rejectPoseNonMonotonic
+              << " duplicate_rf=" << d.rejectDuplicateRf
+              << " old_ambiguous_rf=" << d.rejectOldOrAmbiguousRf
+              << " pose_gap=" << d.rejectPoseGap
+              << " pose_sequence_exhausted=" << d.rejectPoseSequenceExhausted
+              << " state_sequence_exhausted=" << d.rejectStateSequenceExhausted
+              << " state_nonmonotonic=" << d.rejectStateNonMonotonic
+              << " repair_after_absent=" << d.rejectRepairAfterAbsent
+              << " last_accepted_rf=" << d.lastAcceptedRf
+              << " last_rejected_rf=" << d.lastRejectedRf
+              << " last_rejected_gap_ms="
+              << (d.lastRejectedGapNs < 0 ? -1.0 : static_cast<double>(d.lastRejectedGapNs) / 1000000.0)
+              << '\n';
+}
 vut::ObservationContext config(const char* path) {
     std::ifstream in(path);
     if (!in) throw std::runtime_error("cannot read configuration");
@@ -112,14 +139,21 @@ int main(int argc,char** argv) try {
             if(auto observation=adapter.admit(event)) publisher.enqueue(std::move(*observation));
         });
         std::cerr << "session=" << c.sessionId << " revision=" << c.revision << '\n';
+        auto nextAdmissionReport = std::chrono::steady_clock::now() + std::chrono::seconds(5);
         while(run && backend.running() && !adapter.restartRequired()) {
             if(!backend.pollOnce()) break;
             publisher.flush();
+            const auto now = std::chrono::steady_clock::now();
+            if(now >= nextAdmissionReport) {
+                printAdmissionDiagnostics(adapter, "[admission]");
+                nextAdmissionReport = now + std::chrono::seconds(5);
+            }
         }
         backend.setEventCallback({}); backend.stop(); publisher.clear();
         const auto& counts=publisher.counters();
         std::cerr << "sent=" << counts.sent << " send_errors=" << counts.sendErrors << " encode_errors=" << counts.encodeErrors
                   << " dropped=" << counts.dropped << " admission_rejected=" << adapter.rejected() << '\n';
+        printAdmissionDiagnostics(adapter, "[admission-final]");
     }
     return 0;
 } catch(const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
