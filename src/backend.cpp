@@ -257,16 +257,15 @@ bool Backend::start(const BackendConfig& config) {
     ++impl_->generation;
 #ifdef _WIN32
     if (!impl_->hid.open(protocol::kVendorIdVive, protocol::kProductIdUltimateTrackerDongle, impl_->error)) return false;
-    const std::array<std::uint8_t, 7> enablePairing = {
-        protocol::kRfBehaviorPairDevice, 1, 1, 1, 1, 0, 0
-    };
-    (void)impl_->sendCommand(protocol::kCmdRequestRfChangeBehavior, enablePairing);
 
-    // Do not issue RxPowerSaving here. Startup may need PairDevice behavior for
-    // an initial/re-pair operation, and a subsequent RF-behavior command can
-    // interfere with that state. PWS-off is HIL-validated only after a concrete
-    // DeviceUnpaired event for the affected slot.
-
+    // Normal service startup must not enter pairing mode. PairDevice changes
+    // receiver behavior and caused a restart loop during hardware validation:
+    // config reload required a backend restart, the restart re-enabled pairing,
+    // and the already-paired tracker would not resume normal pose traffic until
+    // paired again (changing the session RF address yet again).
+    //
+    // Pairing is therefore an explicit operation outside normal startup.
+    // Runtime DeviceUnpaired recovery remains slot-local RxPowerSaving(false).
     impl_->isRunning = true;
     return true;
 #else
