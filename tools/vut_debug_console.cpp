@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    constexpr const char* kBuildMarker = "VUT_DEBUG_CONSOLE_V1";
+    constexpr const char* kBuildMarker = "VUT_DEBUG_CONSOLE_PWS_OFF_V2";
     printLine(std::string("[build] marker=") + kBuildMarker);
 
     auto input = std::make_shared<InputState>();
