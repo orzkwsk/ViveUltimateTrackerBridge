@@ -2,3 +2,5 @@
 *.user
 __pycache__/
 /dist/
+
+/config/vut-service.conf
