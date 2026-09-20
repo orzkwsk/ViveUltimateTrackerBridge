@@ -1,4 +1,5 @@
 #include "vut/backend.hpp"
+#include "vut/loss_diagnostics.hpp"
 #include "vut/protocol.hpp"
 
 #include <algorithm>
@@ -176,8 +177,7 @@ struct Backend::Impl {
     std::map<int, TrackerState> states;
     std::map<int, DeviceId> devices;
     std::map<int, std::uint16_t> buttons;
-    std::map<int, std::int64_t> lostSinceNs;
-    std::map<int, bool> lostDiagnosticSent;
+    detail::LossDiagnostics lossDiagnostics;
     int hostSlot = -1;
     bool isRunning = false;
     std::uint64_t generation = 0;
@@ -286,8 +286,7 @@ void Backend::stop() {
     impl_->states.clear();
     impl_->devices.clear();
     impl_->buttons.clear();
-    impl_->lostSinceNs.clear();
-    impl_->lostDiagnosticSent.clear();
+    impl_->lossDiagnostics.clear();
 }
 
 std::uint64_t Backend::transportGeneration() const noexcept { return impl_->generation; }
@@ -326,8 +325,7 @@ bool Backend::pollOnce() {
                 impl_->devices.erase(pair->device.slot);
                 impl_->states.erase(pair->device.slot);
                 impl_->buttons.erase(pair->device.slot);
-                impl_->lostSinceNs.erase(pair->device.slot);
-                impl_->lostDiagnosticSent.erase(pair->device.slot);
+                impl_->lossDiagnostics.forget(pair->device.slot);
                 if (impl_->hostSlot == pair->device.slot) impl_->hostSlot = -1;
             } else {
                 {
@@ -371,26 +369,15 @@ bool Backend::pollOnce() {
             impl_->states[state->device.slot] = *state;
         }
 
-        // Read-only SLAM diagnostics for the persistent green-breathing/lost
-        // failure. Query once after five continuous seconds of Lost/RecentlyLost;
-        // never change map, pairing, RF behavior, or tracking mode here.
-        const bool lost = state->trackingStatus == TrackingStatus::Lost ||
-                          state->trackingStatus == TrackingStatus::RecentlyLost;
-        if (!lost) {
-            impl_->lostSinceNs.erase(state->device.slot);
-            impl_->lostDiagnosticSent.erase(state->device.slot);
-        } else {
-            auto [it, inserted] = impl_->lostSinceNs.emplace(state->device.slot, impl_->receivedNs);
-            auto& sent = impl_->lostDiagnosticSent[state->device.slot];
-            if (!inserted && !sent && impl_->receivedNs - it->second >= 5'000'000'000LL) {
-                impl_->emit({BackendEvent::Kind::Diagnostic, state->device, std::nullopt,
-                             "tracking lost >=5s; requesting SLAM status keys 0,4,5,6"});
-                impl_->sendAck(state->device, "P63:0");
-                impl_->sendAck(state->device, "P63:4");
-                impl_->sendAck(state->device, "P63:5");
-                impl_->sendAck(state->device, "P63:6");
-                sent = true;
-            }
+        // Active HID requests, NOT passive logging. Only the explicit probe/HIL
+        // option enables this; the production service always leaves it disabled.
+        if (impl_->lossDiagnostics.queryDue(*state, impl_->config.diagnosticSlamQueries)) {
+            impl_->emit({BackendEvent::Kind::Diagnostic, state->device, std::nullopt,
+                         "diagnostic-only: tracking lost >=5s; querying SLAM keys 0,4,5,6"});
+            impl_->sendAck(state->device, "P63:0");
+            impl_->sendAck(state->device, "P63:4");
+            impl_->sendAck(state->device, "P63:5");
+            impl_->sendAck(state->device, "P63:6");
         }
         impl_->emit({BackendEvent::Kind::Pose, state->device, *state, {}});
     }

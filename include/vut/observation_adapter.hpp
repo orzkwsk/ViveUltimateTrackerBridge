@@ -32,9 +32,10 @@ struct ObservationAdmissionDiagnostics {
     std::uint64_t rejectStateNonMonotonic = 0;
     std::uint64_t rejectRepairAfterAbsent = 0;
     int lastAcceptedRf = -1;
+    // Snapshot of the last RF duplicate/reorder/gap rejection, not the latest packet.
     int lastRejectedRf = -1;
     std::int64_t lastRejectedGapNs = -1;
-    std::string lastRejectedDevice;
+    std::string lastUnknownDevice;
 };
 
 class ViveObservationAdapter {

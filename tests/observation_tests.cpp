@@ -13,9 +13,11 @@ const std::string mac="23:32:42:b7:82:d3";
 const std::string sid="00000000-0000-4000-8000-000000000001";
 const std::string sid2="00000000-0000-4000-8000-000000000002";
 vut::ObservationContext context() { return {"vive-installation-a",sid,1,1,100,{{mac,"map-a"},{"24:32:42:b7:82:d3","map-b"}}}; }
-vut::BackendEvent fixture(bool extended=false) {
+vut::BackendEvent fixture(bool extended=false, int rawStatus=-1) {
     std::ifstream in(std::string(FIXTURE_DIR)+(extended?"/pose39.bin":"/pose37.bin"),std::ios::binary);
     std::vector<std::uint8_t> raw{std::istreambuf_iterator<char>(in),{}};
+    CHECK(raw.size() >= 49);
+    if (rawStatus >= 0) raw[48] = static_cast<std::uint8_t>(rawStatus);
     const auto env=vut::protocol::parseIncomingEnvelope(raw); CHECK(env);
     const auto p=vut::protocol::parsePose(*env,110); CHECK(p);
     return {vut::BackendEvent::Kind::Pose,p->device,p,{},110,1};
@@ -50,6 +52,24 @@ int main(int argc,char** argv) try {
         CHECK(p.capabilities==std::vector<std::string>({"position","orientation"}));
         CHECK(p.device_id==mac && p.coordinate_space.id=="map-a"); encode(p);
     }
+    // Full parser -> admission -> fixed v2 codec round trip for BOTH packet lengths.
+    // 0x13 remains NONE at the shared boundary; vendor ovalid is not independent
+    // rotation-only evidence. Unknown flagged bytes must never become usable.
+    for (bool extended : {false, true}) for (int raw = 0; raw <= 255; ++raw) {
+        auto event = fixture(extended, raw);
+        vut::ViveObservationAdapter checked(c);
+        auto admitted = checked.admit(event); CHECK(admitted);
+        c1::Envelope decoded; c1::Error error;
+        const auto bytes = encode(*admitted);
+        CHECK(c1::DecodeEnvelope(reinterpret_cast<const std::uint8_t*>(bytes.data()), bytes.size(), decoded, error));
+        const auto& p = std::get<c1::TrackerObservation>(decoded);
+        const bool full = raw == 2 || raw == 0x12;
+        CHECK(p.modality == (full ? "full" : "none"));
+        CHECK(p.validity.position == full && p.validity.orientation == full);
+        CHECK(bool(p.position) == full && bool(p.orientation) == full);
+        if (raw > 5 && raw != 0x12 && raw != 0x13) CHECK(p.tracking_state == "unknown");
+        if (raw == 0x13) CHECK(p.tracking_state == "lost");
+    }
     e=fixture();
     for(float invalid: {std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}) {
         auto p=*e.pose; p.positionMeters.x=invalid;
@@ -70,6 +90,24 @@ int main(int argc,char** argv) try {
     CHECK(adapter.diagnostics().rejectPoseNonMonotonic==1);
     CHECK(adapter.diagnostics().rejectDuplicateRf==1);
     CHECK(adapter.diagnostics().rejectOldOrAmbiguousRf==1);
+    {
+        vut::ViveObservationAdapter diagnostic(context());
+        auto event = fixture(); CHECK(diagnostic.admit(event));
+        advance(event); CHECK(diagnostic.admit(event));
+        CHECK(diagnostic.diagnostics().lastRejectedRf == -1);
+        CHECK(diagnostic.diagnostics().lastRejectedGapNs == -1);
+        advance(event, 0); CHECK(!diagnostic.admit(event));
+        auto unknown = event; unknown.device.mac[0] = 0x25; unknown.pose->device = unknown.device;
+        CHECK(!diagnostic.admit(unknown));
+        const auto rejected = diagnostic.diagnostics();
+        CHECK(rejected.lastUnknownDevice == unknown.device.toString());
+        advance(event); CHECK(diagnostic.admit(event));
+        CHECK(diagnostic.diagnostics().lastRejectedRf == rejected.lastRejectedRf);
+        CHECK(diagnostic.diagnostics().lastRejectedGapNs == rejected.lastRejectedGapNs);
+        CHECK(diagnostic.diagnostics().lastUnknownDevice == rejected.lastUnknownDevice);
+        CHECK(diagnostic.diagnostics().acceptedPose == rejected.acceptedPose + 1);
+        CHECK(diagnostic.diagnostics().rejectDuplicateRf == rejected.rejectDuplicateRf);
+    }
     // Repeated identical numeric values are fresh when packet receipt advances.
     e=fixture(); e.pose->packetIndex=254;
     vut::ViveObservationAdapter wrap(c);

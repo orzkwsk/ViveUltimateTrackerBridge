@@ -10,7 +10,15 @@ std::atomic_bool gRun{true};
 void onSignal(int) { gRun = false; }
 }
 
-int main() {
+int main(int argc, char** argv) {
+    vut::BackendConfig config;
+    if (argc == 2 && std::string(argv[1]) == "--help") {
+        std::cout << "vut_probe [--diagnostic-slam-query]\n"
+                     "Explicit option sends active P63 HID queries after persistent loss; HIL only.\n";
+        return 0;
+    }
+    if (argc == 2 && std::string(argv[1]) == "--diagnostic-slam-query") config.diagnosticSlamQueries = true;
+    else if (argc != 1) { std::cerr << "use --help\n"; return 1; }
     std::signal(SIGINT, onSignal);
 
     vut::Backend backend;
@@ -21,6 +29,8 @@ int main() {
             std::cout << "[unpair] slot=" << event.device.slot << " mac=" << event.device.toString() << '\n';
         } else if (event.kind == vut::BackendEvent::Kind::Ack) {
             std::cout << "[ack] slot=" << event.device.slot << " " << event.text << '\n';
+        } else if (event.kind == vut::BackendEvent::Kind::Diagnostic) {
+            std::cout << "[diagnostic] slot=" << event.device.slot << " " << event.text << '\n';
         } else if (event.kind == vut::BackendEvent::Kind::Pose && event.pose) {
             const auto& p = *event.pose;
             std::cout << std::fixed << std::setprecision(4)
@@ -35,7 +45,7 @@ int main() {
         }
     });
 
-    if (!backend.start()) {
+    if (!backend.start(config)) {
         std::cerr << "start failed: " << backend.lastError() << '\n';
         return 1;
     }
