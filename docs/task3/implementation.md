@@ -2,6 +2,10 @@
 
 C1 status: fixed Task 1 candidate / wire 1.0 / master reconciliation pending.
 
+Historical handoff only. Current wire-v2 production status/validity and diagnostic
+defaults are documented in [production integration](../production-integration.md).
+In particular, the C1 loss-orientation table below is not current v2 behavior.
+
 ## Ownership and compatibility
 
 Official dongle HID/SetupAPI, VID/PID filtering, feature commands/ACK bring-up, independent

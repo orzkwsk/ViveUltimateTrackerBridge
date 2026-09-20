@@ -1,6 +1,9 @@
 # ViveUltimateTrackerBridge
 
-Development branch: `dev/vivehub-bypass`
+Current integration lineage: `refactor/monaka-layer-separation`.
+
+For current wire-v2 behavior, production defaults and diagnostic/HIL limits, see
+[production integration](docs/production-integration.md) and [software release evidence](docs/release-v2.md).
 
 Native backend for using VIVE Ultimate Trackers through the official USB dongle without running VIVE Hub / VIVE Streaming Hub.
 
@@ -57,6 +60,10 @@ Start_VIVE_Backend.cmd
 ```
 
 The launcher configures/builds `vut_service` in `build/runtime` and starts it in the foreground.
+An existing process is accepted only after executable/config/journal/options match;
+this check does not establish stream or hardware health. Use `-Diagnostics` on
+`scripts/start_vive_backend.ps1` for detailed logging. Default operation does not
+issue persistent-loss SLAM queries; active queries require an explicit probe option.
 It uses `config/vut-service.conf` and stores the persistent revision journal under
 `%LOCALAPPDATA%\\MonakaVR\\ViveUltimateTrackerBridge\\vut-service.revision.log`.
 
@@ -119,7 +126,11 @@ Protocol behavior was independently reimplemented from public reverse-engineerin
 
 No third-party source is vendored or copied into this repository.
 
-## Task 3 common Observation boundary
+## Historical Task 3 common Observation boundary
+
+The following describes the original C1 handoff. Current production uses the pinned
+wire-v2 kit and the fail-closed mapping in the production integration guide above;
+historical loss-orientation mappings are not current rotation-only support.
 
 The fixed Task 1 kit is now consumed by `ViveObservationAdapter`, the bounded loopback
 `ObservationPublisher`, and the Windows `vut_service` executable. Existing backend/probe targets

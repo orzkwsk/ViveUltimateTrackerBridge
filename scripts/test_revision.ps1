@@ -63,7 +63,7 @@ $Steps = @(
 )
 
 if ($Mode -eq 'Quick') {
-    $Steps += @{ Name='ctest-quick'; File='ctest'; Args=@('--test-dir',$BuildDir,'-C','Release','--output-on-failure','-R','protocol_v2_integrity|protocol$|observation|protocol_kit_integrity') }
+    $Steps += @{ Name='ctest-quick'; File='ctest'; Args=@('--test-dir',$BuildDir,'-C','Release','--output-on-failure','-R','protocol_v2_integrity|protocol$|observation|protocol_kit_integrity|runtime_policy|launcher_process_guard') }
 }
 else {
     $Steps += @{ Name='ctest-full'; File='ctest'; Args=@('--test-dir',$BuildDir,'-C','Release','--output-on-failure') }
