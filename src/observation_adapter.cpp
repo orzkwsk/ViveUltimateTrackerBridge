@@ -72,7 +72,7 @@ std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& ev
     if (event.transportGeneration != context_.generation) return reject(diagnostics_.rejectGeneration);
     if (event.observedMonotonicNs < context_.epochNs) return reject(diagnostics_.rejectBeforeEpoch);
     if (!context_.spaces.contains(event.device.toString())) {
-        diagnostics_.lastRejectedDevice = event.device.toString();
+        diagnostics_.lastUnknownDevice = event.device.toString();
         return reject(diagnostics_.rejectUnknownDevice);
     }
 
@@ -91,12 +91,15 @@ std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& ev
         if (stream.lastPoseNs >= 0) {
             const auto gapNs = p.observedMonotonicNs - stream.lastPoseNs;
             const auto delta = static_cast<std::uint8_t>(p.packetIndex - stream.rf);
-            diagnostics_.lastRejectedRf = static_cast<int>(p.packetIndex);
-            diagnostics_.lastRejectedGapNs = gapNs;
+            const auto rejectRf = [&](std::uint64_t& reason) {
+                diagnostics_.lastRejectedRf = static_cast<int>(p.packetIndex);
+                diagnostics_.lastRejectedGapNs = gapNs;
+                return reject(reason);
+            };
             // Half-range serial arithmetic. Ambiguous gaps require explicit session restart.
-            if (delta == 0) return reject(diagnostics_.rejectDuplicateRf);
-            if (delta >= 128) return reject(diagnostics_.rejectOldOrAmbiguousRf);
-            if (gapNs > 500000000) return reject(diagnostics_.rejectPoseGap);
+            if (delta == 0) return rejectRf(diagnostics_.rejectDuplicateRf);
+            if (delta >= 128) return rejectRf(diagnostics_.rejectOldOrAmbiguousRf);
+            if (gapNs > 500000000) return rejectRf(diagnostics_.rejectPoseGap);
         }
         if (stream.poseSequence == std::numeric_limits<std::int64_t>::max()) {
             restartRequired_ = true;

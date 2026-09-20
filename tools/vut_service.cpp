@@ -1,6 +1,7 @@
 #include "vut/backend.hpp"
 #include "vut/observation_adapter.hpp"
 #include "vut/observation_publisher.hpp"
+#include "vut/service_options.hpp"
 #include <windows.h>
 #include <objbase.h>
 #include <atomic>
@@ -51,7 +52,7 @@ void printAdmissionDiagnostics(const vut::ViveObservationAdapter& adapter, const
               << " last_rejected_rf=" << d.lastRejectedRf
               << " last_rejected_gap_ms="
               << (d.lastRejectedGapNs < 0 ? -1.0 : static_cast<double>(d.lastRejectedGapNs) / 1000000.0)
-              << " last_rejected_device=" << (d.lastRejectedDevice.empty() ? "-" : d.lastRejectedDevice)
+              << " last_unknown_device=" << (d.lastUnknownDevice.empty() ? "-" : d.lastUnknownDevice)
               << '\n';
 }
 vut::ObservationContext config(const char* path) {
@@ -114,8 +115,9 @@ public:
 }
 int main(int argc,char** argv) try {
     if (argc==2 && std::string(argv[1])=="--help") {
-        std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT]\nConfiguration: source <persistent-installation-id> and map <full-mac> <map-id> lines.\n"
+        std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT] [--diagnostics]\nConfiguration: source <persistent-installation-id> and map <full-rf-address> <map-id> lines.\n"
                      "Default destination 127.0.0.1:29810. Stop/restart after map reset or ambiguous RF gap.\n"
+                     "--diagnostics enables detailed stderr only; it never enables active SLAM queries.\n"
                      "For diagnostics without publication use vut_probe.\n"; return 0;
     }
     if (argc==4 && std::string(argv[1])=="--check-session") {
@@ -123,12 +125,13 @@ int main(int argc,char** argv) try {
         std::cout << c.sourceId << " " << journal.advance() << " " << c.sessionId << '\n';
         return 0; // Reserve/test a session without opening HID.
     }
-    if (argc<3 || argc>4) throw std::runtime_error("use --help");
+    if (argc<3) throw std::runtime_error("use --help");
+    std::vector<std::string_view> arguments;
+    for (int i = 3; i < argc; ++i) arguments.emplace_back(argv[i]);
+    const auto options = vut::parseServiceOptions(arguments);
     auto c=config(argv[1]);
-    unsigned long port=29810;
-    if(argc==4) { std::size_t n=0; port=std::stoul(argv[3],&n); if(n!=std::string(argv[3]).size() || port==0 || port>65535) throw std::runtime_error("invalid port"); }
     RevisionJournal journal(argv[2]);
-    vut::LoopbackSender sender(static_cast<std::uint16_t>(port));
+    vut::LoopbackSender sender(options.port);
     std::signal(SIGINT,stop); std::signal(SIGTERM,stop);
     vut::Backend backend;
     while(run) {
@@ -136,35 +139,37 @@ int main(int argc,char** argv) try {
         c.sessionId=uuid(); c.epochNs=nowNs(); c.revision=journal.advance(); c.generation=backend.transportGeneration();
         vut::ViveObservationAdapter adapter(c);
         vut::ObservationPublisher publisher(c.sessionId,[&](auto bytes){return sender.send(bytes);},[&]{return nowNs()-c.epochNs;});
-        auto trackingDiagnosticLogUntil = std::chrono::steady_clock::time_point::min();
         backend.setEventCallback([&](const auto& event) {
-            const auto callbackNow = std::chrono::steady_clock::now();
-            if(event.kind == vut::BackendEvent::Kind::Diagnostic) {
-                trackingDiagnosticLogUntil = callbackNow + std::chrono::seconds(5);
+            if(options.diagnostics && event.kind == vut::BackendEvent::Kind::Diagnostic) {
                 std::cerr << "[tracking-diagnostic] device=" << event.device.toString()
                           << " " << event.text << '\n';
-            } else if(event.kind == vut::BackendEvent::Kind::Ack) {
-                const bool normallyInteresting =
-                    event.text.rfind("P61:",0)==0 || event.text.rfind("LP",0)==0 ||
-                    event.text.rfind("MS",0)==0 || event.text.rfind("DEC",0)==0;
-                if(normallyInteresting || callbackNow <= trackingDiagnosticLogUntil) {
-                    std::cerr << "[tracking-ack] device=" << event.device.toString()
-                              << " " << event.text << '\n';
-                }
+            } else if(options.diagnostics && event.kind == vut::BackendEvent::Kind::Ack) {
+                std::cerr << "[tracking-ack] device=" << event.device.toString()
+                          << " " << event.text << '\n';
             }
             if(auto observation=adapter.admit(event)) publisher.enqueue(std::move(*observation));
         });
         std::cerr << "session=" << c.sessionId << " revision=" << c.revision << '\n';
-        std::cerr << "source=" << c.sourceId << " configured_maps=" << c.spaces.size() << '\n';
-        for(const auto& [deviceId, mapId] : c.spaces)
-            std::cerr << "configured_map device=" << deviceId << " map=" << mapId << '\n';
+        if (options.diagnostics) {
+            std::cerr << "source=" << c.sourceId << " configured_maps=" << c.spaces.size() << '\n';
+            for(const auto& [deviceId, mapId] : c.spaces)
+                std::cerr << "configured_map device=" << deviceId << " map=" << mapId << '\n';
+        }
+        std::uint64_t lastReportedRejections = 0;
         auto nextAdmissionReport = std::chrono::steady_clock::now() + std::chrono::seconds(5);
         while(run && backend.running() && !adapter.restartRequired()) {
             if(!backend.pollOnce()) break;
             publisher.flush();
             const auto now = std::chrono::steady_clock::now();
             if(now >= nextAdmissionReport) {
-                printAdmissionDiagnostics(adapter, "[admission]");
+                if (options.diagnostics) printAdmissionDiagnostics(adapter, "[admission]");
+                else if (adapter.rejected() != lastReportedRejections) {
+                    const auto& d = adapter.diagnostics();
+                    std::cerr << "[admission] rejected=" << adapter.rejected()
+                              << " unknown_device=" << d.rejectUnknownDevice
+                              << " last_unknown_device=" << (d.lastUnknownDevice.empty() ? "-" : d.lastUnknownDevice) << '\n';
+                }
+                lastReportedRejections = adapter.rejected();
                 nextAdmissionReport = now + std::chrono::seconds(5);
             }
         }
@@ -172,7 +177,7 @@ int main(int argc,char** argv) try {
         const auto& counts=publisher.counters();
         std::cerr << "sent=" << counts.sent << " send_errors=" << counts.sendErrors << " encode_errors=" << counts.encodeErrors
                   << " dropped=" << counts.dropped << " admission_rejected=" << adapter.rejected() << '\n';
-        printAdmissionDiagnostics(adapter, "[admission-final]");
+        if (options.diagnostics) printAdmissionDiagnostics(adapter, "[admission-final]");
     }
     return 0;
 } catch(const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }

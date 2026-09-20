@@ -13,6 +13,8 @@ struct BackendConfig {
     std::string wifiCountry = "JP";
     int readTimeoutMs = 50;
     bool configureTrackingOnPair = true;
+    // Explicit probe/HIL opt-in; normal service never enables active SLAM queries.
+    bool diagnosticSlamQueries = false;
 };
 
 class Backend {
