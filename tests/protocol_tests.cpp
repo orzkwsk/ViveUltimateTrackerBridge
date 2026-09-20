@@ -73,8 +73,7 @@ int main(int argc, char** argv) try {
     CHECK(near(pose->orientationXyzw.w, 1.0f));
     CHECK(pose->observedMonotonicNs == 1234);
 
-    // HIL: the high nibble may contain auxiliary flags while the low nibble
-    // remains the pose state. 0x12 must behave as OK and 0x13 as LOST.
+    // Exact HIL-observed values; no general high-nibble mask is established.
     report[48] = 0x12;
     const auto flaggedOkEnv = vut::protocol::parseIncomingEnvelope(report); CHECK(flaggedOkEnv);
     const auto flaggedOk = vut::protocol::parsePose(*flaggedOkEnv, 1234); CHECK(flaggedOk);
@@ -87,6 +86,15 @@ int main(int argc, char** argv) try {
     CHECK(flaggedLost->trackingStatus == vut::TrackingStatus::Lost);
     CHECK(!flaggedLost->positionValid);
     CHECK(flaggedLost->orientationValid);
+    // Every unconfirmed raw byte fails closed, including 0xF2 and 0xA3.
+    for (int raw = 0; raw <= 255; ++raw) {
+        if (raw <= 5 || raw == 0x12 || raw == 0x13) continue;
+        report[48] = static_cast<std::uint8_t>(raw);
+        const auto unknownEnv = vut::protocol::parseIncomingEnvelope(report); CHECK(unknownEnv);
+        const auto unknown = vut::protocol::parsePose(*unknownEnv, 1234); CHECK(unknown);
+        CHECK(unknown->trackingStatus == vut::TrackingStatus::Unknown);
+        CHECK(!unknown->positionValid && !unknown->orientationValid);
+    }
     report[48] = 2;
 
     report.resize(51); report[11]=39;
