@@ -5,11 +5,13 @@ param(
     [string]$JournalPath = "",
     [ValidateRange(1, 65535)]
     [int]$Port = 29810,
-    [switch]$NoBuild
+    [switch]$NoBuild,
+    [switch]$Diagnostics
 )
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'vive_launcher_process.ps1')
 
 function Resolve-RepoPath {
     param([string]$Path)
@@ -62,16 +64,18 @@ if ($journalDir -and -not (Test-Path $journalDir)) {
     New-Item -ItemType Directory -Path $journalDir -Force | Out-Null
 }
 
-$running = Get-Process -Name "vut_service" -ErrorAction SilentlyContinue
-if ($running) {
-    Write-Host "vut_service is already running (PID $($running[0].Id))."
+$buildDir = Join-Path $RepoRoot "build\runtime"
+$exe = Join-Path $buildDir "$BuildConfig\vut_service.exe"
+$running = @(Get-CimInstance Win32_Process -Filter "Name='vut_service.exe'" -ErrorAction Stop)
+$matching = Get-ViveMatchingProcess -Processes $running -Executable $exe -ConfigPath $ConfigPath -JournalPath $JournalPath -Port $Port -Diagnostics ([bool]$Diagnostics)
+if ($null -ne $matching) {
+    Write-Host "Matching vut_service process exists (PID $($matching.ProcessId)); binary path, config, journal and options match."
+    Write-Host 'This is process identity confirmation, not a hardware/stream health check. No rebuild was performed.'
     exit 0
 }
 
-$cmake = Find-CMake
-$buildDir = Join-Path $RepoRoot "build\runtime"
-
 if (-not $NoBuild) {
+    $cmake = Find-CMake
     Write-Host "Configuring VIVE backend runtime..."
     & $cmake -S $RepoRoot -B $buildDir -A x64 -DBUILD_TESTING=OFF -DVUT_BUILD_OBSERVATION=ON
     if ($LASTEXITCODE -ne 0) { throw "CMake configure failed." }
@@ -81,7 +85,6 @@ if (-not $NoBuild) {
     if ($LASTEXITCODE -ne 0) { throw "vut_service build failed." }
 }
 
-$exe = Join-Path $buildDir "$BuildConfig\vut_service.exe"
 if (-not (Test-Path $exe -PathType Leaf)) {
     throw "vut_service.exe was not found: $exe. Run without -NoBuild first."
 }
@@ -97,5 +100,7 @@ Write-Host "Close VIVE Hub / VIVE Streaming Hub before using the official dongle
 Write-Host "Ctrl+C stops the service."
 Write-Host ""
 
-& $exe $ConfigPath $JournalPath $Port
+$serviceArguments = @($ConfigPath, $JournalPath, $Port)
+if ($Diagnostics) { $serviceArguments += '--diagnostics' }
+& $exe @serviceArguments
 exit $LASTEXITCODE
