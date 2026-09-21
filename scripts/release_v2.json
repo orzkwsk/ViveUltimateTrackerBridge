@@ -145,6 +145,7 @@
         "service_configuration",
         "service_session_policy",
         "runtime_policy",
+        "backend_pairing",
         "launcher_process_guard",
         "model_validation",
         "model_validation_v2"
@@ -159,6 +160,10 @@
     {
       "name": "runtime/vut_probe.exe",
       "path": "{BUILD}/Release/vut_probe.exe"
+    },
+    {
+      "name": "runtime/vut_pair.exe",
+      "path": "{BUILD}/Release/vut_pair.exe"
     },
     {
       "name": "config/vut-service.example.conf",

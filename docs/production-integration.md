@@ -9,6 +9,9 @@ below; they do not establish hardware recovery or independent orientation qualit
 
 - Normal `Backend::start` opens HID without sending PairDevice or startup all-slot
   PWS commands. Existing tracking bring-up on an observed pair is retained.
+- PairDevice is exposed only by explicit `Backend::beginPairing`; the standalone
+  `vut_pair` setup tool balances it with `Backend::endPairing`. Neither the service
+  nor transport reconnect calls the pairing API.
 - An observed unpair clears that slot's state and requests PWS-off only for that
   slot. The bounded RF payload builder remains unchanged. Its ability to build an
   all-slot diagnostic payload does not mean startup calls it.
@@ -74,6 +77,35 @@ SLAM keys. `vut_service` deliberately rejects this option. `--help` on either to
 does not open HID. All-ACK collection is confined to diagnostic service logging
 or the probe, and the old automatic five-second all-ACK capture window is gone.
 
+## Explicit first-pair setup
+
+Normal production operation accepts only an already-paired tracker. First pairing is a separate,
+intentional setup operation:
+
+```powershell
+vut_pair.exe --slot all --timeout-seconds 60
+```
+
+The exact enable path is `Backend::beginPairing` →
+`buildRfBehaviorPayload(kRfBehaviorPairDevice, true, selector)` →
+`buildFeatureCommand(kCmdRequestRfChangeBehavior /* 0x1d */, payload)` → exclusive HID feature
+write and matching response. Cleanup uses the same path with `enabled=false`. The Backend records
+a successfully written enable even if its response is missing, so timeout/error/stop still attempt
+disable. Repeated begin/end for the same selector is bounded and idempotent; changing selector
+while active fails closed.
+
+`vut_pair` requests an exclusive dongle handle. Therefore a running `vut_service`, VIVE Hub or
+VIVE Streaming Hub causes a clear open failure; the tool does not stop or kill any owner. It emits
+the exact `DevicePaired` slot/address and a suggested `map ADDRESS tracker-N-map` line to stdout,
+but does not update configuration or approve/rebind an address. The six-byte RF address remains an
+observed admission key, not a persistent hardware identity.
+
+The RF builder accepts one-hot selectors 0..4 and `-1` for all five; other values are rejected.
+The CLI defaults to explicit `all`, with `--slot 0..4` available when an operator has independent
+evidence. Vendor selection/assignment semantics for first pairing, effects on an already-populated
+multi-tracker dongle, and preservation of existing tracking topology are **UNKNOWN/HIL_REQUIRED**.
+The implementation sends no unpair command and does not intentionally modify existing pairings.
+
 ## Launcher identity check
 
 An existing service is reused only when exactly one process has a matching
@@ -125,6 +157,9 @@ rebinds it.
   accepted frames preserve rejection snapshots. Existing lifetime/replay tests run.
 - `runtime_policy`: default config never schedules SLAM requests; explicit
   diagnostic timing, reset/slot bounds, and service CLI opt-in boundaries.
+- `backend_pairing`: injected HID transport proves normal start writes no PairDevice,
+  exact enable/disable feature packets, exact pair-event address, selector bounds,
+  idempotency, exclusive-open request and timeout/read/uncertain-response cleanup.
 - `launcher_process_guard`: mocked process inventory and real Windows command-line
   parser, including wrong executable/config/journal/options and inaccessible data.
   This test does not open HID or launch/stop any service.
@@ -143,6 +178,10 @@ startup pairing effects, slot-local unpair/power-cycle recovery, persistent-loss
 probe queries, native map/axis/unit checks, multiple trackers and physical
 end-to-end Monaka/SteamVR behavior. SteamVR interactive: **NOT RUN**. Synthetic
 software cases do not upgrade any of these claims to PASS.
+
+Hub-independent physical first pairing with `vut_pair`, PairDevice disable confirmation on success/
+timeout/Ctrl+C/error, selector-to-slot behavior, and preservation of an existing multi-tracker
+topology are specifically **NOT RUN**.
 
 Limited prior evidence supplied for policy design: on 2026-09-21, one HIL run
 observed the same `vive-local-1` source, `23:32:03:81:fe:ec` device and

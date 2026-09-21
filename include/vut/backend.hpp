@@ -9,12 +9,19 @@
 
 namespace vut {
 
+namespace detail {
+class BackendTransport;
+}
+
 struct BackendConfig {
     std::string wifiCountry = "JP";
     int readTimeoutMs = 50;
     bool configureTrackingOnPair = true;
     // Explicit probe/HIL opt-in; normal service never enables active SLAM queries.
     bool diagnosticSlamQueries = false;
+    // Setup tools use exclusive ownership so an active service/Hub fails closed.
+    // Normal service/probe behavior remains shared for compatibility.
+    bool exclusiveHidAccess = false;
 };
 
 class Backend {
@@ -22,6 +29,8 @@ public:
     using EventCallback = std::function<void(const BackendEvent&)>;
 
     Backend();
+    // Injectable transport boundary for hardware-free command-sequence tests.
+    explicit Backend(std::unique_ptr<detail::BackendTransport> transport);
     ~Backend();
     Backend(Backend&&) noexcept;
     Backend& operator=(Backend&&) noexcept;
@@ -32,6 +41,12 @@ public:
     void stop();
     [[nodiscard]] bool running() const noexcept;
     [[nodiscard]] const std::string& lastError() const noexcept;
+
+    // Explicit setup operation only. start() never calls this. Slot is 0..4,
+    // or -1 for all selectors, matching buildRfBehaviorPayload semantics.
+    bool beginPairing(int slot = -1);
+    bool endPairing();
+    [[nodiscard]] bool pairingActive() const noexcept;
 
     bool pollOnce();
     [[nodiscard]] std::uint64_t transportGeneration() const noexcept;
