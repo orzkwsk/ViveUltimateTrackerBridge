@@ -38,25 +38,26 @@ c1::TrackerObservation ViveObservationAdapter::mapPose(const TrackerState& p, co
     c1::TrackerObservation out;
     header(out, p.device, c, seq, p.observedMonotonicNs);
     const auto status = p.trackingStatus;
-    const bool allowPosition = status == TrackingStatus::Ok;
-    // Lost/RecentlyLost numeric quaternions do not prove independent usable rotation.
-    // Native loss semantics remain hardware NOT RUN, unlike an explicit OpenVR
-    // Fallback_RotationOnly report. Do not fabricate a second IMU stream.
-    const bool allowOrientation = allowPosition;
     const auto& v = p.positionMeters;
     const auto& q = p.orientationXyzw;
+    const bool finitePosition = std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
     const double norm = std::hypot(std::hypot(double(q.x), double(q.y)), std::hypot(double(q.z), double(q.w)));
-    out.validity.position = allowPosition && std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
-    out.validity.orientation = allowOrientation && std::isfinite(norm) && norm >= 0.5 && norm <= 1.5;
-    const bool full = out.validity.position && out.validity.orientation;
-    out.validity = {full, full};
-    out.modality = full ? "full" : "none";
+    const bool finiteOrientation = std::isfinite(norm) && norm >= 0.5 && norm <= 1.5;
+
+    // HIL evidence distinguishes pre-localization Lost (0x03/0x13) from
+    // post-localization RecentlyLost (0x04/0x14). Only the latter preserves a
+    // usable orientation in the previously established native tracking frame.
+    const bool full = status == TrackingStatus::Ok && finitePosition && finiteOrientation;
+    const bool rotationOnly = status == TrackingStatus::RecentlyLost && finiteOrientation;
+    out.validity = {full, full || rotationOnly};
+    out.modality = full ? "full" : rotationOnly ? "rotation_only" : "none";
     if (out.validity.position) out.position = c1::Vec3{v.x, v.y, v.z};
     if (out.validity.orientation) out.orientation = c1::QuatXyzw{q.x, q.y, q.z, q.w};
     out.orientation_evidence = out.validity.orientation ? "device" : "none";
-    if (allowOrientation) out.tracking_state = out.validity.position && out.validity.orientation ? "tracked" :
-        out.validity.position || out.validity.orientation ? "degraded" : "lost";
-    else if (status == TrackingStatus::Lost || status == TrackingStatus::RecentlyLost) out.tracking_state = "lost";
+    if (full) out.tracking_state = "tracked";
+    else if (rotationOnly) out.tracking_state = "degraded";
+    else if (status == TrackingStatus::Ok || status == TrackingStatus::Lost ||
+             status == TrackingStatus::RecentlyLost) out.tracking_state = "lost";
     else out.tracking_state = status == TrackingStatus::NoImagesYet || status == TrackingStatus::NotInitialized ||
         status == TrackingStatus::SystemNotReady ? "initializing" : "unknown";
     return out;

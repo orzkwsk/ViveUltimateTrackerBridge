@@ -46,9 +46,13 @@ int main(int argc,char** argv) try {
     for(int status: {0,1,2,3,4,5,255}) {
         e.pose->trackingStatus=static_cast<vut::TrackingStatus>(status);
         auto p=vut::ViveObservationAdapter::mapPose(*e.pose,c,0);
-        CHECK(p.validity.position==(status==2)); CHECK(p.validity.orientation==(status==2));
-        CHECK(p.modality==(status==2?"full":"none"));
-        CHECK(p.tracking_state==(status==2?"tracked":status==3||status==4?"lost":status==255?"unknown":"initializing"));
+        const bool full = status == 2;
+        const bool rotationOnly = status == 4;
+        CHECK(p.validity.position == full);
+        CHECK(p.validity.orientation == (full || rotationOnly));
+        CHECK(p.modality == (full ? "full" : rotationOnly ? "rotation_only" : "none"));
+        CHECK(p.tracking_state == (full ? "tracked" : rotationOnly ? "degraded" :
+            status == 3 ? "lost" : status == 255 ? "unknown" : "initializing"));
         CHECK(!p.battery && !p.linear_velocity && !p.angular_velocity && !p.linear_acceleration);
         CHECK(p.capabilities==std::vector<std::string>({"position","orientation"}));
         CHECK(p.device_id==mac && p.coordinate_space.id=="map-a"); encode(p);
@@ -57,6 +61,8 @@ int main(int argc,char** argv) try {
         {0x02,vut::TrackingStatus::Ok},
         {0x12,vut::TrackingStatus::Ok},
         {0x03,vut::TrackingStatus::Lost},
+        {0x13,vut::TrackingStatus::Lost},
+        {0x04,vut::TrackingStatus::RecentlyLost},
         {0x14,vut::TrackingStatus::RecentlyLost},
         {0x22,vut::TrackingStatus::Unknown},
         {0xf2,vut::TrackingStatus::Unknown},
@@ -66,7 +72,17 @@ int main(int argc,char** argv) try {
         CHECK(event.pose->trackingStatusRaw == raw);
         CHECK(event.pose->trackingStatus == normalized);
         const auto observation = vut::ViveObservationAdapter::mapPose(*event.pose,c,0);
-        if (normalized == vut::TrackingStatus::Unknown) {
+        if (normalized == vut::TrackingStatus::RecentlyLost) {
+            CHECK(observation.modality == "rotation_only");
+            CHECK(observation.tracking_state == "degraded");
+            CHECK(!observation.validity.position && observation.validity.orientation);
+            CHECK(!observation.position && observation.orientation);
+        } else if (normalized == vut::TrackingStatus::Lost) {
+            CHECK(observation.modality == "none");
+            CHECK(observation.tracking_state == "lost");
+            CHECK(!observation.validity.position && !observation.validity.orientation);
+            CHECK(!observation.position && !observation.orientation);
+        } else if (normalized == vut::TrackingStatus::Unknown) {
             CHECK(observation.modality == "none");
             CHECK(observation.tracking_state == "unknown");
             CHECK(!observation.validity.position && !observation.validity.orientation);
@@ -74,9 +90,9 @@ int main(int argc,char** argv) try {
         }
     }
     // Full parser -> admission -> fixed v2 codec round trip for BOTH packet lengths.
-    // 0x13 and HIL-confirmed stationary-loss variant 0x14 remain NONE at the
-    // shared boundary here. This parser change does not yet promote vendor
-    // rotation-only evidence into Common Observation semantics.
+    // HIL establishes 0x04/0x14 as post-localization rotation-only states.
+    // 0x03/0x13 remain fail-closed because their orientation precedes localization
+    // and can jump to a different native frame when 6DoF first becomes valid.
     for (bool extended : {false, true}) for (int raw = 0; raw <= 255; ++raw) {
         auto event = fixture(extended, raw);
         CHECK(event.pose->trackingStatusRaw == raw);
@@ -86,12 +102,16 @@ int main(int argc,char** argv) try {
         const auto bytes = encode(*admitted);
         CHECK(c1::DecodeEnvelope(reinterpret_cast<const std::uint8_t*>(bytes.data()), bytes.size(), decoded, error));
         const auto& p = std::get<c1::TrackerObservation>(decoded);
-        const bool full = raw == 2 || raw == 0x12;
-        CHECK(p.modality == (full ? "full" : "none"));
-        CHECK(p.validity.position == full && p.validity.orientation == full);
-        CHECK(bool(p.position) == full && bool(p.orientation) == full);
+        const bool full = raw == 0x02 || raw == 0x12;
+        const bool rotationOnly = raw == 0x04 || raw == 0x14;
+        CHECK(p.modality == (full ? "full" : rotationOnly ? "rotation_only" : "none"));
+        CHECK(p.validity.position == full);
+        CHECK(p.validity.orientation == (full || rotationOnly));
+        CHECK(bool(p.position) == full);
+        CHECK(bool(p.orientation) == (full || rotationOnly));
         if (raw > 5 && raw != 0x12 && raw != 0x13 && raw != 0x14) CHECK(p.tracking_state == "unknown");
-        if (raw == 0x13 || raw == 0x14) CHECK(p.tracking_state == "lost");
+        if (raw == 0x03 || raw == 0x13) CHECK(p.tracking_state == "lost");
+        if (rotationOnly) CHECK(p.tracking_state == "degraded");
     }
     e=fixture();
     for(float invalid: {std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}) {
