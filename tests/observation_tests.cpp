@@ -7,6 +7,7 @@
 #include <limits>
 #include <stdexcept>
 #include <iterator>
+#include <utility>
 #define CHECK(x) do {if(!(x)) throw std::runtime_error("check failed: " #x);} while(false)
 namespace c1=monaka::protocol::v2;
 const std::string mac="23:32:42:b7:82:d3";
@@ -52,11 +53,31 @@ int main(int argc,char** argv) try {
         CHECK(p.capabilities==std::vector<std::string>({"position","orientation"}));
         CHECK(p.device_id==mac && p.coordinate_space.id=="map-a"); encode(p);
     }
+    const std::pair<int,vut::TrackingStatus> rawCases[] = {
+        {0x02,vut::TrackingStatus::Ok},
+        {0x12,vut::TrackingStatus::Ok},
+        {0x03,vut::TrackingStatus::Lost},
+        {0x22,vut::TrackingStatus::Unknown},
+        {0xf2,vut::TrackingStatus::Unknown},
+    };
+    for (const auto& [raw, normalized] : rawCases) {
+        const auto event = fixture(false, raw);
+        CHECK(event.pose->trackingStatusRaw == raw);
+        CHECK(event.pose->trackingStatus == normalized);
+        const auto observation = vut::ViveObservationAdapter::mapPose(*event.pose,c,0);
+        if (normalized == vut::TrackingStatus::Unknown) {
+            CHECK(observation.modality == "none");
+            CHECK(observation.tracking_state == "unknown");
+            CHECK(!observation.validity.position && !observation.validity.orientation);
+            CHECK(!observation.position && !observation.orientation);
+        }
+    }
     // Full parser -> admission -> fixed v2 codec round trip for BOTH packet lengths.
     // 0x13 remains NONE at the shared boundary; vendor ovalid is not independent
     // rotation-only evidence. Unknown flagged bytes must never become usable.
     for (bool extended : {false, true}) for (int raw = 0; raw <= 255; ++raw) {
         auto event = fixture(extended, raw);
+        CHECK(event.pose->trackingStatusRaw == raw);
         vut::ViveObservationAdapter checked(c);
         auto admitted = checked.admit(event); CHECK(admitted);
         c1::Envelope decoded; c1::Error error;

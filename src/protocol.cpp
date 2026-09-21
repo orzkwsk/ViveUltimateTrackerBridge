@@ -143,6 +143,7 @@ std::optional<TrackerState> parsePose(const IncomingEnvelope& envelope, std::int
     }
 
     const auto statusRaw = data[36];
+    state.trackingStatusRaw = statusRaw;
     // Only these exact additional raw values have HIL evidence. There is no
     // evidence that an arbitrary high-nibble flag mask can be ignored.
     const auto poseStatus = statusRaw == 0x12 ? 2 : statusRaw == 0x13 ? 3 : statusRaw;

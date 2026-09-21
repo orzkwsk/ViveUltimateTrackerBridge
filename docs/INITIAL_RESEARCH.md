@@ -25,6 +25,14 @@ Observed pose payload sizes are 0x25 or 0x27 bytes. The 0x25-byte base layout is
 - bytes 28..35: four float16 rotation-velocity fields;
 - byte 36: tracking status.
 
+The backend preserves byte 36 verbatim as `TrackerState::trackingStatusRaw` for
+diagnostic evidence. `vut_probe` displays it for every pose, and
+`vut_service --diagnostics` reports bounded unknown-status evidence by device,
+slot and RF packet index. This field is observability only: it is not published
+through MonakaProtocol and does not alter admission, validity or normalized
+tracking-state semantics. Seeing a value such as `0x22` or `0xF2` does not
+establish its vendor meaning, and no bit mask is inferred from it.
+
 Tracking status behavior observed by the public implementations is important for the normalized backend contract:
 
 - 2: position + orientation valid;
