@@ -2,6 +2,7 @@
 #include "vut/observation_adapter.hpp"
 #include "vut/observation_publisher.hpp"
 #include "vut/service_options.hpp"
+#include "vut/service_session.hpp"
 #include <windows.h>
 #include <objbase.h>
 #include <atomic>
@@ -12,6 +13,7 @@
 #include <limits>
 #include <sstream>
 #include <thread>
+#include <utility>
 
 namespace {
 std::atomic_bool run{true};
@@ -55,10 +57,16 @@ void printAdmissionDiagnostics(const vut::ViveObservationAdapter& adapter, const
               << " last_unknown_device=" << (d.lastUnknownDevice.empty() ? "-" : d.lastUnknownDevice)
               << '\n';
 }
-vut::ObservationContext config(const char* path) {
+struct ServiceConfiguration {
+    vut::ObservationContext observation;
+    vut::ReconnectRevisionPolicy reconnectRevision = vut::ReconnectRevisionPolicy::Strict;
+};
+ServiceConfiguration config(const char* path) {
     std::ifstream in(path);
     if (!in) throw std::runtime_error("cannot read configuration");
-    vut::ObservationContext c;
+    ServiceConfiguration result;
+    auto& c = result.observation;
+    bool hasReconnectRevision = false;
     std::string line;
     while (std::getline(in,line)) {
         if (line.empty() || line[0]=='#') continue;
@@ -71,16 +79,20 @@ vut::ObservationContext config(const char* path) {
                 if ((i%3==2) ? a[i]!=':' : !(a[i]>='0'&&a[i]<='9') && !(a[i]>='a'&&a[i]<='f'))
                     throw std::runtime_error("invalid MAC");
             if (!c.spaces.emplace(a,b).second) throw std::runtime_error("duplicate map MAC");
+        } else if (key=="reconnect_revision" && !hasReconnectRevision) {
+            result.reconnectRevision = vut::parseReconnectRevisionPolicy(a);
+            hasReconnectRevision = true;
         } else throw std::runtime_error("invalid configuration line");
         if (row >> extra) throw std::runtime_error("unexpected configuration field");
     }
     if (c.sourceId.empty() || c.spaces.empty()) throw std::runtime_error("source and per-MAC map configuration required");
     c.sessionId=uuid();
     vut::ViveObservationAdapter validate(c);
-    return c;
+    return result;
 }
 // Exclusive open prevents two service instances using this persistent revision journal.
-// Append + FlushFileBuffers precedes every session. Torn/corrupt journals fail closed.
+// Append + FlushFileBuffers precedes every newly reserved coordinate revision.
+// Preserved reconnects do not modify the journal. Torn/corrupt journals fail closed.
 class RevisionJournal {
     HANDLE file_ = INVALID_HANDLE_VALUE;
     std::uint32_t revision_ = 0;
@@ -116,27 +128,39 @@ public:
 int main(int argc,char** argv) try {
     if (argc==2 && std::string(argv[1])=="--help") {
         std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT] [--diagnostics]\nConfiguration: source <persistent-installation-id> and map <full-rf-address> <map-id> lines.\n"
+                     "Optional: reconnect_revision strict|preserve (default strict).\n"
+                     "preserve means: Preserve coordinate map across tracker reconnect.\n"
                      "Default destination 127.0.0.1:29810. Stop/restart after map reset or ambiguous RF gap.\n"
                      "--diagnostics enables detailed stderr only; it never enables active SLAM queries.\n"
                      "For diagnostics without publication use vut_probe.\n"; return 0;
     }
     if (argc==4 && std::string(argv[1])=="--check-session") {
-        const auto c=config(argv[2]); RevisionJournal journal(argv[3]);
-        std::cout << c.sourceId << " " << journal.advance() << " " << c.sessionId << '\n';
+        const auto configured=config(argv[2]); RevisionJournal journal(argv[3]);
+        const auto& c = configured.observation;
+        std::cout << c.sourceId << " " << journal.advance() << " " << c.sessionId << " "
+                  << vut::reconnectRevisionPolicyName(configured.reconnectRevision) << '\n';
         return 0; // Reserve/test a session without opening HID.
     }
     if (argc<3) throw std::runtime_error("use --help");
     std::vector<std::string_view> arguments;
     for (int i = 3; i < argc; ++i) arguments.emplace_back(argv[i]);
     const auto options = vut::parseServiceOptions(arguments);
-    auto c=config(argv[1]);
+    auto configured=config(argv[1]);
+    auto c=std::move(configured.observation);
     RevisionJournal journal(argv[2]);
+    vut::SessionRevisionCoordinator revisionCoordinator(configured.reconnectRevision);
+    const vut::CoordinateMapIdentity coordinateIdentity{c.sourceId, c.spaces};
+    auto nextStartCause = vut::SessionStartCause::InitialStart;
     vut::LoopbackSender sender(options.port);
     std::signal(SIGINT,stop); std::signal(SIGTERM,stop);
     vut::Backend backend;
     while(run) {
         if(!backend.start()) { std::cerr << backend.lastError() << '\n'; std::this_thread::sleep_for(std::chrono::seconds(1)); continue; }
-        c.sessionId=uuid(); c.epochNs=nowNs(); c.revision=journal.advance(); c.generation=backend.transportGeneration();
+        const auto session = revisionCoordinator.begin(
+            coordinateIdentity, nextStartCause, backend.transportGeneration(),
+            [&] { return journal.advance(); }, uuid, nowNs);
+        c.sessionId=session.sessionId; c.epochNs=session.epochNs;
+        c.revision=session.revision; c.generation=session.transportGeneration;
         vut::ViveObservationAdapter adapter(c);
         vut::ObservationPublisher publisher(c.sessionId,[&](auto bytes){return sender.send(bytes);},[&]{return nowNs()-c.epochNs;});
         backend.setEventCallback([&](const auto& event) {
@@ -149,7 +173,9 @@ int main(int argc,char** argv) try {
             }
             if(auto observation=adapter.admit(event)) publisher.enqueue(std::move(*observation));
         });
-        std::cerr << "session=" << c.sessionId << " revision=" << c.revision << '\n';
+        std::cerr << "session=" << c.sessionId << " revision=" << c.revision
+                  << " revision_action=" << (session.revisionAdvanced ? "advanced" : "preserved")
+                  << " reconnect_revision=" << vut::reconnectRevisionPolicyName(configured.reconnectRevision) << '\n';
         if (options.diagnostics) {
             std::cerr << "source=" << c.sourceId << " configured_maps=" << c.spaces.size() << '\n';
             for(const auto& [deviceId, mapId] : c.spaces)
@@ -174,6 +200,9 @@ int main(int argc,char** argv) try {
             }
         }
         backend.setEventCallback({}); backend.stop(); publisher.clear();
+        nextStartCause = adapter.coordinateContinuityUncertain()
+            ? vut::SessionStartCause::ContinuityUncertain
+            : vut::SessionStartCause::TransportReconnect;
         const auto& counts=publisher.counters();
         std::cerr << "sent=" << counts.sent << " send_errors=" << counts.sendErrors << " encode_errors=" << counts.encodeErrors
                   << " dropped=" << counts.dropped << " admission_rejected=" << adapter.rejected() << '\n';

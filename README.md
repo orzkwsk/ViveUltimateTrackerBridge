@@ -71,10 +71,32 @@ Before first use, copy `config/vut-service.example.conf` to `config/vut-service.
 all example source/map values. The local config is gitignored. Close VIVE Hub / VIVE Streaming Hub
 before opening the official dongle. Ctrl+C stops the service.
 
+`reconnect_revision` controls coordinate-map revision behavior:
+
+- omitted or `strict` (default): every successful backend start creates a new session, epoch,
+  transport generation, and journal revision;
+- `preserve` (experimental opt-in): an ordinary HID transport reconnect in the same
+  `vut_service` process with the exact same configured source/device/map identity creates a new
+  session, epoch, and transport generation but retains the current coordinate revision.
+
+The preserve policy is not automatic Bridge approval and does not claim that VIVE always retains
+its map. An exact configured device returning after an observed absence is treated as the narrow
+tracker reconnect covered by this explicit opt-in; unknown addresses are still rejected. Sequence
+exhaustion, ambiguous/uncertain recovery, service/process restart, config identity change, and any
+path without sufficient continuity evidence advance the journal revision or fail closed.
+Corrupt/torn journals always fail closed. Preserving a revision never rewrites the append-only
+journal, and the next real advance receives the next monotonic value.
+
 The current service configuration still keys mappings by the full RF address accepted by the
 historical service path. Do not treat that address as persistent hardware identity; if it changes,
 update the local config and restart for validation. This launcher does not fabricate or persist a
 hardware identity.
+
+Limited evidence for the opt-in is one 2026-09-21 HIL observation: after tracker power OFF/ON and
+re-pair, `source=vive-local-1`, device `23:32:03:81:fe:ec`, and map `tracker-0-map` stayed the same;
+strict mode advanced revision 55 to 56, while physical fixed-point pose comparison was broadly
+consistent. This is evidence from that setup only, not a VIVE map-continuity guarantee. Map reset,
+ambiguous RF recovery, other devices/firmware, and end-to-end approval behavior remain HIL gates.
 
 Normal `vut_service` startup does **not** enter dongle pairing mode. It assumes the tracker is
 already paired and only observes the existing relationship. Pairing/re-pairing is an explicit

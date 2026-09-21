@@ -40,11 +40,26 @@ struct ObservationAdmissionDiagnostics {
 
 class ViveObservationAdapter {
 public:
+    enum class RestartReason {
+        None,
+        ConfiguredDevicePairedAfterAbsent,
+        PoseSequenceExhausted,
+        StateSequenceExhausted,
+    };
+
     explicit ViveObservationAdapter(ObservationContext context);
     static monaka::protocol::v2::TrackerObservation mapPose(
         const TrackerState&, const ObservationContext&, std::int64_t sequence);
     std::optional<monaka::protocol::v2::Envelope> admit(const BackendEvent&);
-    bool restartRequired() const { return restartRequired_; }
+    bool restartRequired() const { return restartReason_ != RestartReason::None; }
+    RestartReason restartReason() const { return restartReason_; }
+    // VIVE-owned classification: an exact configured device returning after an
+    // observed absence is the narrow reconnect covered by the opt-in policy.
+    // Exhaustion and future unclassified restart reasons remain fail-closed.
+    bool coordinateContinuityUncertain() const {
+        return restartReason_ != RestartReason::None &&
+               restartReason_ != RestartReason::ConfiguredDevicePairedAfterAbsent;
+    }
     std::uint64_t rejected() const { return rejected_; }
     const ObservationAdmissionDiagnostics& diagnostics() const { return diagnostics_; }
 private:
@@ -57,6 +72,6 @@ private:
     std::map<std::string, Stream> streams_;
     std::uint64_t rejected_ = 0;
     ObservationAdmissionDiagnostics diagnostics_;
-    bool restartRequired_ = false;
+    RestartReason restartReason_ = RestartReason::None;
 };
 }
