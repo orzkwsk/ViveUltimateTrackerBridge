@@ -36,7 +36,10 @@ int main(int argc, char** argv) {
             std::cout << std::fixed << std::setprecision(4)
                       << "[pose] slot=" << p.device.slot
                       << " rf=" << static_cast<unsigned>(p.packetIndex)
-                      << " status=" << static_cast<int>(p.trackingStatus)
+                      << " status_raw=0x" << std::hex << std::setw(2) << std::setfill('0')
+                      << static_cast<unsigned>(p.trackingStatusRaw)
+                      << std::dec << std::setfill(' ')
+                      << " status=" << vut::trackingStatusName(p.trackingStatus)
                       << " pvalid=" << p.positionValid
                       << " ovalid=" << p.orientationValid
                       << " pos=(" << p.positionMeters.x << ',' << p.positionMeters.y << ',' << p.positionMeters.z << ')'

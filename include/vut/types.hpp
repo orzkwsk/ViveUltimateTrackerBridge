@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 
 namespace vut {
 
@@ -16,6 +17,18 @@ enum class TrackingStatus : std::uint8_t {
     SystemNotReady = 5,
     Unknown = 0xff,
 };
+
+[[nodiscard]] constexpr std::string_view trackingStatusName(TrackingStatus status) noexcept {
+    switch (status) {
+    case TrackingStatus::NoImagesYet: return "no_images_yet";
+    case TrackingStatus::NotInitialized: return "not_initialized";
+    case TrackingStatus::Ok: return "ok";
+    case TrackingStatus::Lost: return "lost";
+    case TrackingStatus::RecentlyLost: return "recently_lost";
+    case TrackingStatus::SystemNotReady: return "system_not_ready";
+    default: return "unknown";
+    }
+}
 
 struct Vec3f {
     float x = 0.0f;
@@ -41,6 +54,9 @@ struct TrackerState {
     DeviceId device;
     std::uint8_t packetIndex = 0;
     std::uint16_t buttons = 0;
+    // Preserved vendor evidence only. Normalized semantics remain in
+    // trackingStatus/positionValid/orientationValid.
+    std::uint8_t trackingStatusRaw = 0xff;
     TrackingStatus trackingStatus = TrackingStatus::Unknown;
     bool positionValid = false;
     bool orientationValid = false;

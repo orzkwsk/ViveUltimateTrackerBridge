@@ -5,10 +5,13 @@
 #include "vut/service_session.hpp"
 #include <windows.h>
 #include <objbase.h>
+#include <array>
 #include <atomic>
+#include <bitset>
 #include <chrono>
 #include <csignal>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -57,6 +60,55 @@ void printAdmissionDiagnostics(const vut::ViveObservationAdapter& adapter, const
               << " last_unknown_device=" << (d.lastUnknownDevice.empty() ? "-" : d.lastUnknownDevice)
               << '\n';
 }
+class UnknownStatusEvidence {
+    struct DeviceEvidence {
+        std::bitset<256> observedRaw;
+        std::uint64_t samplesSinceReport = 0;
+        std::uint64_t rawChangesSinceReport = 0;
+        std::uint8_t lastRaw = 0xff;
+        bool hasLast = false;
+        std::string device;
+        std::chrono::steady_clock::time_point nextSummary{};
+    };
+    // Five protocol selectors plus one bounded bucket for an invalid slot.
+    std::array<DeviceEvidence, 6> slots_;
+public:
+    void observe(const vut::BackendEvent& event) {
+        if (event.kind != vut::BackendEvent::Kind::Pose || !event.pose ||
+            event.pose->trackingStatus != vut::TrackingStatus::Unknown) return;
+        const auto& pose = *event.pose;
+        const auto device = event.device.toString();
+        const std::size_t index = event.device.slot >= 0 && event.device.slot < 5
+            ? static_cast<std::size_t>(event.device.slot) : 5;
+        auto& evidence = slots_[index];
+        if (evidence.device != device) {
+            evidence = {};
+            evidence.device = device;
+        }
+        const auto now = std::chrono::steady_clock::now();
+        const bool newRaw = !evidence.observedRaw.test(pose.trackingStatusRaw);
+        evidence.observedRaw.set(pose.trackingStatusRaw);
+        ++evidence.samplesSinceReport;
+        if (evidence.hasLast && evidence.lastRaw != pose.trackingStatusRaw)
+            ++evidence.rawChangesSinceReport;
+        evidence.hasLast = true;
+        evidence.lastRaw = pose.trackingStatusRaw;
+        if (!newRaw && now < evidence.nextSummary) return;
+
+        std::cerr << "[tracking-status-unknown] device=" << device
+                  << " slot=" << event.device.slot
+                  << " status_raw=0x" << std::hex << std::setw(2) << std::setfill('0')
+                  << static_cast<unsigned>(pose.trackingStatusRaw)
+                  << std::dec << std::setfill(' ')
+                  << " status=" << vut::trackingStatusName(pose.trackingStatus)
+                  << " rf=" << static_cast<unsigned>(pose.packetIndex)
+                  << " samples=" << evidence.samplesSinceReport
+                  << " raw_changes=" << evidence.rawChangesSinceReport << '\n';
+        evidence.samplesSinceReport = 0;
+        evidence.rawChangesSinceReport = 0;
+        evidence.nextSummary = now + std::chrono::seconds(5);
+    }
+};
 struct ServiceConfiguration {
     vut::ObservationContext observation;
     vut::ReconnectRevisionPolicy reconnectRevision = vut::ReconnectRevisionPolicy::Strict;
@@ -152,6 +204,7 @@ int main(int argc,char** argv) try {
     const vut::CoordinateMapIdentity coordinateIdentity{c.sourceId, c.spaces};
     auto nextStartCause = vut::SessionStartCause::InitialStart;
     vut::LoopbackSender sender(options.port);
+    UnknownStatusEvidence unknownStatusEvidence;
     std::signal(SIGINT,stop); std::signal(SIGTERM,stop);
     vut::Backend backend;
     while(run) {
@@ -164,6 +217,7 @@ int main(int argc,char** argv) try {
         vut::ViveObservationAdapter adapter(c);
         vut::ObservationPublisher publisher(c.sessionId,[&](auto bytes){return sender.send(bytes);},[&]{return nowNs()-c.epochNs;});
         backend.setEventCallback([&](const auto& event) {
+            if (options.diagnostics) unknownStatusEvidence.observe(event);
             if(options.diagnostics && event.kind == vut::BackendEvent::Kind::Diagnostic) {
                 std::cerr << "[tracking-diagnostic] device=" << event.device.toString()
                           << " " << event.text << '\n';
