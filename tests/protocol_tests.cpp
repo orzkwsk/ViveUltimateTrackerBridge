@@ -86,9 +86,16 @@ int main(int argc, char** argv) try {
     CHECK(flaggedLost->trackingStatus == vut::TrackingStatus::Lost);
     CHECK(!flaggedLost->positionValid);
     CHECK(flaggedLost->orientationValid);
+    report[48] = 0x14;
+    const auto flaggedRecentlyLostEnv = vut::protocol::parseIncomingEnvelope(report); CHECK(flaggedRecentlyLostEnv);
+    const auto flaggedRecentlyLost = vut::protocol::parsePose(*flaggedRecentlyLostEnv, 1234); CHECK(flaggedRecentlyLost);
+    CHECK(flaggedRecentlyLost->trackingStatusRaw == 0x14);
+    CHECK(flaggedRecentlyLost->trackingStatus == vut::TrackingStatus::RecentlyLost);
+    CHECK(!flaggedRecentlyLost->positionValid);
+    CHECK(flaggedRecentlyLost->orientationValid);
     // Every unconfirmed raw byte fails closed, including 0xF2 and 0xA3.
     for (int raw = 0; raw <= 255; ++raw) {
-        if (raw <= 5 || raw == 0x12 || raw == 0x13) continue;
+        if (raw <= 5 || raw == 0x12 || raw == 0x13 || raw == 0x14) continue;
         report[48] = static_cast<std::uint8_t>(raw);
         const auto unknownEnv = vut::protocol::parseIncomingEnvelope(report); CHECK(unknownEnv);
         const auto unknown = vut::protocol::parsePose(*unknownEnv, 1234); CHECK(unknown);

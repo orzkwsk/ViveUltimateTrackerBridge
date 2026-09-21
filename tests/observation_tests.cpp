@@ -57,6 +57,7 @@ int main(int argc,char** argv) try {
         {0x02,vut::TrackingStatus::Ok},
         {0x12,vut::TrackingStatus::Ok},
         {0x03,vut::TrackingStatus::Lost},
+        {0x14,vut::TrackingStatus::RecentlyLost},
         {0x22,vut::TrackingStatus::Unknown},
         {0xf2,vut::TrackingStatus::Unknown},
     };
@@ -73,8 +74,9 @@ int main(int argc,char** argv) try {
         }
     }
     // Full parser -> admission -> fixed v2 codec round trip for BOTH packet lengths.
-    // 0x13 remains NONE at the shared boundary; vendor ovalid is not independent
-    // rotation-only evidence. Unknown flagged bytes must never become usable.
+    // 0x13 and HIL-confirmed stationary-loss variant 0x14 remain NONE at the
+    // shared boundary here. This parser change does not yet promote vendor
+    // rotation-only evidence into Common Observation semantics.
     for (bool extended : {false, true}) for (int raw = 0; raw <= 255; ++raw) {
         auto event = fixture(extended, raw);
         CHECK(event.pose->trackingStatusRaw == raw);
@@ -88,8 +90,8 @@ int main(int argc,char** argv) try {
         CHECK(p.modality == (full ? "full" : "none"));
         CHECK(p.validity.position == full && p.validity.orientation == full);
         CHECK(bool(p.position) == full && bool(p.orientation) == full);
-        if (raw > 5 && raw != 0x12 && raw != 0x13) CHECK(p.tracking_state == "unknown");
-        if (raw == 0x13) CHECK(p.tracking_state == "lost");
+        if (raw > 5 && raw != 0x12 && raw != 0x13 && raw != 0x14) CHECK(p.tracking_state == "unknown");
+        if (raw == 0x13 || raw == 0x14) CHECK(p.tracking_state == "lost");
     }
     e=fixture();
     for(float invalid: {std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}) {
