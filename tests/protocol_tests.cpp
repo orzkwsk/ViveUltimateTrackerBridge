@@ -129,6 +129,14 @@ int main(int argc, char** argv) try {
     CHECK(pwsAll && *pwsAll==expectedPwsAll);
     CHECK(!vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorRxPowerSaving,false,5));
     CHECK(!vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorRxPowerSaving,false,-2));
+    const std::array<std::uint8_t,7> expectedPairAll{0,1,1,1,1,1,1};
+    const std::array<std::uint8_t,7> expectedPairSlot2{0,0,0,0,1,0,0};
+    auto pairAll=vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorPairDevice,true,-1);
+    CHECK(pairAll && *pairAll==expectedPairAll);
+    auto pairSlot2=vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorPairDevice,false,2);
+    CHECK(pairSlot2 && *pairSlot2==expectedPairSlot2);
+    CHECK(!vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorPairDevice,true,5));
+    CHECK(!vut::protocol::buildRfBehaviorPayload(vut::protocol::kRfBehaviorPairDevice,true,-2));
     auto ack=vut::protocol::buildAckTx(paired->device,"ARI1");
     CHECK(ack.size()==14 && ack[0]==4 && ack[10]=='A' && ack[13]=='1');
     CHECK(vut::protocol::buildAckTx(paired->device,std::string(45,'x')).empty());

@@ -35,6 +35,7 @@ This phase intentionally does **not** implement Wi-Fi-only tracker transport or 
 - button-fragment accumulation;
 - normalized in-process `TrackerState` snapshot/event API;
 - `vut_probe` command-line hardware probe;
+- explicit one-shot `vut_pair` first-pairing setup tool;
 - protocol unit tests independent of hardware.
 
 See `docs/INITIAL_RESEARCH.md` for protocol evidence, assumptions, and current limitations.
@@ -101,6 +102,33 @@ ambiguous RF recovery, other devices/firmware, and end-to-end approval behavior 
 Normal `vut_service` startup does **not** enter dongle pairing mode. It assumes the tracker is
 already paired and only observes the existing relationship. Pairing/re-pairing is an explicit
 diagnostic/setup action; restarting the service must not change pairing state.
+
+## Explicit first pairing
+
+Normal operation is for already-paired trackers only. For an intentional first-pair setup, stop
+`vut_service` and VIVE Hub / VIVE Streaming Hub, then run the separate one-shot tool:
+
+```powershell
+.\build\Release\vut_pair.exe --slot all --timeout-seconds 60
+```
+
+`vut_pair` opens the dongle exclusively, enables PairDevice only after that explicit invocation,
+waits for one `DevicePaired` event, prints its exact observed slot and six-byte RF address, and
+disables PairDevice before closing. Timeout, Ctrl+C, HID error and uncertain command response take
+the same bounded best-effort disable path. It never kills another process, unpairs an existing
+tracker, edits `vut-service.conf`, approves a map or restarts the service. If the service or Hub
+owns the HID interface, the tool exits with an ownership error.
+
+The default `--slot all` uses the existing five-selector RF payload helper. `--slot 0` through
+`--slot 4` request a one-hot selector. What selector a new tracker should use and how the dongle
+assigns a resulting slot are vendor semantics that remain **UNKNOWN/HIL_REQUIRED**; do not infer
+topology from the selector. Existing paired trackers are not deliberately unpaired, but the effect
+of pairing mode on a populated multi-tracker dongle also remains a hardware gate. The printed RF
+address is an observed admission/configuration key, not a persistent hardware ID.
+
+The tool is software-built and mock-tested, but Hub-independent physical first pairing is
+**NOT RUN**. Until that HIL is completed, “VIVE Hub is unnecessary for first pairing” is a goal,
+not a validated production claim.
 
 ## Hardware probe
 

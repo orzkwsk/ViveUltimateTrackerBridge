@@ -1,4 +1,5 @@
 #include "vut/backend.hpp"
+#include "vut/backend_transport.hpp"
 #include "vut/loss_diagnostics.hpp"
 #include "vut/protocol.hpp"
 
@@ -28,11 +29,11 @@ std::int64_t monotonicNs() {
 }
 
 #ifdef _WIN32
-class WinHidDevice {
+class WinHidDevice final : public detail::BackendTransport {
 public:
     ~WinHidDevice() { close(); }
 
-    bool open(std::uint16_t vid, std::uint16_t pid, std::string& error) {
+    bool open(std::uint16_t vid, std::uint16_t pid, bool exclusive, std::string& error) override {
         GUID hidGuid{};
         HidD_GetHidGuid(&hidGuid);
         HDEVINFO info = SetupDiGetClassDevsW(&hidGuid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
@@ -42,6 +43,7 @@ public:
         }
 
         std::wstring fallback;
+        bool matchingPathWasBusy = false;
         for (DWORD index = 0;; ++index) {
             SP_DEVICE_INTERFACE_DATA iface{};
             iface.cbSize = sizeof(iface);
@@ -58,7 +60,14 @@ public:
             HANDLE h = CreateFileW(detail->DevicePath, GENERIC_READ | GENERIC_WRITE,
                                    FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
                                    FILE_FLAG_OVERLAPPED, nullptr);
-            if (h == INVALID_HANDLE_VALUE) continue;
+            if (h == INVALID_HANDLE_VALUE) {
+                std::wstring path = detail->DevicePath;
+                std::transform(path.begin(), path.end(), path.begin(), ::towlower);
+                const std::wstring identity = L"vid_0bb4&pid_0350";
+                if (vid == protocol::kVendorIdVive && pid == protocol::kProductIdUltimateTrackerDongle &&
+                    path.find(identity) != std::wstring::npos) matchingPathWasBusy = true;
+                continue;
+            }
             HIDD_ATTRIBUTES attr{};
             attr.Size = sizeof(attr);
             const bool match = HidD_GetAttributes(h, &attr) && attr.VendorID == vid && attr.ProductID == pid;
@@ -77,15 +86,19 @@ public:
         SetupDiDestroyDeviceInfoList(info);
 
         if (fallback.empty()) {
-            error = "VIVE Ultimate Tracker dongle HID interface not found (VID 0x0bb4 PID 0x0350)";
+            error = matchingPathWasBusy
+                ? "VIVE Ultimate Tracker dongle HID interface is busy; stop vut_service and VIVE Hub / VIVE Streaming Hub"
+                : "VIVE Ultimate Tracker dongle HID interface not found (VID 0x0bb4 PID 0x0350)";
             return false;
         }
 
         handle_ = CreateFileW(fallback.c_str(), GENERIC_READ | GENERIC_WRITE,
-                              FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
+                              exclusive ? 0 : (FILE_SHARE_READ | FILE_SHARE_WRITE), nullptr, OPEN_EXISTING,
                               FILE_FLAG_OVERLAPPED, nullptr);
         if (handle_ == INVALID_HANDLE_VALUE) {
-            error = "CreateFileW failed for dongle HID interface";
+            error = exclusive
+                ? "exclusive dongle HID open failed; stop vut_service and VIVE Hub / VIVE Streaming Hub"
+                : "CreateFileW failed for dongle HID interface";
             return false;
         }
 
@@ -101,7 +114,7 @@ public:
         return true;
     }
 
-    void close() {
+    void close() override {
         if (handle_ != INVALID_HANDLE_VALUE) {
             CancelIoEx(handle_, nullptr);
             CloseHandle(handle_);
@@ -109,23 +122,23 @@ public:
         }
     }
 
-    std::size_t featureLength() const noexcept { return featureLength_; }
+    std::size_t featureLength() const noexcept override { return featureLength_; }
 
-    bool setFeature(std::span<const std::uint8_t> data) {
+    bool setFeature(std::span<const std::uint8_t> data) override {
         std::vector<std::uint8_t> buffer(featureLength_, 0);
         std::copy_n(data.begin(), std::min(data.size(), buffer.size()), buffer.begin());
         return HidD_SetFeature(handle_, buffer.data(), static_cast<ULONG>(buffer.size())) != FALSE;
     }
 
-    std::vector<std::uint8_t> getFeature() {
+    std::vector<std::uint8_t> getFeature() override {
         std::vector<std::uint8_t> buffer(featureLength_, 0);
         if (!HidD_GetFeature(handle_, buffer.data(), static_cast<ULONG>(buffer.size()))) return {};
         return buffer;
     }
 
-    bool readFailed() const { return readFailed_; }
+    bool readFailed() const noexcept override { return readFailed_; }
 
-    std::vector<std::uint8_t> read(int timeoutMs) {
+    std::vector<std::uint8_t> read(int timeoutMs) override {
         readFailed_ = false;
         std::vector<std::uint8_t> buffer(inputLength_, 0);
         OVERLAPPED ov{};
@@ -168,9 +181,26 @@ private:
 };
 #endif
 
+std::unique_ptr<detail::BackendTransport> makePlatformTransport() {
+#ifdef _WIN32
+    return std::make_unique<WinHidDevice>();
+#else
+    return {};
+#endif
+}
+
 } // namespace
 
 struct Backend::Impl {
+    explicit Impl(std::unique_ptr<detail::BackendTransport> value)
+        : hid(std::move(value)) {}
+
+    struct CommandResult {
+        bool sent = false;
+        bool responseMatched = false;
+        std::vector<std::uint8_t> response;
+    };
+
     BackendConfig config;
     EventCallback callback;
     mutable std::mutex mutex;
@@ -183,9 +213,10 @@ struct Backend::Impl {
     std::uint64_t generation = 0;
     std::int64_t receivedNs = 0;
     std::string error;
-#ifdef _WIN32
-    WinHidDevice hid;
-#endif
+    std::unique_ptr<detail::BackendTransport> hid;
+    bool pairingMayBeEnabled = false;
+    bool pairingConfirmed = false;
+    int pairingSlot = -1;
 
     void emit(BackendEvent event) {
         event.observedMonotonicNs = receivedNs;
@@ -193,20 +224,28 @@ struct Backend::Impl {
         if (callback) callback(event);
     }
 
-#ifdef _WIN32
-    std::vector<std::uint8_t> sendCommand(std::uint8_t command, std::span<const std::uint8_t> payload) {
-        auto packet = protocol::buildFeatureCommand(command, payload, hid.featureLength());
-        if (packet.empty() || !hid.setFeature(packet)) return {};
+    CommandResult sendCommandDetailed(std::uint8_t command, std::span<const std::uint8_t> payload) {
+        CommandResult result;
+        if (!hid) return result;
+        auto packet = protocol::buildFeatureCommand(command, payload, hid->featureLength());
+        if (packet.empty() || !hid->setFeature(packet)) return result;
+        result.sent = true;
         for (int i = 0; i < 10; ++i) {
-            auto response = hid.getFeature();
+            auto response = hid->getFeature();
             if (response.size() < 5) continue;
             if (response[1] != command) continue;
             const std::size_t declared = response[2];
-            if (declared < 4) return {};
+            if (declared < 4) return result;
             const std::size_t len = std::min<std::size_t>(declared - 4, response.size() - 5);
-            return {response.begin() + 5, response.begin() + 5 + len};
+            result.response.assign(response.begin() + 5, response.begin() + 5 + len);
+            result.responseMatched = true;
+            return result;
         }
-        return {};
+        return result;
+    }
+
+    std::vector<std::uint8_t> sendCommand(std::uint8_t command, std::span<const std::uint8_t> payload) {
+        return sendCommandDetailed(command, payload).response;
     }
 
     void setRxPowerSaving(bool enabled, int slot) {
@@ -241,15 +280,23 @@ struct Backend::Impl {
             sendAck(device, "ATM11");
         }
     }
-#endif
 };
 
-Backend::Backend() : impl_(std::make_unique<Impl>()) {}
-Backend::~Backend() = default;
+Backend::Backend() : Backend(makePlatformTransport()) {}
+Backend::Backend(std::unique_ptr<detail::BackendTransport> transport)
+    : impl_(std::make_unique<Impl>(std::move(transport))) {}
+Backend::~Backend() { stop(); }
 Backend::Backend(Backend&&) noexcept = default;
-Backend& Backend::operator=(Backend&&) noexcept = default;
+Backend& Backend::operator=(Backend&& other) noexcept {
+    if (this != &other) {
+        stop();
+        impl_ = std::move(other.impl_);
+    }
+    return *this;
+}
 
 bool Backend::start(const BackendConfig& config) {
+    if (!impl_) return false;
     stop();
     impl_->config = config;
     impl_->error.clear();
@@ -258,7 +305,10 @@ bool Backend::start(const BackendConfig& config) {
     }
     ++impl_->generation;
 #ifdef _WIN32
-    if (!impl_->hid.open(protocol::kVendorIdVive, protocol::kProductIdUltimateTrackerDongle, impl_->error)) return false;
+    if (!impl_->hid || !impl_->hid->open(protocol::kVendorIdVive,
+                                         protocol::kProductIdUltimateTrackerDongle,
+                                         config.exclusiveHidAccess,
+                                         impl_->error)) return false;
 
     // Normal service startup must not enter pairing mode. PairDevice changes
     // receiver behavior and caused a restart loop during hardware validation:
@@ -277,8 +327,10 @@ bool Backend::start(const BackendConfig& config) {
 }
 
 void Backend::stop() {
+    if (!impl_) return;
 #ifdef _WIN32
-    impl_->hid.close();
+    if (impl_->pairingMayBeEnabled) (void)endPairing();
+    if (impl_->hid) impl_->hid->close();
 #endif
     impl_->isRunning = false;
     impl_->hostSlot = -1;
@@ -289,13 +341,83 @@ void Backend::stop() {
     impl_->lossDiagnostics.clear();
 }
 
-std::uint64_t Backend::transportGeneration() const noexcept { return impl_->generation; }
+std::uint64_t Backend::transportGeneration() const noexcept {
+    return impl_ ? impl_->generation : 0;
+}
 
-bool Backend::running() const noexcept { return impl_->isRunning; }
-const std::string& Backend::lastError() const noexcept { return impl_->error; }
-void Backend::setEventCallback(EventCallback callback) { impl_->callback = std::move(callback); }
+bool Backend::running() const noexcept { return impl_ && impl_->isRunning; }
+const std::string& Backend::lastError() const noexcept {
+    static const std::string empty;
+    return impl_ ? impl_->error : empty;
+}
+void Backend::setEventCallback(EventCallback callback) {
+    if (impl_) impl_->callback = std::move(callback);
+}
+
+bool Backend::beginPairing(int slot) {
+    if (!impl_ || !impl_->isRunning) {
+        if (impl_) impl_->error = "cannot begin pairing: backend is not running";
+        return false;
+    }
+    const auto payload = protocol::buildRfBehaviorPayload(protocol::kRfBehaviorPairDevice, true, slot);
+    if (!payload) {
+        impl_->error = "cannot begin pairing: slot must be 0..4 or -1 for all selectors";
+        return false;
+    }
+    if (impl_->pairingMayBeEnabled) {
+        if (impl_->pairingSlot != slot) {
+            impl_->error = "cannot change pairing selector while pairing is active";
+            return false;
+        }
+        return impl_->pairingConfirmed;
+    }
+    const auto result = impl_->sendCommandDetailed(protocol::kCmdRequestRfChangeBehavior, *payload);
+    if (result.sent) {
+        impl_->pairingMayBeEnabled = true;
+        impl_->pairingSlot = slot;
+    }
+    if (!result.responseMatched) {
+        impl_->error = result.sent
+            ? "PairDevice enable was sent but no matching feature response was observed"
+            : "failed to send PairDevice enable feature command";
+        return false;
+    }
+    impl_->pairingConfirmed = true;
+    return true;
+}
+
+bool Backend::endPairing() {
+    if (!impl_) return false;
+    if (!impl_->pairingMayBeEnabled) return true;
+    if (!impl_->isRunning) {
+        impl_->error = "cannot disable pairing: backend is not running";
+        return false;
+    }
+    const auto payload = protocol::buildRfBehaviorPayload(
+        protocol::kRfBehaviorPairDevice, false, impl_->pairingSlot);
+    if (!payload) {
+        impl_->error = "cannot disable pairing: saved selector is invalid";
+        return false;
+    }
+    const auto result = impl_->sendCommandDetailed(protocol::kCmdRequestRfChangeBehavior, *payload);
+    if (!result.responseMatched) {
+        impl_->error = result.sent
+            ? "PairDevice disable was sent but no matching feature response was observed"
+            : "failed to send PairDevice disable feature command";
+        return false;
+    }
+    impl_->pairingMayBeEnabled = false;
+    impl_->pairingConfirmed = false;
+    impl_->pairingSlot = -1;
+    return true;
+}
+
+bool Backend::pairingActive() const noexcept {
+    return impl_ && impl_->pairingMayBeEnabled;
+}
 
 std::vector<TrackerState> Backend::snapshot() const {
+    if (!impl_) return {};
     std::scoped_lock lock(impl_->mutex);
     std::vector<TrackerState> result;
     result.reserve(impl_->states.size());
@@ -307,11 +429,11 @@ std::vector<TrackerState> Backend::snapshot() const {
 }
 
 bool Backend::pollOnce() {
-    if (!impl_->isRunning) return false;
+    if (!impl_ || !impl_->isRunning) return false;
 #ifdef _WIN32
-    auto report = impl_->hid.read(impl_->config.readTimeoutMs);
+    auto report = impl_->hid->read(impl_->config.readTimeoutMs);
     impl_->receivedNs = monotonicNs();
-    if (impl_->hid.readFailed()) {
+    if (impl_->hid->readFailed()) {
         impl_->error = "HID read failed: transport session lost";
         stop();
         return false;
