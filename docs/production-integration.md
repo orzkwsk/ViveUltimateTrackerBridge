@@ -31,9 +31,11 @@ below; they do not establish hardware recovery or independent orientation qualit
 
 ## Exact status normalization
 
-There is no established mask of ignorable status bits. Only the two exact
-additional values reported by prior HIL, `0x12` and `0x13`, are normalized.
-This cleanup does not claim to have repeated those HIL observations.
+There is no established mask of ignorable status bits. HIL performed on
+2026-09-22 observed three raw-status pairs. The high `0x10` bit strongly correlates
+with stationary/low-motion behavior, but its exact vendor meaning is not documented.
+Implementation therefore continues to normalize only explicitly confirmed raw values;
+it does not apply a general `raw & 0x0f` rule.
 
 | Raw byte | Decoded vendor status | Shared v2 observation |
 |---|---|---|
@@ -41,15 +43,20 @@ This cleanup does not claim to have repeated those HIL observations.
 | `0x01` | NotInitialized | NONE / initializing |
 | `0x02`, `0x12` | Ok | FULL / tracked only with finite position and valid quaternion; otherwise NONE / lost |
 | `0x03`, `0x13` | Lost | NONE / lost |
-| `0x04` | RecentlyLost | NONE / lost |
+| `0x04`, `0x14` | RecentlyLost | ROTATION_ONLY / degraded when quaternion is valid; otherwise NONE / lost |
 | `0x05` | SystemNotReady | NONE / initializing |
-| All other bytes, including `0xF2`, `0xA3`, `0x22`, `0x14` | Unknown | NONE / unknown |
+| All other unconfirmed bytes, including `0xF2`, `0xA3`, `0x22` | Unknown | NONE / unknown |
 
-The existing vendor `TrackerState` orientation flag for Lost/RecentlyLost is
-retained for diagnostics. It is **not** evidence of a usable independent rotation
-stream. At the shared boundary both components remain invalid/null and orientation
-evidence remains `none`. No rotation-only capability or common fallback rule is
-introduced. The quaternion check remains finite norm in `[0.5, 1.5]`.
+The distinction between `0x03/0x13` and `0x04/0x14` is deliberate.
+Before first localization, Lost quaternions can react to motion but an observed
+`0x03 -> 0x02` transition established a materially different native frame
+(about 76.7 degrees in one HIL transition), so pre-localization orientation remains
+fail-closed at the shared boundary. After localization, `0x02 -> 0x04` freezes
+position while quaternion remains continuous and motion-responsive; `0x04 -> 0x14`
+is likewise continuous as the lost tracker becomes stationary. Those post-loss
+states therefore publish orientation-only observations with
+`orientation_evidence=device`. Full evidence is retained in
+`docs/hil/vive-tracking-status-semantics.md` and its sanitized pose log.
 
 ## Explicit diagnostics
 
@@ -172,12 +179,17 @@ with `python -O scripts/release_v2.py --verify RELEASE_DIRECTORY`. Logs/receipts
 live under ignored `build/revision-test-results`, `build/release-v2` and
 `dist/release-v2`; a prior HEAD's receipt is not evidence for this cleanup.
 
-Hardware/HIL validation performed as part of this code change: **NOT RUN**. This
-includes actual HID traffic/ACK timing, default production absence of queries observed on hardware,
-startup pairing effects, slot-local unpair/power-cycle recovery, persistent-loss
-probe queries, native map/axis/unit checks, multiple trackers and physical
-end-to-end Monaka/SteamVR behavior. SteamVR interactive: **NOT RUN**. Synthetic
-software cases do not upgrade any of these claims to PASS.
+Hardware/HIL status semantics validation on 2026-09-22: **PASS for raw-state observation**.
+The captured session contains pre-localization 0x03/0x13, first localization into
+0x02, tracked 0x02/0x12 motion-state transitions, optical-loss 0x02->0x04, and
+stationary post-loss 0x04->0x14. This supports the mapping documented above.
+
+The new Common Observation ROTATION_ONLY implementation itself still requires a
+fresh local build/CTest and end-to-end Bridge/Monaka/SteamVR HIL after commit
+94e5444bb0e4dcdecfb757742ab14af1b4274500. Other hardware items remain NOT RUN
+unless separately documented: startup pairing effects, slot-local unpair/power-cycle
+recovery, persistent-loss probe queries, native map/axis/unit checks, and interactive
+SteamVR validation.
 
 Hub-independent physical first pairing with `vut_pair`, PairDevice disable confirmation on success/
 timeout/Ctrl+C/error, selector-to-slot behavior, and preservation of an existing multi-tracker
