@@ -126,10 +126,11 @@ C1 Observationの既定送信先は`127.0.0.1:29810`。
 
 | vendor値 | C1 policy |
 |---|---|
-| `status=2 (Ok)` | 数値検証を通ったposition/orientationをvalid。両方validなら`tracked`。orientation evidence=`device` |
-| `status=3/4 (Lost/RecentlyLost)` | positionは必ずinvalid。orientationは数値検証を通ればvalid。orientation validなら`degraded` |
+| `raw=0x02/0x12 (Ok)` | 数値検証を通ったposition/orientationをvalid。両方validなら`FULL / tracked`。orientation evidence=`device` |
+| `raw=0x03/0x13 (Lost, pre-localization)` | position/orientationともCommon Observationではinvalid、`NONE / lost`。vendor quaternionが数値上動いても初回localizationでframe jumpが実測されているため使用しない |
+| `raw=0x04/0x14 (RecentlyLost, post-localization)` | position invalid。Quaternionが数値検証を通ればorientation valid、`ROTATION_ONLY / degraded`、orientation evidence=`device` |
 | `status=0/1/5` | 両component invalid、`initializing` |
-| unknown status | 両component invalid、`unknown` |
+| unknown / unconfirmed raw status | 両component invalid、`unknown` |
 | `positionMeters` | metresとして既存実装を維持。ただし実機1m検証未実施なら未確認と明記 |
 | `orientationXyzw` | 既存wire `[w,z,y,x]`→internal xyzw変換を維持。Task 3でさらに並べ替えない |
 | `linearAccelerationRaw` | C1ではnull。単位/frame/gravity semantics未確定 |
@@ -137,7 +138,7 @@ C1 Observationの既定送信先は`127.0.0.1:29810`。
 | battery | null。fractionを推測しない |
 | buttons/ACK/RF/raw payload | vendor診断・制御内だけに保持しObservation extensionへ流さない |
 
-数値validationでstatusが許可したcomponentの片方だけが落ちた場合、残ったvalid componentだけを`degraded`で出す。両方落ちた場合は`lost`。ただしvendor statusが`initializing`または`unknown`を示す場合、この数値ルールでそれを`lost`へ上書きしない。
+数値validationによる部分有効化は、HILで意味が確認されたstatusだけに適用する。現行ではOkは両componentが有効なときだけFULL、RecentlyLost 0x04/0x14はorientationのみ有効ならROTATION_ONLYとする。Lost 0x03/0x13はQuaternionが数値上正常でもNONEのままにする。vendor statusが`initializing`または`unknown`を示す場合も数値だけで昇格しない。
 
 capabilitiesは**現在意味を保証できるものだけ**を列挙する。初期はposition/orientationを基本とし、derivative/battery capabilityを未検証のまま宣言しない。
 
@@ -171,7 +172,7 @@ expected 5.960464478e-08 (2^-24)
 
 既存protocol testsを維持し、少なくとも以下を追加する。
 
-- status 2/3/4/unknown mapping
+- raw status 0x02/0x12, 0x03/0x13, 0x04/0x14, unknown mapping
 - 37/39-byte pose variants
 - truncation / malformed frame
 - nonfinite vector/quaternion
@@ -308,3 +309,12 @@ handoff_artifacts: filename / SHA256 / source commit
 ```
 
 最後に「VIVE Backendに残した責務」「上位Bridge/MonakaVRへ残した責務」「旧diagnostic/backend利用を壊していない根拠」を短くまとめる。
+
+
+## 2026-09-22 HIL update
+
+このTask文書の初期仮説より後に実機status semanticsが追加検証された。現在の規範的なHIL根拠は
+`docs/hil/vive-tracking-status-semantics.md` と
+`docs/hil/raw/2026-09-22-vive-tracking-status-pose-only.txt`。
+次回Codex作業では、旧記述だけを前提にせずこれらを先に確認すること。
+必要なHIL情報が不足する場合は推測で補完せず、必要なログ/操作条件をユーザーへ具体的に要求すること。
