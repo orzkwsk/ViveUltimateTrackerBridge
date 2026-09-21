@@ -21,6 +21,10 @@ below; they do not establish hardware recovery or independent orientation qualit
 - Default service stderr reports session/revision, end-of-session totals and a
   brief rejection/unknown-device summary when rejection counts change (at most
   every five seconds). Full admission/config/ACK dumps require `--diagnostics`.
+- `reconnect_revision` defaults to `strict`. The experimental `preserve` opt-in
+  separates a new transport session (new UUID, epoch and generation) from the
+  coordinate-map lifetime only for an ordinary reconnect in the same service
+  process and exact configured source/device/map identity.
 
 ## Exact status normalization
 
@@ -95,10 +99,22 @@ addressing/diagnostic data, not persistent identity or MTP sequence.
 The pinned wire-v2 codec, source/session identity, independent observation/state
 sequences, timestamp rules, explicit map identity/revision, `vut-native-v1` profile,
 raw quaternion ordering and common-layer fallback semantics are unchanged.
-Re-pair following unpair still renews session/revision. Bridge coordinate-space
-approval and map continuity must still be revalidated as required; RF reconnection
-alone does not establish end-to-end Monaka recovery. No vendor policy is added to
-MonakaProtocol, MonakaBridge or MonakaVR.
+In default `strict` mode every successful backend start reserves a new revision,
+unchanged from the historical behavior. In opt-in `preserve` mode, only a plain
+transport read failure/reopen or the exact configured device returning after an
+observed absence may reuse the current revision. This VIVE-side classification is
+the narrow tracker reconnect selected by the operator; it is not an automatic RF
+rebind. Sequence exhaustion, ambiguous/uncertain recovery, configured source/device/map
+change, process restart, and every other unproved continuity path reserve a new
+revision or fail closed. The service has no trusted explicit map-reset signal;
+an operator reset/reprovision therefore requires a service restart. Journal
+corruption fails closed, reuse performs no journal write, and the next advance
+appends the next value. Bridge coordinate-space approval remains exact and no
+VIVE-specific policy is added to MonakaProtocol, MonakaBridge or MonakaVR.
+
+The six-byte configured address remains an admission key, not a persistent
+hardware identity. A changed address is rejected; neither policy automatically
+rebinds it.
 
 ## Software evidence and hardware boundary
 
@@ -121,9 +137,17 @@ with `python -O scripts/release_v2.py --verify RELEASE_DIRECTORY`. Logs/receipts
 live under ignored `build/revision-test-results`, `build/release-v2` and
 `dist/release-v2`; a prior HEAD's receipt is not evidence for this cleanup.
 
-Hardware/HIL validation for this cleanup: **NOT RUN**. This includes actual HID
-traffic/ACK timing, default production absence of queries observed on hardware,
+Hardware/HIL validation performed as part of this code change: **NOT RUN**. This
+includes actual HID traffic/ACK timing, default production absence of queries observed on hardware,
 startup pairing effects, slot-local unpair/power-cycle recovery, persistent-loss
 probe queries, native map/axis/unit checks, multiple trackers and physical
 end-to-end Monaka/SteamVR behavior. SteamVR interactive: **NOT RUN**. Synthetic
 software cases do not upgrade any of these claims to PASS.
+
+Limited prior evidence supplied for policy design: on 2026-09-21, one HIL run
+observed the same `vive-local-1` source, `23:32:03:81:fe:ec` device and
+`tracker-0-map` after power OFF/ON and re-pair. Strict behavior advanced revision
+55 to 56, and physical fixed-point pose comparison was broadly consistent. This
+single observation does not prove a vendor guarantee. Preserve-mode transport
+reconnect, map reset/reprovision, ambiguous RF recovery, multiple trackers,
+firmware variation, and end-to-end Bridge behavior remain hardware gates.

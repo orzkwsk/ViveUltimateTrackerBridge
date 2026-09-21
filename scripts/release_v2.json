@@ -143,6 +143,7 @@
         "loopback_udp",
         "cross_language",
         "service_configuration",
+        "service_session_policy",
         "runtime_policy",
         "launcher_process_guard",
         "model_validation",

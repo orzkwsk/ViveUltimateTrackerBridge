@@ -36,14 +36,22 @@ Run: build/Release/vut_service.exe CONFIG REVISION_JOURNAL [PORT]. Default targe
 source socket binds loopback ephemeral port. Bridge owns ingress. Ctrl+C stops. Keep the same
 config and journal on every restart; never delete/replace the journal while retaining map identity.
 The journal is exclusively opened, append-only and flushed before publishing each new revision.
-Corrupt/torn journals fail closed. Every service/dongle session has a new UUID and revision. Gaps
+Corrupt/torn journals fail closed. Every service/dongle session has a new UUID, epoch and transport
+generation. By default, `reconnect_revision strict` also gives every backend start a new revision.
+Experimental `reconnect_revision preserve` may retain the revision only for a plain transport
+reconnect within the same process and exact configured source/device/map identity. It never edits
+or rolls back the journal; the next required advance appends the next number. Gaps
 in revisions after an unused reservation are safe. Do not deploy duplicate source IDs using
 separate journals; journal locking only prevents concurrent reuse of the same journal.
 --check-session CONFIG JOURNAL reserves a revision without opening HID, for configuration tests.
 
-HID read errors end the session and trigger reconnect attempts; timeouts alone do not. Re-pair
-following unpair renews session/revision because map continuity is unknown. Stop/restart after
-map reset or ambiguous RF gap. Undetectable map resets require operator restart. U63 exhaustion
+HID read errors end the session and trigger reconnect attempts; timeouts alone do not. An exact
+configured device returning after an observed unpair starts a new session. Strict mode advances;
+preserve mode may retain the revision as the operator-selected reconnect case. Unknown RF addresses
+remain rejected and are never rebound. Ambiguous/uncertain recovery and sequence exhaustion are
+unsafe and advance. Stop/restart after map reset or ambiguous RF gap; no trusted automatic reset
+detector exists. Process/config
+lifetime changes advance. Undetectable map resets require operator restart. U63 exhaustion
 requests a session restart; revision exhaustion requires provisioning a new map identity/journal.
 For diagnostics without C1 use vut_probe or -DVUT_BUILD_OBSERVATION=OFF. Tests do not open HID.
 
@@ -80,7 +88,8 @@ Evidence is device for valid orientation, none otherwise. Only position/orientat
 Battery and all derivatives are null, including four raw angular values and raw acceleration.
 Position metres, device-to-space quaternion interpretation, axes and shared maps are NOT hardware
 verified. vut-native-v1 is a profile key, not an identity transform to OpenVR/MTP. space.id is
-explicit per MAC; revision increments conservatively on restart. No world/body calibration here.
+explicit per MAC; revision increments conservatively unless the narrow transport-reconnect opt-in
+applies. No world/body calibration here.
 
 ## Publication
 
@@ -115,12 +124,20 @@ fixed codec 74 fixtures, shared C++/JVM directions 44, seven VIVE status samples
 37/39-byte variants/truncation/status/nonfinite/zero quaternion/MAC/slot reuse/pair/unpair;
 wrap/duplicate/reorder/unchanged pose/session retirement/two sources/metadata-only/event omission;
 10000 failed sends, queue cap, encode recovery, real loopback receiver absent/stop/reopen;
-persistent revision/new UUID/torn and corrupt journal/duplicate config tests.
+persistent monotonic revision/new UUID/torn and corrupt journal/duplicate config tests; strict
+default, preserve reconnect, unsafe restart, identity change and exact-RF no-rebind policy tests.
 Final full-suite counts and exact commands are recorded in dist/task3-final-report.json.
 
-NOT RUN: Linux; ALL hardware checks (Hub stopped dongle open, one/multiple trackers, optical
+NOT RUN for this implementation change: Linux; ALL hardware checks (Hub stopped dongle open, one/multiple trackers, optical
 loss/recovery, unpair/power-cycle, dongle reconnect, map reset, 1 m translation, axis/quaternion).
 No Hub-free physical operation is claimed. Wi-Fi-only/count bypass is outside scope.
+
+Policy-design evidence supplied from a separate 2026-09-21 HIL run is deliberately narrow:
+power OFF/ON and re-pair retained source `vive-local-1`, RF address `23:32:03:81:fe:ec`, and map
+`tracker-0-map`; strict mode changed revision 55 to 56; physical fixed-point pose comparison was
+broadly consistent. This does not establish that VIVE guarantees map continuity. Preserve-mode
+transport reconnect, explicit map reset/reprovision, ambiguous RF recovery and broader hardware
+coverage remain required gates.
 
 ## Handoff and open questions
 

@@ -123,7 +123,9 @@ int main(int argc,char** argv) try {
     CHECK(streams.admit(e));
     auto unpaired=paired; unpaired.kind=vut::BackendEvent::Kind::DeviceUnpaired; unpaired.observedMonotonicNs=120;
     auto absent=streams.admit(unpaired); CHECK(absent); advance(e); CHECK(!streams.admit(e));
-    paired.observedMonotonicNs=130; CHECK(!streams.admit(paired)); CHECK(streams.restartRequired()); advance(e); CHECK(!streams.admit(e));
+    paired.observedMonotonicNs=130; CHECK(!streams.admit(paired)); CHECK(streams.restartRequired());
+    CHECK(streams.restartReason()==vut::ViveObservationAdapter::RestartReason::ConfiguredDevicePairedAfterAbsent);
+    CHECK(!streams.coordinateContinuityUncertain()); advance(e); CHECK(!streams.admit(e));
     auto reuse=fixture(); reuse.device.mac[0]=0x24; reuse.pose->device=reuse.device;
     auto other=streams.admit(reuse); CHECK(other); CHECK(std::get<c1::TrackerObservation>(*other).sequence==0);
     CHECK(std::get<c1::TrackerObservation>(*other).coordinate_space.id=="map-b");

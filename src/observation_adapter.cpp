@@ -102,7 +102,7 @@ std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& ev
             if (gapNs > 500000000) return rejectRf(diagnostics_.rejectPoseGap);
         }
         if (stream.poseSequence == std::numeric_limits<std::int64_t>::max()) {
-            restartRequired_ = true;
+            restartReason_ = RestartReason::PoseSequenceExhausted;
             return reject(diagnostics_.rejectPoseSequenceExhausted);
         }
 
@@ -115,14 +115,15 @@ std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& ev
     }
 
     if (stream.stateSequence == std::numeric_limits<std::int64_t>::max()) {
-        restartRequired_ = true;
+        restartReason_ = RestartReason::StateSequenceExhausted;
         return reject(diagnostics_.rejectStateSequenceExhausted);
     }
     if (event.observedMonotonicNs <= stream.lastStateNs)
         return reject(diagnostics_.rejectStateNonMonotonic);
     if (event.kind == BackendEvent::Kind::DevicePaired && stream.absent) {
-        // Re-pair may establish a new map origin. Reserve a new source session/revision.
-        restartRequired_ = true;
+        // The service always starts a new transport session. Only the explicit
+        // reconnect policy may preserve this exact configured device/map revision.
+        restartReason_ = RestartReason::ConfiguredDevicePairedAfterAbsent;
         return reject(diagnostics_.rejectRepairAfterAbsent);
     }
 
