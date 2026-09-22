@@ -4,6 +4,33 @@ Status: HIL evidence summary, 2026-09-22.
 
 Evidence file: `docs/hil/raw/2026-09-22-vive-tracking-status-pose-only.txt`.
 
+## Common Observation boundary HIL
+
+Date: 2026-09-22. Result: **PASS**.
+
+A separate 2026-09-22 physical HIL run exercised the complete publisher boundary
+from VIVE hardware through `Backend`, `TrackerState`, `ObservationAdapter`,
+Monaka Observation v2 encoding, and UDP port 29810. It passed with this observed
+sample sequence:
+
+| Samples | Common Observation modality |
+| --- | --- |
+| 1-1404 | `NONE` |
+| 1405-7092 | `FULL` |
+| 7093-8314 | `ROTATION_ONLY` |
+| 8315-9030 | `FULL` |
+
+The `FULL -> ROTATION_ONLY` boundary was direct, with no intervening `NONE`
+sample and an orientation delta of about 0.011 degrees. Orientation continued to
+respond to physical rotation throughout `ROTATION_ONLY`. Recovery was likewise a
+direct `ROTATION_ONLY -> FULL` transition with no intervening `NONE` sample and
+an orientation delta of about 0.20 degrees.
+
+This later capture did not co-record the vendor raw status byte. It validates the
+Common Observation boundary behavior, but it is not independent evidence for the
+raw-byte mapping. The raw-specific `0x02/0x12`, `0x03/0x13`, and `0x04/0x14`
+mapping remains grounded in the earlier raw-status capture named above.
+
 ## Observed status pairs
 
 | Raw | Observed phase | Shared-boundary policy |

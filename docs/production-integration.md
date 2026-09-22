@@ -184,12 +184,20 @@ The captured session contains pre-localization 0x03/0x13, first localization int
 0x02, tracked 0x02/0x12 motion-state transitions, optical-loss 0x02->0x04, and
 stationary post-loss 0x04->0x14. This supports the mapping documented above.
 
-The new Common Observation ROTATION_ONLY implementation itself still requires a
-fresh local build/CTest and end-to-end Bridge/Monaka/SteamVR HIL after commit
-94e5444bb0e4dcdecfb757742ab14af1b4274500. Other hardware items remain NOT RUN
-unless separately documented: startup pairing effects, slot-local unpair/power-cycle
-recovery, persistent-loss probe queries, native map/axis/unit checks, and interactive
-SteamVR validation.
+Common Observation boundary validation on 2026-09-22: **PASS** from VIVE hardware
+through Backend, TrackerState, ObservationAdapter, Monaka Observation v2 encoding,
+and UDP port 29810. Samples 1-1404 were NONE, 1405-7092 FULL, 7093-8314
+ROTATION_ONLY, and 8315-9030 FULL. Both transitions were direct with no intervening
+NONE; their orientation deltas were about 0.011 degrees into ROTATION_ONLY and
+0.20 degrees back to FULL, and orientation remained motion-responsive during
+ROTATION_ONLY. That later capture did not co-record raw status bytes, so the raw
+mapping continues to rely on the earlier raw-status HIL rather than this boundary run.
+
+End-to-end Bridge/Monaka/SteamVR HIL after commit
+94e5444bb0e4dcdecfb757742ab14af1b4274500 remains **NOT RUN**. Other hardware
+items remain NOT RUN unless separately documented: startup pairing effects,
+slot-local unpair/power-cycle recovery, persistent-loss probe queries, native
+map/axis/unit checks, and interactive SteamVR validation.
 
 Hub-independent physical first pairing with `vut_pair`, PairDevice disable confirmation on success/
 timeout/Ctrl+C/error, selector-to-slot behavior, and preservation of an existing multi-tracker
