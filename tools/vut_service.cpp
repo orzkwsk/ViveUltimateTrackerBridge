@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <thread>
 #include <utility>
@@ -237,7 +238,7 @@ public:
 }
 int main(int argc,char** argv) try {
     if (argc==2 && std::string(argv[1])=="--help") {
-        std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT] [--diagnostics]\nConfiguration: source <persistent-installation-id> and map <full-rf-address> <map-id> lines.\n"
+        std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT] [--diagnostics] [--interactive-debug]\nConfiguration: source <persistent-installation-id> and map <full-rf-address> <map-id> lines.\n"
                      "Optional: reconnect_revision strict|preserve (default strict).\n"
                      "preserve means: Preserve coordinate map across tracker reconnect.\n"
                      "Default destination 127.0.0.1:29810. Stop/restart after map reset or ambiguous RF gap.\n"
