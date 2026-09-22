@@ -10,13 +10,14 @@ $command = '"{0}" "{1}" "{2}"' -f $executable, $config, $journal
 function Candidate([string]$Path, [string]$Arguments) {
     return [pscustomobject]@{ProcessId=123;ExecutablePath=$Path;CommandLine=$Arguments}
 }
-function Match([object[]]$Processes, [bool]$Diagnostic=$false) {
-    return Get-ViveMatchingProcess -Processes $Processes -Executable $executable -ConfigPath $config -JournalPath $journal -Port 29810 -Diagnostics $Diagnostic
+function Match([object[]]$Processes, [bool]$Diagnostic=$false, [bool]$InteractiveDebug=$false) {
+    return Get-ViveMatchingProcess -Processes $Processes -Executable $executable -ConfigPath $config -JournalPath $journal -Port 29810 -Diagnostics $Diagnostic -InteractiveDebug $InteractiveDebug
 }
 Require ($null -eq (Match @())) 'Empty process list must allow a new launch'
 Require ((Match @(Candidate $executable $command)).ProcessId -eq 123) 'Default port and quoted paths'
 Require ((Match @(Candidate $executable ($command + ' 29810'))).ProcessId -eq 123) 'Explicit port'
 Require ((Match @(Candidate $executable ($command + ' --diagnostics 29810')) $true).ProcessId -eq 123) 'Diagnostic options'
+Require ((Match @(Candidate $executable ($command + ' --diagnostics --interactive-debug 29810')) $true $true).ProcessId -eq 123) 'Interactive debug options'
 Require ((Match @(Candidate $executable.ToUpperInvariant() $command)).ProcessId -eq 123) 'Windows path casing'
 Require (-not (Test-ViveSameAbsolutePath 'C:relative.conf' $config)) 'Drive-relative path is not absolute'
 Require (-not (Test-ViveSameAbsolutePath '\Fixture With Spaces\service.conf' $config)) 'Root-relative path is not absolute'
@@ -28,9 +29,11 @@ foreach ($candidate in @(
     (Candidate $executable ($command.Replace($config, 'relative.conf'))),
     (Candidate $executable ($command + ' 29811')),
     (Candidate $executable ($command + ' --diagnostics')),
+    (Candidate $executable ($command + ' --interactive-debug')),
     (Candidate $executable ($command + ' --diagnostic-slam-query')),
     (Candidate $executable ($command + ' 29810 29810')),
     (Candidate $executable ($command + ' --diagnostics --diagnostics')),
+    (Candidate $executable ($command + ' --interactive-debug --interactive-debug')),
     (Candidate $executable ($command + ' --DIAGNOSTICS')),
     (Candidate '' $command), (Candidate $executable ''),
     (Candidate $executable ($command + ' 999999999999999999999999'))

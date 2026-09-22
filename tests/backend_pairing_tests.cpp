@@ -77,6 +77,14 @@ std::vector<std::uint8_t> pairReport(const std::array<std::uint8_t, 6>& address)
     return report;
 }
 
+std::string ackText(const std::vector<std::uint8_t>& packet) {
+    CHECK(packet.size() >= 13);
+    CHECK(packet[1] == vut::protocol::kCmdTx);
+    const auto length = static_cast<std::size_t>(packet[12]);
+    CHECK(13 + length <= packet.size());
+    return std::string(packet.begin() + 13, packet.begin() + 13 + length);
+}
+
 void checkPairCommand(const std::vector<std::uint8_t>& packet,
                       bool enabled,
                       int slot) {
@@ -177,6 +185,36 @@ int main() try {
     CHECK(uncertainFake->writes.size() == 2);
     checkPairCommand(uncertainFake->writes[1], false, 4);
 
+    // Manual diagnostic controls are allow-listed, target an already observed
+    // slot, and never require pairing mode.
+    auto diagnosticTransport = std::make_unique<FakeTransport>();
+    auto* diagnosticFake = diagnosticTransport.get();
+    diagnosticFake->reads.push_back(pairReport(address));
+    vut::Backend diagnosticBackend(std::move(diagnosticTransport));
+    CHECK(diagnosticBackend.start(config));
+    CHECK(diagnosticBackend.pollOnce());
+    CHECK(diagnosticFake->writes.empty());
+    CHECK(!diagnosticBackend.sendDiagnosticCommand(1, vut::DiagnosticCommand::QuerySlamStatus));
+    CHECK(diagnosticBackend.sendDiagnosticCommand(2, vut::DiagnosticCommand::QuerySlamStatus));
+    CHECK(diagnosticFake->writes.size() == 4);
+    CHECK(ackText(diagnosticFake->writes[0]) == "P63:0");
+    CHECK(ackText(diagnosticFake->writes[1]) == "P63:4");
+    CHECK(ackText(diagnosticFake->writes[2]) == "P63:5");
+    CHECK(ackText(diagnosticFake->writes[3]) == "P63:6");
+    CHECK(diagnosticBackend.sendDiagnosticCommand(2, vut::DiagnosticCommand::ReassertHostTracking));
+    CHECK(ackText(diagnosticFake->writes[4]) == "ATM-1");
+    CHECK(ackText(diagnosticFake->writes[5]) == "ATM20");
+    CHECK(diagnosticBackend.sendDiagnosticCommand(2, vut::DiagnosticCommand::EndMap));
+    CHECK(ackText(diagnosticFake->writes[6]) == "ALE");
+    CHECK(diagnosticBackend.sendDiagnosticCommand(2, vut::DiagnosticCommand::AskMap));
+    CHECK(ackText(diagnosticFake->writes[7]) == "P64:1");
+    CHECK(diagnosticBackend.sendDiagnosticCommand(2, vut::DiagnosticCommand::KeyframeSync));
+    CHECK(ackText(diagnosticFake->writes[8]) == "P64:2");
+    CHECK(diagnosticBackend.sendDiagnosticCommand(2, vut::DiagnosticCommand::ResetMap));
+    CHECK(ackText(diagnosticFake->writes[9]) == "P64:3");
+    diagnosticFake->failSetCount = 1;
+    CHECK(!diagnosticBackend.sendDiagnosticCommand(2, vut::DiagnosticCommand::EndMap));
+
     // Pairing tool requests exclusive ownership; the transport sees that flag.
     auto exclusiveTransport = std::make_unique<FakeTransport>();
     auto* exclusiveFake = exclusiveTransport.get();
@@ -185,7 +223,7 @@ int main() try {
     CHECK(exclusiveBackend.start(config));
     CHECK(exclusiveFake->openedExclusive);
 
-    std::cout << "PASS backend pairing: passive start, exact enable/event/disable, idempotency, selector bounds, timeout/error cleanup, exclusive ownership\n";
+    std::cout << "PASS backend pairing/debug: passive start, exact pairing lifecycle, allow-listed diagnostic ACKs, selector bounds, timeout/error cleanup, exclusive ownership\n";
     return 0;
 } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

@@ -257,8 +257,7 @@ struct Backend::Impl {
     bool sendAck(const DeviceId& device, const std::string& ack) {
         auto tx = protocol::buildAckTx(device, ack);
         if (tx.empty()) return false;
-        (void)sendCommand(protocol::kCmdTx, tx);
-        return true;
+        return sendCommandDetailed(protocol::kCmdTx, tx).sent;
     }
 
     void configureOnPair(const DeviceId& device) {
@@ -414,6 +413,55 @@ bool Backend::endPairing() {
 
 bool Backend::pairingActive() const noexcept {
     return impl_ && impl_->pairingMayBeEnabled;
+}
+
+bool Backend::sendDiagnosticCommand(int slot, DiagnosticCommand command) {
+    if (!impl_ || !impl_->isRunning) {
+        if (impl_) impl_->error = "cannot send diagnostic command: backend is not running";
+        return false;
+    }
+
+    DeviceId device;
+    {
+        std::scoped_lock lock(impl_->mutex);
+        const auto found = impl_->devices.find(slot);
+        if (found == impl_->devices.end()) {
+            impl_->error = "cannot send diagnostic command: selected tracker slot is not connected";
+            return false;
+        }
+        device = found->second;
+    }
+
+    const auto send = [&](const char* ack) { return impl_->sendAck(device, ack); };
+    bool ok = true;
+    switch (command) {
+    case DiagnosticCommand::QuerySlamStatus:
+        ok = send("P63:0") && ok;
+        ok = send("P63:4") && ok;
+        ok = send("P63:5") && ok;
+        ok = send("P63:6") && ok;
+        break;
+    case DiagnosticCommand::ReassertHostTracking: {
+        const bool resetMode = send("ATM-1");
+        const bool hostMode = send("ATM20");
+        ok = resetMode && hostMode;
+        break;
+    }
+    case DiagnosticCommand::EndMap:
+        ok = send("ALE");
+        break;
+    case DiagnosticCommand::AskMap:
+        ok = send("P64:1");
+        break;
+    case DiagnosticCommand::KeyframeSync:
+        ok = send("P64:2");
+        break;
+    case DiagnosticCommand::ResetMap:
+        ok = send("P64:3");
+        break;
+    }
+    if (!ok) impl_->error = "failed to send one or more diagnostic tracker commands";
+    return ok;
 }
 
 std::vector<TrackerState> Backend::snapshot() const {

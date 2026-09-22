@@ -41,7 +41,7 @@ function Test-ViveSameAbsolutePath {
 
 function Get-ViveMatchingProcess {
     param([object[]]$Processes, [string]$Executable, [string]$ConfigPath, [string]$JournalPath,
-          [int]$Port, [bool]$Diagnostics)
+          [int]$Port, [bool]$Diagnostics, [bool]$InteractiveDebug=$false)
     if ($Processes.Count -eq 0) { return $null }
     if ($Processes.Count -ne 1) { throw 'Multiple vut_service processes exist; refusing to claim a matching service.' }
     $candidate = $Processes[0]
@@ -56,15 +56,19 @@ function Get-ViveMatchingProcess {
                 $actualPort = 29810
                 $hasPort = $false
                 $actualDiagnostics = $false
+                $actualInteractiveDebug = $false
                 $valid = $true
                 for ($index = 3; $index -lt $arguments.Count; ++$index) {
                     $argument = $arguments[$index]
                     if ($argument -ceq '--diagnostics' -and -not $actualDiagnostics) { $actualDiagnostics = $true }
+                    elseif ($argument -ceq '--interactive-debug' -and -not $actualInteractiveDebug) { $actualInteractiveDebug = $true }
                     elseif (-not $hasPort -and $argument -cmatch '^[0-9]+$') {
                         $actualPort = [int]$argument; $hasPort = $true
                     } else { $valid = $false }
                 }
-                $matchesRequest = $valid -and $actualPort -eq $Port -and $actualDiagnostics -eq $Diagnostics
+                $matchesRequest = $valid -and $actualPort -eq $Port -and
+                    $actualDiagnostics -eq $Diagnostics -and
+                    $actualInteractiveDebug -eq $InteractiveDebug
             }
         }
     } catch { $matchesRequest = $false }

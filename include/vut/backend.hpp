@@ -13,6 +13,15 @@ namespace detail {
 class BackendTransport;
 }
 
+enum class DiagnosticCommand {
+    QuerySlamStatus,
+    ReassertHostTracking,
+    EndMap,
+    AskMap,
+    KeyframeSync,
+    ResetMap,
+};
+
 struct BackendConfig {
     std::string wifiCountry = "JP";
     int readTimeoutMs = 50;
@@ -47,6 +56,10 @@ public:
     bool beginPairing(int slot = -1);
     bool endPairing();
     [[nodiscard]] bool pairingActive() const noexcept;
+
+    // Explicit HIL/debug operation only. Commands are a fixed allow-list and
+    // are never sent by normal service startup or automatic recovery.
+    bool sendDiagnosticCommand(int slot, DiagnosticCommand command);
 
     bool pollOnce();
     [[nodiscard]] std::uint64_t transportGeneration() const noexcept;

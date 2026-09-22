@@ -5,6 +5,7 @@
 #include "vut/service_session.hpp"
 #include <windows.h>
 #include <objbase.h>
+#include <conio.h>
 #include <array>
 #include <atomic>
 #include <bitset>
@@ -32,6 +33,63 @@ std::string uuid() {
         id.Data1, id.Data2, id.Data3, id.Data4[0],id.Data4[1],id.Data4[2],id.Data4[3],id.Data4[4],id.Data4[5],id.Data4[6],id.Data4[7]);
     return result;
 }
+const char* diagnosticCommandName(vut::DiagnosticCommand command) {
+    switch (command) {
+    case vut::DiagnosticCommand::QuerySlamStatus: return "query-slam-status";
+    case vut::DiagnosticCommand::ReassertHostTracking: return "reassert-host-tracking";
+    case vut::DiagnosticCommand::EndMap: return "end-map";
+    case vut::DiagnosticCommand::AskMap: return "ask-map";
+    case vut::DiagnosticCommand::KeyframeSync: return "keyframe-sync";
+    case vut::DiagnosticCommand::ResetMap: return "reset-map";
+    }
+    return "unknown";
+}
+void printInteractiveDebugHelp() {
+    std::cerr
+        << "[debug-control] keys: 0-4 select tracker slot; "
+        << "Q=query P63:0/4/5/6; T=ATM-1->ATM20; E=ALE; "
+        << "M=P64:1 ASK_MAP; K=P64:2 KF_SYNC; Shift+X=P64:3 RESET_MAP; H=help\n"
+        << "[debug-control] commands are manual HIL only; no command is sent automatically\n";
+}
+void pollInteractiveDebug(vut::Backend& backend, int& selectedSlot) {
+    while (_kbhit()) {
+        const int key = _getch();
+        if (key == 0 || key == 0xe0) {
+            if (_kbhit()) (void)_getch();
+            continue;
+        }
+        if (key >= '0' && key <= '4') {
+            selectedSlot = key - '0';
+            std::cerr << "[debug-control] selected slot=" << selectedSlot << '\n';
+            continue;
+        }
+        if (key == 'h' || key == 'H' || key == '?') {
+            printInteractiveDebugHelp();
+            continue;
+        }
+
+        std::optional<vut::DiagnosticCommand> command;
+        if (key == 'q' || key == 'Q') command = vut::DiagnosticCommand::QuerySlamStatus;
+        else if (key == 't' || key == 'T') command = vut::DiagnosticCommand::ReassertHostTracking;
+        else if (key == 'e' || key == 'E') command = vut::DiagnosticCommand::EndMap;
+        else if (key == 'm' || key == 'M') command = vut::DiagnosticCommand::AskMap;
+        else if (key == 'k' || key == 'K') command = vut::DiagnosticCommand::KeyframeSync;
+        else if (key == 'X') command = vut::DiagnosticCommand::ResetMap;
+        else continue;
+
+        if (selectedSlot < 0) {
+            std::cerr << "[debug-control] no tracker slot selected; press 0-4 first\n";
+            continue;
+        }
+        const bool sent = backend.sendDiagnosticCommand(selectedSlot, *command);
+        std::cerr << "[debug-control] slot=" << selectedSlot
+                  << " command=" << diagnosticCommandName(*command)
+                  << " result=" << (sent ? "sent" : "failed");
+        if (!sent) std::cerr << " error=" << backend.lastError();
+        std::cerr << '\n';
+    }
+}
+
 void printAdmissionDiagnostics(const vut::ViveObservationAdapter& adapter, const char* prefix) {
     const auto& d = adapter.diagnostics();
     std::cerr << prefix
@@ -184,6 +242,7 @@ int main(int argc,char** argv) try {
                      "preserve means: Preserve coordinate map across tracker reconnect.\n"
                      "Default destination 127.0.0.1:29810. Stop/restart after map reset or ambiguous RF gap.\n"
                      "--diagnostics enables detailed stderr only; it never enables active SLAM queries.\n"
+                     "--interactive-debug enables manual console hotkeys for an allow-listed set of SLAM recovery commands.\n"
                      "For diagnostics without publication use vut_probe.\n"; return 0;
     }
     if (argc==4 && std::string(argv[1])=="--check-session") {
@@ -207,6 +266,8 @@ int main(int argc,char** argv) try {
     UnknownStatusEvidence unknownStatusEvidence;
     std::signal(SIGINT,stop); std::signal(SIGTERM,stop);
     vut::Backend backend;
+    int debugSlot = -1;
+    if (options.interactiveDebug) printInteractiveDebugHelp();
     while(run) {
         if(!backend.start()) { std::cerr << backend.lastError() << '\n'; std::this_thread::sleep_for(std::chrono::seconds(1)); continue; }
         const auto session = revisionCoordinator.begin(
@@ -217,6 +278,17 @@ int main(int argc,char** argv) try {
         vut::ViveObservationAdapter adapter(c);
         vut::ObservationPublisher publisher(c.sessionId,[&](auto bytes){return sender.send(bytes);},[&]{return nowNs()-c.epochNs;});
         backend.setEventCallback([&](const auto& event) {
+            if (options.interactiveDebug && event.device.slot >= 0) {
+                if (event.kind == vut::BackendEvent::Kind::DeviceUnpaired && debugSlot == event.device.slot) {
+                    debugSlot = -1;
+                    std::cerr << "[debug-control] selected tracker disconnected; select slot again after reconnect\n";
+                } else if (debugSlot < 0 &&
+                           (event.kind == vut::BackendEvent::Kind::DevicePaired ||
+                            event.kind == vut::BackendEvent::Kind::Pose)) {
+                    debugSlot = event.device.slot;
+                    std::cerr << "[debug-control] auto-selected observed slot=" << debugSlot << '\n';
+                }
+            }
             if (options.diagnostics) unknownStatusEvidence.observe(event);
             if(options.diagnostics && event.kind == vut::BackendEvent::Kind::Diagnostic) {
                 std::cerr << "[tracking-diagnostic] device=" << event.device.toString()
@@ -240,6 +312,7 @@ int main(int argc,char** argv) try {
         while(run && backend.running() && !adapter.restartRequired()) {
             if(!backend.pollOnce()) break;
             publisher.flush();
+            if (options.interactiveDebug) pollInteractiveDebug(backend, debugSlot);
             const auto now = std::chrono::steady_clock::now();
             if(now >= nextAdmissionReport) {
                 if (options.diagnostics) printAdmissionDiagnostics(adapter, "[admission]");
