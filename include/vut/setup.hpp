@@ -9,8 +9,6 @@
 
 namespace vut::setup {
 
-// Local setup vocabulary, not a MonakaProtocol or upper consumer role enum.
-const std::vector<std::string>& roles();
 enum class IdentityKind { HardwareSerial, StableUuid, PersistentIdentifier };
 struct StableIdentity {
     IdentityKind kind;
@@ -22,25 +20,24 @@ struct StableIdentity {
 StableIdentity stableIdentity(IdentityKind kind, std::string identifier);
 StableIdentity parseStableIdentity(std::string_view key);
 
-enum class ConflictAction { Cancel, Replace, Swap };
-class Assignments {
-public:
-    void assign(const StableIdentity&, const std::string& role,
-                ConflictAction = ConflictAction::Cancel);
-    void unassign(const StableIdentity&);
-    void swap(const StableIdentity&, const StableIdentity&);
-    void clear();
-    [[nodiscard]] std::string role(const StableIdentity&) const;
-    [[nodiscard]] const std::map<std::string, std::string>& entries() const { return entries_; }
-private:
-    std::map<std::string, std::string> entries_;
+// Provisional synthetic-test defaults, HIL_REQUIRED. These are Identify tuning
+// parameters, not device capability guarantees or verified physical thresholds.
+struct IdentifyPolicy {
+    std::size_t minimumSamples = 6, minimumMovements = 3;
+    std::int64_t minimumSpanNs = 100000000, freshnessNs = 250000000, windowNs = 5000000000LL;
+    double positionThresholdMeters = 0.12, angularThresholdRadians = 0.52;
+    double positionNoiseMeters = 0.015, angularNoiseRadians = 0.05;
+    double positionJumpMeters = 0.5, angularJumpRadians = 1.57;
+    void validate() const;
 };
 
 struct MotionEvidence {
     std::size_t samples = 0, movements = 0;
     double positionDeltaMeters = 0, angularDeltaRadians = 0;
+    double maxPositionStepMeters = 0, maxAngularStepRadians = 0;
+    std::int64_t lastIntervalNs = 0, maxGapNs = 0;
     std::int64_t firstNs = 0, lastNs = 0;
-    [[nodiscard]] bool candidate(std::int64_t now) const;
+    [[nodiscard]] bool candidate(std::int64_t now, const IdentifyPolicy&) const;
 };
 struct Device {
     std::string rfAddress, displayName;
@@ -55,6 +52,7 @@ struct Device {
 
 class Devices {
 public:
+    explicit Devices(IdentifyPolicy policy = {});
     void beginSession(std::uint64_t generation);
     void endSession();
     void observe(const BackendEvent&);
@@ -66,7 +64,9 @@ public:
     [[nodiscard]] const std::map<std::string, Device>& entries() const { return devices_; }
     [[nodiscard]] bool identifying(std::int64_t now) const;
     [[nodiscard]] const std::string& warning() const { return warning_; }
+    [[nodiscard]] const IdentifyPolicy& identifyPolicy() const { return policy_; }
 private:
+    IdentifyPolicy policy_;
     std::uint64_t generation_ = 0;
     std::optional<std::int64_t> identifyStart_;
     std::map<std::string, Device> devices_;

@@ -1,14 +1,15 @@
 #pragma once
-#include "vut/setup.hpp"
+#include "vut/provisional_assignments.hpp"
 #include <filesystem>
 #include <memory>
 
-namespace vut::setup {
-// Versioned sidecar: existing service/map configuration is never rewritten.
+namespace vut::setup::provisional {
+// Internal legacy v1 sidecar, NOT a production body-role storage contract.
+// Existing service/map configuration is never rewritten.
 // Parse failure throws, unknown JSON members survive edits, stale writers fail.
 class AssignmentStore {
 public:
-    explicit AssignmentStore(std::filesystem::path path);
+    AssignmentStore(std::filesystem::path path, std::vector<std::string> acceptedLabels);
     ~AssignmentStore();
     AssignmentStore(const AssignmentStore&) = delete;
     AssignmentStore& operator=(const AssignmentStore&) = delete;

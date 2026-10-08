@@ -1,23 +1,18 @@
 [CmdletBinding()]
-param([string]$CMake = 'cmake', [string]$AssignmentsPath = '')
+param([string]$CMake = 'cmake')
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $BuildDir = Join-Path $RepoRoot 'build/setup'
-if ([string]::IsNullOrWhiteSpace($AssignmentsPath)) {
-    $AssignmentsPath = Join-Path $env:LOCALAPPDATA 'MonakaVR/ViveUltimateTrackerBridge/assignments.json'
-}
-Write-Host 'Setup Altra Trackers: discovery and motion Identify are available.'
+Write-Host 'Setup Altra Trackers: same-session Pairing, discovery and provisional motion Identify.'
 Write-Host 'Stable identity acquisition and upper consumer role application are not integrated.'
 Write-Host 'Stop vut_service and VIVE Hub before using this exclusive dongle setup tool.'
-& $CMake -S $RepoRoot -B $BuildDir -A x64 -DBUILD_TESTING=OFF
+& $CMake -S $RepoRoot -B $BuildDir -A x64 -DBUILD_TESTING=OFF -DVUT_BUILD_ASSIGNMENT_LAB=OFF
 if ($LASTEXITCODE -ne 0) { throw 'Setup configure failed.' }
 & $CMake --build $BuildDir --config Release --target vut_setup vut_pair
 if ($LASTEXITCODE -ne 0) { throw 'Setup build failed.' }
-$FullAssignmentsPath = [System.IO.Path]::GetFullPath($AssignmentsPath)
-New-Item -ItemType Directory -Force -Path (Split-Path -Parent $FullAssignmentsPath) | Out-Null
-Write-Host "Assignment sidecar: $FullAssignmentsPath"
-Write-Host ("If physical pairing is needed, quit setup and run: {0}" -f (Join-Path $BuildDir 'Release/vut_pair.exe'))
-& (Join-Path $BuildDir 'Release/vut_setup.exe') $FullAssignmentsPath
+Write-Host 'Use pair [all|0|1|2|3|4], pair-cancel and pair-status inside setup.'
+Write-Host 'This exclusive direct-HID console is a bring-up path; service-owned live control is not implemented.'
+& (Join-Path $BuildDir 'Release/vut_setup.exe')
 exit $LASTEXITCODE

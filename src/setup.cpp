@@ -4,12 +4,6 @@
 #include <stdexcept>
 
 namespace vut::setup {
-const std::vector<std::string>& roles() {
-    static const std::vector<std::string> values{
-        "LeftFoot", "RightFoot", "Waist", "Chest", "LeftKnee", "RightKnee",
-        "LeftElbow", "RightElbow", "LeftHand", "RightHand", "Head"};
-    return values;
-}
 StableIdentity stableIdentity(IdentityKind kind, std::string id) {
     if (id.empty() || id.size() > 256 || std::any_of(id.begin(), id.end(),
         [](unsigned char c) { return c < 0x20 || c == 0x7f; }))
@@ -37,41 +31,22 @@ StableIdentity parseStableIdentity(std::string_view key) {
         if (key.starts_with(prefix)) return stableIdentity(kind, std::string(key.substr(prefix.size())));
     throw std::invalid_argument("stable identity must have serial:, uuid: or persistent: provenance");
 }
-void Assignments::assign(const StableIdentity& identity, const std::string& value, ConflictAction action) {
-    const auto key = identity.key();
-    if (std::find(roles().begin(), roles().end(), value) == roles().end())
-        throw std::invalid_argument("unknown local setup role: " + value);
-    if (action != ConflictAction::Cancel && action != ConflictAction::Replace && action != ConflictAction::Swap)
-        throw std::invalid_argument("invalid conflict action");
-    const auto occupied = std::find_if(entries_.begin(), entries_.end(),
-        [&](const auto& e) { return e.second == value && e.first != key; });
-    if (occupied != entries_.end()) {
-        if (action == ConflictAction::Cancel)
-            throw std::invalid_argument("role already assigned to " + occupied->first + "; choose Swap / Replace / Cancel");
-        const auto previous = role(identity);
-        if (action == ConflictAction::Swap && !previous.empty()) occupied->second = previous;
-        else entries_.erase(occupied); // swapping with unassigned transfers the role
-    }
-    entries_[key] = value;
+void IdentifyPolicy::validate() const {
+    if (minimumSamples < 2 || minimumSamples > 1000000 || minimumMovements == 0 ||
+        minimumMovements > 1000000 || minimumSpanNs <= 0 || freshnessNs <= 0 ||
+        windowNs < minimumSpanNs || windowNs > 3600000000000LL || freshnessNs > windowNs)
+        throw std::invalid_argument("invalid Identify sample/time policy");
+    for (double v : {positionThresholdMeters, angularThresholdRadians, positionNoiseMeters,
+                     angularNoiseRadians, positionJumpMeters, angularJumpRadians})
+        if (!std::isfinite(v) || v <= 0) throw std::invalid_argument("invalid Identify motion policy");
+    if (positionNoiseMeters > positionJumpMeters || angularNoiseRadians > angularJumpRadians)
+        throw std::invalid_argument("Identify noise threshold exceeds jump threshold");
 }
-void Assignments::unassign(const StableIdentity& id) { entries_.erase(id.key()); }
-void Assignments::swap(const StableIdentity& a, const StableIdentity& b) {
-    const auto ka = a.key(), kb = b.key();
-    if (ka == kb) return;
-    const auto ra = role(a), rb = role(b);
-    unassign(a); unassign(b);
-    if (!rb.empty()) entries_[ka] = rb;
-    if (!ra.empty()) entries_[kb] = ra;
-}
-void Assignments::clear() { entries_.clear(); }
-std::string Assignments::role(const StableIdentity& id) const {
-    const auto it = entries_.find(id.key());
-    return it == entries_.end() ? std::string{} : it->second;
-}
-bool MotionEvidence::candidate(std::int64_t now) const {
-    return samples >= 6 && movements >= 3 && lastNs - firstNs >= 100000000 &&
-        now >= lastNs && now - lastNs <= 250000000 &&
-        (positionDeltaMeters >= 0.12 || angularDeltaRadians >= 0.52);
+Devices::Devices(IdentifyPolicy policy) : policy_(policy) { policy_.validate(); }
+bool MotionEvidence::candidate(std::int64_t now, const IdentifyPolicy& policy) const {
+    return samples >= policy.minimumSamples && movements >= policy.minimumMovements &&
+        lastNs - firstNs >= policy.minimumSpanNs && now >= lastNs && now - lastNs <= policy.freshnessNs &&
+        (positionDeltaMeters >= policy.positionThresholdMeters || angularDeltaRadians >= policy.angularThresholdRadians);
 }
 void Devices::endSession() {
     for (auto& [_, device] : devices_) {
@@ -99,16 +74,23 @@ void Devices::beginIdentify(std::int64_t now) {
     for (auto& [_, d] : devices_) { d.motion = {}; d.previous.reset(); }
 }
 bool Devices::identifying(std::int64_t now) const {
-    return identifyStart_ && now >= *identifyStart_ && now - *identifyStart_ <= 5000000000LL;
+    return identifyStart_ && now >= *identifyStart_ && now - *identifyStart_ <= policy_.windowNs;
 }
 std::vector<std::string> Devices::motionCandidates(std::int64_t now) const {
     std::vector<std::string> result;
     if (!identifying(now)) return result;
     for (const auto& [rf, d] : devices_)
-        if (d.connected && d.motion.candidate(now)) result.push_back(rf);
+        if (d.connected && d.motion.candidate(now, policy_)) result.push_back(rf);
     return result; // multiple candidates remain ambiguous; never auto assign
 }
 namespace {
+void resetEvidence(MotionEvidence& motion) {
+    // Keep evaluation diagnostics (including rejected outliers) for this
+    // Identify window while retiring all candidate evidence.
+    motion.samples = motion.movements = 0;
+    motion.positionDeltaMeters = motion.angularDeltaRadians = 0;
+    motion.firstNs = motion.lastNs = 0;
+}
 double norm(const Quatf& q) { return std::hypot(std::hypot(double(q.x), q.y), std::hypot(double(q.z), q.w)); }
 bool usableOrientation(const TrackerState& p) {
     const auto n = norm(p.orientationXyzw);
@@ -164,12 +146,13 @@ void Devices::observe(const BackendEvent& e) {
     const auto& p = *e.pose;
     d.lastPoseNs = e.observedMonotonicNs; d.tracking = p.trackingStatus;
     if (!identifying(e.observedMonotonicNs)) return;
-    if (!usableOrientation(p)) { d.previous.reset(); d.motion = {}; return; }
+    if (!usableOrientation(p)) { d.previous.reset(); resetEvidence(d.motion); return; }
     if (d.previous) {
         const auto gap = p.observedMonotonicNs - d.previous->observedMonotonicNs;
+        d.motion.lastIntervalNs = gap; d.motion.maxGapNs = std::max(d.motion.maxGapNs, gap);
         const auto delta = static_cast<std::uint8_t>(p.packetIndex - d.previous->packetIndex);
-        if (delta == 0 || delta >= 128) return;
-        if (gap > 250000000) { d.previous.reset(); d.motion = {}; }
+        if (gap > policy_.freshnessNs) { d.previous.reset(); resetEvidence(d.motion); }
+        else if (delta == 0 || delta >= 128) return;
     }
     auto& m = d.motion;
     if (m.samples == 0) m.firstNs = p.observedMonotonicNs;
@@ -184,11 +167,13 @@ void Devices::observe(const BackendEvent& e) {
         const auto& a = p.orientationXyzw; const auto& b = before.orientationXyzw;
         const auto dot = (double(a.x)*b.x + double(a.y)*b.y + double(a.z)*b.z + double(a.w)*b.w) / (norm(a)*norm(b));
         const double angle = 2 * std::acos(std::clamp(std::abs(dot), 0.0, 1.0));
+        m.maxPositionStepMeters = std::max(m.maxPositionStepMeters, distance);
+        m.maxAngularStepRadians = std::max(m.maxAngularStepRadians, angle);
         // Ignore subthreshold noise. Reject discontinuities/localization jumps.
-        if (distance > 0.5 || angle > 1.57 || before.trackingStatus != p.trackingStatus) {
-            m = {}; d.previous = p; return;
+        if (distance > policy_.positionJumpMeters || angle > policy_.angularJumpRadians || before.trackingStatus != p.trackingStatus) {
+            resetEvidence(m); d.previous = p; return;
         }
-        if (distance >= 0.015 || angle >= 0.05) {
+        if (distance >= policy_.positionNoiseMeters || angle >= policy_.angularNoiseRadians) {
             ++m.movements; m.positionDeltaMeters += distance; m.angularDeltaRadians += angle;
         }
     }

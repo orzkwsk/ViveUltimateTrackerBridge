@@ -1,41 +1,26 @@
-import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 exe = sys.argv[1]
-def check(condition, message):
-    if not condition:
-        raise RuntimeError(message)
-
-with tempfile.TemporaryDirectory(prefix="vut-setup-cli-") as root:
-    path = Path(root) / "assignments.json"
-    def run(*args, commands=None):
-        return subprocess.run([exe, str(path), *args], input=commands, capture_output=True, text=True)
-    result = run("--validate")
-    check(result.returncode == 0 and not path.exists(), result.stderr)
-    # Seed is explicitly mock stable identity evidence, not discovered hardware.
-    path.write_text(json.dumps({"schema_version": 1, "future": "keep", "assignments": {
-        "serial:A": {"role": "LeftFoot", "extra": "keep"}, "serial:B": {"role": "RightFoot"}}}))
-    result = run("--offline", commands="reassign serial:A RightFoot\nvalidate\nsave\nquit\n")
-    check("Swap / Replace / Cancel" in result.stderr, result.stderr)
-    check(json.loads(path.read_text())["assignments"]["serial:A"]["role"] == "LeftFoot", result.stdout)
-    result = run("--offline", commands="reassign serial:A RightFoot swap\nsave\nrefresh\nquit\n")
-    data = json.loads(path.read_text())
-    check(result.returncode == 0 and data["assignments"]["serial:B"]["role"] == "LeftFoot", result.stderr)
-    check(data["future"] == "keep" and data["assignments"]["serial:A"]["extra"] == "keep", data)
-    check("retained" in result.stdout and "BLOCKED" in result.stdout, result.stdout)
-    before = path.read_bytes()
-    result = run("--offline", commands="clear-all\nreassign serial:A Unknown\nunassign serial:A\nquit\n")
-    check("Unsaved" in result.stderr and path.read_bytes() == before, result.stderr)
-    result = run("--offline", commands="swap serial:A serial:B\nunassign serial:A\nsave\nquit\n")
-    check(list(json.loads(path.read_text())["assignments"]) == ["serial:B"], result.stdout)
-    result = run("--offline", commands="clear-all confirm\nsave\nquit\n")
-    check(json.loads(path.read_text())["assignments"] == {}, result.stdout)
-    for data in ["{broken", '{"schema_version":1,"assignments":{"serial:A":{"role":"NoSuchRole"}}}',
-                 '{"schema_version":1,"assignments":{"slot:1":{"role":"Waist"}}}']:
-        path.write_text(data)
-        result = run("--validate")
-        check(result.returncode == 1 and path.read_text() == data, result.stderr)
-print("PASS CLI conflicts/edit/save/disconnected retention/unknown preservation/invalid config; no HID opened")
+def check(value, message):
+    if not value: raise RuntimeError(message)
+def run(commands):
+    return subprocess.run([exe, "--offline"], input=commands, capture_output=True, text=True)
+result = run("help\npair-status\nrefresh\nidentify\nnext\nquit\n")
+check(result.returncode == 0, result.stderr)
+check("pair [all|0|1|2|3|4]" in result.stdout and "HIL_REQUIRED" in result.stdout, result.stdout)
+for word in ["LeftFoot", "RightFoot", "Waist", "Chest", "schema_version", "reassign"]:
+    check(word not in result.stdout, word)
+for commands in ["roles", "save", "assign serial:A LeftFoot", 'confirm "unterminated',
+                 "pair 5", "pair all", "unknown", "refresh extra", "bad\x00input", "x"*4097]:
+    result = run(commands+"\npair-status\nquit\n")
+    check(result.returncode != 0 and "ERROR:" in result.stderr, result)
+    # Subsequent successful commands cannot mask an earlier script failure.
+    check("pair_state=" in result.stdout, result.stdout)
+with tempfile.TemporaryDirectory(prefix="vut-production-cli-") as root:
+    path = Path(root)/"assignments.json"
+    result = subprocess.run([exe, str(path), "--offline"], capture_output=True, text=True)
+    check(result.returncode != 0 and not path.exists(), result)
+print("PASS setup CLI script exits, malformed input, no production body-role schema; no HID opened")
