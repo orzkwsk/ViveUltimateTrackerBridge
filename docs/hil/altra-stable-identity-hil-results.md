@@ -1,7 +1,13 @@
-# Altra identity HIL: observed results
+# Altra identity HIL: interrupted report and continuation
 
 Research branch: `research/altra-stable-identity-hil`; instrumentation `cce2216`.
-This is an ongoing hardware trial, not Class A approval. Raw serials and RF addresses
+Status: **interrupted at the user's request, 2026-10-09 JST**.
+Interruption reason: **user temporarily away (「一旦離席のため中断」)**.
+The user requested the results so far and preparation for continuation. This interruption
+is distinct from the observed reconnect/discovery gaps below. The last capture ended
+cleanly with capture_stop at generation 9; no research recorder remains running.
+
+This hardware trial is incomplete, not Class A approval. Raw serials and RF addresses
 stay in local gitignored `hil-private/`. Aliases below preserve byte equality within
 each namespace; RF aliases are diagnostic labels, not persistent identities.
 
@@ -38,6 +44,12 @@ backend capture executable with both trackers left ON, run `17915002331153955`.
 | A | HIL-05 | RF-1 | 0 | NADS-1 | NASS-1 | 1, new run | A-second connect; unchanged values |
 | A | HIL-06-before review of HIL-05 | RF-1 | 0 | NADS-1 | NASS-1 | 1, HIL-05 run | Baseline references saved; no additional ACK |
 | B | HIL-06-before review of HIL-05 | RF-2 | 4 | NADS-2 | NASS-2 | 1, HIL-05 run | Baseline references saved; no additional ACK |
+| A | HIL-06-after | RF-3 | 3 | NADS-1 | NASS-1 | 9 | RF and slot changed; candidate bytes unchanged |
+| B | HIL-06-after | Unbound | — | Not received | Not received | 9 | Blue/breathing with A ON; B-only retry interrupted |
+| A | HIL-07 review of HIL-05 | RF-1 | 0 | NADS-1 | NASS-1 | 1, HIL-05 run | A/B byte comparison; no additional ACK |
+| B | HIL-07 review of HIL-05 | RF-2 | 4 | NADS-2 | NASS-2 | 1, HIL-05 run | Both namespaces differ from A |
+| A/B | HIL-08 | — | — | — | — | — | Optional PC restart: not run |
+| A/B | HIL-09 | — | — | — | — | — | Optional second dongle: not run |
 
 NADS payloads were 12 bytes; NASS payloads were 13 bytes. No parser notes were
 reported for these four ACKs. A/B differed independently in both namespaces; NADS
@@ -100,6 +112,44 @@ Capture is closed for the human to inspect an official single-tracker unpair ope
 No repo unpair command exists; the [official pairing guide](https://www.vive.com/eu/support/ultimate-tracker/category_howto/pairing-ultimate-tracker-with-the-dongle.html) describes pairing,
 but does not document that single-tracker removal UI. No guessed command is sent.
 
+During HIL-06 preparation the human opened VIVE Hub and reported connection loss
+at launch. The read-only Trackers.json recheck then showed one dongle with zero
+cached trackers, changed from the two entries used for earlier correlation. Cache
+contents do not prove the dongle's pairing registration was removed. A-only OFF→ON
+was requested to distinguish reconnectability from registration loss. This is not
+counted as an actual unpair/re-pair trial and no cache/database file was edited by
+the research tools. The initial correlation remains an observation made before
+Hub launch, not a claim about the later empty cache.
+The human then confirmed the Hub list was absent and A's OFF→ON did not reconnect,
+and recognized that re-pair was needed. Manual official Pair new was requested for
+B only (A OFF), then A. This is vendor control outside the passive recorder, not
+an undocumented feature command. Explicit single-tracker unpair remains unconfirmed.
+The human confirmed B was connected/green after Pair new, then both A/B were
+connected/green after A's Pair new. The exact former NASS values were again present
+in the read-only Hub cache. With Hub still active, both trackers were switched OFF
+and the human confirmed ten seconds had elapsed. The authorized Hub application
+processes VHConsole and ViveHubServer were stopped after executable-path checks;
+other services and SteamVR were not stopped. Exclusive passive HIL-06-after capture
+opened successfully, run `17915016786807686`, before asking for A-only power-on.
+The human reported A remained blue/breathing and B OFF; no reconnect ACK was received.
+Both were then switched OFF, the dongle unplugged/replugged, and A alone powered ON.
+The human confirmed A green / B OFF. The same capture reopened successfully at
+generation 9 after seven failed not-found attempts. Its newly observed A RF differed
+from the HIL-05 baseline and slot changed 0→3. NADS and NASS exactly matched the
+pre-pair values. This is new raw ACK evidence in generation 9, not cache-inferred RF
+or a previous generation's candidate binding. When B was powered ON while A remained
+ON, the human reported B blue/breathing and no B connect or identity ACK was observed.
+B-only power-on after another both-OFF/dongle-replug was requested. Simultaneous
+post-pair A/B reconnection is not validated by this trial.
+Before confirmation of that B-only operation, the user requested interruption for
+absence. No B post-pair connect or NADS/NASS was recorded. HIL-06-after saved 137
+non-pose raw reports and 16 ACK events, all identity ACKs from physically confirmed A.
+The pending B operation must not be assumed completed. Current physical ON/OFF states
+must be rechecked on continuation; only the historical confirmations above are known.
+The comparer consumes raw scenario markers, not HIL-06-before/HIL-07 review annotations;
+its missing-marker results are conservative and are not substitutes for the manual
+provenance and incomplete-operation assessment in this report.
+
 ## Exact namespace correlation
 
 For both physically confirmed trackers:
@@ -120,8 +170,8 @@ serial have not been correlated in this HIL.
 
 | Candidate | A/B unique | Restart | Power cycle | Dongle reconnect | Slot/order | Re-pair | PC restart | Class |
 |---|---|---|---|---|---|---|---|---|
-| NADS | PASS, HIL-01/05/07 review | No fresh ACK on restart alone | Unchanged in later HIL-05; isolated rediscovery missing | Unchanged in later HIL-05; immediate ACK missing | PASS, reversed order; slots unchanged | Pending | Not run | B |
-| NASS | PASS, HIL-01/05/07 review | No fresh ACK on restart alone | Unchanged in later HIL-05; isolated rediscovery missing | Unchanged in later HIL-05; immediate ACK missing | PASS, reversed order; slots unchanged | Pending | Not run | B |
+| NADS | PASS, HIL-01/05/07 review | No fresh ACK on restart alone | Unchanged in later HIL-05; isolated rediscovery missing | Unchanged in later HIL-05; immediate ACK missing | Reversed order PASS; A slot 0→3 unchanged after re-pair | A: RF changed/value unchanged; B incomplete; explicit unpair unverified | Not run | B |
+| NASS | PASS, HIL-01/05/07 review | No fresh ACK on restart alone | Unchanged in later HIL-05; isolated rediscovery missing | Unchanged in later HIL-05; immediate ACK missing | Reversed order PASS; A slot 0→3 unchanged after re-pair | A: RF changed/value unchanged; B incomplete; explicit unpair unverified | Not run | B |
 
 NADS classification: **Class B**.
 NASS classification: **Class B**.
@@ -129,9 +179,52 @@ Recommended persistent identity: **none verified**. NADS is the device-serial
 candidate supported by exact Hub SerialNumber correlation; NASS is the separate
 ship-serial candidate matching strTrackerSN. These are research candidates only.
 Production integration readiness: **not ready**; no provider has been implemented.
-Remaining HIL: isolated restart/power/dongle rediscovery resolution, a slot-change
-test if available, and actual unpair/re-pair with changed RF for A and B. PC restart
+Remaining HIL: B's fresh post-pair ACK/RF capture and slot-change assessment,
+controlled explicit unpair/re-pair for both A/B, isolated restart/power/dongle
+rediscovery resolution, and simultaneous A/B reconnect after re-pair. PC restart
 and a second dongle remain optional.
+
+## Continuation preparation
+
+Resume only when the user returns and explicitly requests continuation. There is no
+background retry, scheduled task, pending device query or automatic vendor operation.
+The pending B-only instruction was superseded by the interruption request.
+
+1. Read this report and the passive procedure in `altra-stable-identity-hil.md`.
+   Keep branch `research/altra-stable-identity-hil`; do not merge into the base branch.
+2. Read local `hil-private/HIL-06-status.json`, `bindings.json`,
+   `HIL-06-before-references.json`, `HIL-06-Hub-correlation.json`, and the immutable
+   raw captures. These files are not public attachments or committed evidence.
+3. Reconfirm physical Tracker A/B labels, both OFF, official dongle present, and
+   current vendor processes. VIVE Hub application was stopped; Streaming Service,
+   ViveAgentService and SteamVR were not stopped. Do not assume their later state.
+4. Start a **new** passive run before physical recovery/power operations:
+
+   ```powershell
+   .\build\stable-identity-hil\Release\vut_identity_capture.exe --scenario HIL-06-after --duration-seconds 900
+   ```
+
+   Record its actual new run ID. Do not reuse generation 9 or historical RF bindings.
+   If initial exclusive open fails, resolve ownership/presence rather than downgrading.
+5. With both OFF, unplug/replug the dongle, wait for successful transport open, then
+   power **B alone** ON with A OFF. Confirm B's LED and observe its actual connect RF,
+   slot, generation and fresh NADS/NASS. Cache index 2 is only a prior observation;
+   it cannot establish the new RF binding. Do not send NA/ADS/ASS or other queries.
+6. Add a new bounded human-confirmed binding. Compare exact candidate bytes against
+   B's original HIL-05 raw references from the before-review file, and compare actual
+   old/new RF and slot. If B reconnects, power A ON and obtain fresh A ACK/binding in
+   that same new generation before claiming simultaneous post-pair reconnect.
+7. Record missing ACKs and LED states if recovery fails. Resolve explicit single-device
+   unpair through a verified vendor operation; never infer it from an empty UI list or
+   decoder DeviceUnpaired. Do not guess a command or edit the pairing database.
+8. End the recorder using its new `.stop` file, update sanitized tables, rerun the offline
+   comparison with all capture files, and commit/push only public sanitized evidence.
+
+Private capture run IDs, in order: `17914998458231804` (HIL-01),
+`17915002331153955` (HIL-02), `17915003355876539` (HIL-03),
+`17915008682883821` (HIL-04), `17915009835473812` (HIL-05),
+`17915016786807686` (HIL-06-after). Each corresponds to
+`hil-private/<run-id>.ndjson`. Run IDs are evidence metadata, not hardware identifiers.
 
 ## Instrumentation validation
 
