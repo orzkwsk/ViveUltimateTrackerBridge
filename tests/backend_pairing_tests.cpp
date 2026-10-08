@@ -177,6 +177,28 @@ int main() try {
     CHECK(uncertainFake->writes.size() == 2);
     checkPairCommand(uncertainFake->writes[1], false, 4);
 
+    // An unconfirmed disable must not become a confirmed enable in the next
+    // generation. Reopen resolves the old cleanup before passive operation.
+    auto recoveryTransport = std::make_unique<FakeTransport>();
+    auto* recoveryFake = recoveryTransport.get();
+    vut::Backend recoveryBackend(std::move(recoveryTransport));
+    CHECK(recoveryBackend.start(config));
+    CHECK(recoveryBackend.beginPairing(1));
+    recoveryFake->respond = false;
+    recoveryBackend.stop();
+    CHECK(recoveryBackend.pairingActive());
+    const auto oldGeneration = recoveryBackend.transportGeneration();
+    recoveryFake->respond = true;
+    CHECK(recoveryBackend.start(config));
+    CHECK(recoveryBackend.transportGeneration() > oldGeneration);
+    CHECK(!recoveryBackend.pairingActive());
+    CHECK(recoveryFake->writes.size() == 3);
+    checkPairCommand(recoveryFake->writes.back(), false, 1);
+    CHECK(recoveryBackend.beginPairing(1));
+    CHECK(recoveryFake->writes.size() == 4);
+    checkPairCommand(recoveryFake->writes.back(), true, 1);
+    recoveryBackend.stop();
+
     // Pairing tool requests exclusive ownership; the transport sees that flag.
     auto exclusiveTransport = std::make_unique<FakeTransport>();
     auto* exclusiveFake = exclusiveTransport.get();
