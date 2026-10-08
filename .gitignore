@@ -4,3 +4,4 @@ __pycache__/
 /dist/
 
 /config/vut-service.conf
+/assignments.json
