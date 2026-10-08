@@ -9,9 +9,11 @@ below; they do not establish hardware recovery or independent orientation qualit
 
 - Normal `Backend::start` opens HID without sending PairDevice or startup all-slot
   PWS commands. Existing tracking bring-up on an observed pair is retained.
-- PairDevice is exposed only by explicit `Backend::beginPairing`; the standalone
-  `vut_pair` setup tool balances it with `Backend::endPairing`. Neither the service
-  nor transport reconnect calls the pairing API.
+- PairDevice enable is exposed only by explicit `Backend::beginPairing` through
+  the shared PairingController used by `vut_setup` and auxiliary `vut_pair`.
+  Neither service start nor reconnect begins pairing. If an earlier explicit
+  operation closed with uncertain disable, reopen confirms that pending disable
+  before admitting another operation; it never resumes enable automatically.
 - An observed unpair clears that slot's state and requests PWS-off only for that
   slot. The bounded RF payload builder remains unchanged. Its ability to build an
   all-slot diagnostic payload does not mean startup calls it.
