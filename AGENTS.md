@@ -39,3 +39,35 @@ If ancestry does not derive from the prepared lineage, stop and report the misma
 - Never claim Hub-bypass hardware operation, multi-tracker behavior, loss/recovery, map behavior, or Wi-Fi/count-limit behavior unless it was actually validated.
 
 If repository state, the active v2 kit, or observed hardware behavior conflicts with the current Architecture Revision, inspect and report the difference rather than silently adapting the shared contract.
+
+
+## Active project profile: Altra Pairing / Assignment UX
+
+When this workspace is used for the `feature/altra-pairing-assignment-ux` Codex project, the task scope is restricted to operator-facing setup and configuration:
+
+- tracker discovery and physical identification;
+- pairing/setup workflow;
+- persistent logical assignment;
+- configuration persistence and validation;
+- status/error presentation;
+- reconnect/setup UX.
+
+### Hardware/resource isolation
+
+This project **does not own or consume PICO hardware**. Do not start PICO HMD services, PICO Motion Tracker capture, ADB/logcat collection, PICO Bridge real-device capture, or any HIL scenario requiring PICO. PICO hardware ownership is reserved for the MonakaVR-HIL physical-campaign project.
+
+VIVE Ultimate Tracker / Altra hardware may be used when required for this UX task.
+
+### Data-path freeze
+
+Unless a narrowly scoped defect is proven and explicitly approved, do not change:
+
+- pose transport semantics;
+- source timestamps or timestamp-domain handling;
+- Monaka wire/protocol schema;
+- tracking-state semantics;
+- observation identity/session semantics;
+- coordinate transforms;
+- Fusion, fallback, IK, or body-role policy.
+
+If UX work appears to require one of these changes, stop at that boundary and report it as a separate integration issue.
