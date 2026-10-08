@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,11 @@ struct BackendConfig {
     // Setup tools use exclusive ownership so an active service/Hub fails closed.
     // Normal service/probe behavior remains shared for compatibility.
     bool exclusiveHidAccess = false;
+    // HIL capture only: prohibit every feature write/read command exchange.
+    // Normal service behavior is unchanged; this is never enabled by service.
+    bool diagnosticPassiveCapture = false;
+    // Synchronous, receive-time raw evidence, only in passive capture mode.
+    std::function<void(std::span<const std::uint8_t>, std::int64_t, std::uint64_t)> diagnosticReportCallback;
 };
 
 class Backend {

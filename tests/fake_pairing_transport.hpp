@@ -36,6 +36,7 @@ public:
         return true;
     }
     std::vector<std::uint8_t> getFeature() override {
+        ++featureReads;
         if (throwEnableResponse && enabling) { throwEnableResponse = false; throw std::runtime_error("injected response exception"); }
         if ((enabling && uncertainEnable) || (!enabling && uncertainDisable)) return {};
         std::vector<std::uint8_t> response(65,0);
@@ -50,7 +51,7 @@ public:
     bool readFailed() const noexcept override { return failRead; }
     bool openedExclusive = false, closed = true, enabling = false;
     bool failRead = false, throwRead = false, uncertainEnable = false, uncertainDisable = false, throwEnableResponse = false;
-    int failDisableWrites = 0, opens = 0;
+    int failDisableWrites = 0, opens = 0, featureReads = 0;
     std::deque<std::vector<std::uint8_t>> reads;
     std::vector<std::vector<std::uint8_t>> writes;
 };

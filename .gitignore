@@ -5,3 +5,4 @@ __pycache__/
 
 /config/vut-service.conf
 /assignments.json
+/hil-private/

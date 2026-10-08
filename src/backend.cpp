@@ -226,7 +226,7 @@ struct Backend::Impl {
 
     CommandResult sendCommandDetailed(std::uint8_t command, std::span<const std::uint8_t> payload) {
         CommandResult result;
-        if (!hid) return result;
+        if (!hid || config.diagnosticPassiveCapture) return result;
         auto packet = protocol::buildFeatureCommand(command, payload, hid->featureLength());
         if (packet.empty() || !hid->setFeature(packet)) return result;
         result.sent = true;
@@ -365,6 +365,10 @@ void Backend::setEventCallback(EventCallback callback) {
 }
 
 bool Backend::beginPairing(int slot) {
+    if (impl_ && impl_->config.diagnosticPassiveCapture) {
+        impl_->error = "pairing is prohibited in passive capture mode";
+        return false;
+    }
     if (!impl_ || !impl_->isRunning) {
         if (impl_) impl_->error = "cannot begin pairing: backend is not running";
         return false;
@@ -461,6 +465,9 @@ bool Backend::pollOnce() {
         return false;
     }
     if (report.empty()) return true;
+
+    if (impl_->config.diagnosticPassiveCapture && impl_->config.diagnosticReportCallback)
+        impl_->config.diagnosticReportCallback(report, impl_->receivedNs, impl_->generation);
 
     if (auto pair = protocol::parsePairEvent(report)) {
         if (pair->device.slot >= 0) {
