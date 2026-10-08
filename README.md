@@ -5,6 +5,13 @@ Current integration lineage: `refactor/monaka-layer-separation`.
 For current wire-v2 behavior, production defaults and diagnostic/HIL limits, see
 [production integration](docs/production-integration.md) and [software release evidence](docs/release-v2.md).
 
+For the new optional tracker discovery/motion Identify console, run
+`Setup_Altra_Trackers.cmd` or see [Altra setup and assignment boundaries](docs/altra-setup.md).
+This setup foundation includes a versioned local assignment model/store, but the
+current HID path cannot acquire stable per-tracker identity and no upper body-role
+apply API exists here. Live persistent assignment/automatic restoration are blocked
+explicitly; the complete config-free body-role workflow is not delivered yet.
+
 Native backend for using VIVE Ultimate Trackers through the official USB dongle without running VIVE Hub / VIVE Streaming Hub.
 
 ## Current phase
