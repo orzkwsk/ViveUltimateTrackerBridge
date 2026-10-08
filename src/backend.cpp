@@ -319,6 +319,15 @@ bool Backend::start(const BackendConfig& config) {
     // Pairing is therefore an explicit operation outside normal startup.
     // Runtime DeviceUnpaired recovery remains slot-local RxPowerSaving(false).
     impl_->isRunning = true;
+    // A previous explicit setup operation may have closed with uncertain
+    // disable. Resolve it on the reopened handle before admitting another
+    // operation; never carry a confirmed enable across transport generations.
+    if (impl_->pairingMayBeEnabled && !endPairing()) {
+        const auto error = impl_->error;
+        stop();
+        impl_->error = error;
+        return false;
+    }
     return true;
 #else
     impl_->error = "VIVE dongle HID backend is currently implemented for Windows only";
@@ -329,9 +338,10 @@ bool Backend::start(const BackendConfig& config) {
 void Backend::stop() {
     if (!impl_) return;
 #ifdef _WIN32
-    if (impl_->pairingMayBeEnabled) (void)endPairing();
+    if (impl_->pairingMayBeEnabled) (void)endPairingWithRetry(1);
     if (impl_->hid) impl_->hid->close();
 #endif
+    impl_->pairingConfirmed = false;
     impl_->isRunning = false;
     impl_->hostSlot = -1;
     std::scoped_lock lock(impl_->mutex);
@@ -371,11 +381,12 @@ bool Backend::beginPairing(int slot) {
         }
         return impl_->pairingConfirmed;
     }
+    // Conservatively retain cleanup eligibility if a transport call throws
+    // after writing the enable but before returning its response.
+    impl_->pairingMayBeEnabled = true;
+    impl_->pairingSlot = slot;
     const auto result = impl_->sendCommandDetailed(protocol::kCmdRequestRfChangeBehavior, *payload);
-    if (result.sent) {
-        impl_->pairingMayBeEnabled = true;
-        impl_->pairingSlot = slot;
-    }
+    if (!result.sent) { impl_->pairingMayBeEnabled = false; impl_->pairingSlot = -1; }
     if (!result.responseMatched) {
         impl_->error = result.sent
             ? "PairDevice enable was sent but no matching feature response was observed"
@@ -416,6 +427,16 @@ bool Backend::pairingActive() const noexcept {
     return impl_ && impl_->pairingMayBeEnabled;
 }
 
+bool Backend::endPairingWithRetry(unsigned attempts) {
+    if (!pairingActive()) return true;
+    for (unsigned i = 0; i < attempts && i < 2; ++i) {
+        try { if (endPairing()) return true; }
+        catch (const std::exception& error) { if (impl_) impl_->error = error.what(); }
+        catch (...) { if (impl_) impl_->error = "exception during PairDevice disable"; }
+    }
+    return false;
+}
+
 std::vector<TrackerState> Backend::snapshot() const {
     if (!impl_) return {};
     std::scoped_lock lock(impl_->mutex);
@@ -434,8 +455,9 @@ bool Backend::pollOnce() {
     auto report = impl_->hid->read(impl_->config.readTimeoutMs);
     impl_->receivedNs = monotonicNs();
     if (impl_->hid->readFailed()) {
-        impl_->error = "HID read failed: transport session lost";
+        (void)endPairingWithRetry();
         stop();
+        impl_->error = "HID read failed: transport session lost";
         return false;
     }
     if (report.empty()) return true;

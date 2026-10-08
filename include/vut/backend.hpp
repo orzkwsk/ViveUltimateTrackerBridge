@@ -46,6 +46,8 @@ public:
     // or -1 for all selectors, matching buildRfBehaviorPayload semantics.
     bool beginPairing(int slot = -1);
     bool endPairing();
+    // Shared bounded cleanup for setup controllers and transport-loss close.
+    bool endPairingWithRetry(unsigned attempts = 2);
     [[nodiscard]] bool pairingActive() const noexcept;
 
     bool pollOnce();
