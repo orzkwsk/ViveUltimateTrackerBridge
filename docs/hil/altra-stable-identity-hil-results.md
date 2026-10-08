@@ -34,6 +34,10 @@ backend capture executable with both trackers left ON, run `17915002331153955`.
 | B | HIL-03 | RF-2 at disconnect; ON binding unavailable | 4 at disconnect | Not received | Not received | 1, new run | Individual power-cycle instruction followed; disconnect observed, no reconnect identity ACK |
 | A | HIL-04 | Unbound | — | Not received | Not received | 1→8, new run | Transport reopened; no identity ACK |
 | B | HIL-04 | Unbound | — | Not received | Not received | 1→8, new run | Transport reopened; no identity ACK |
+| B | HIL-05 | RF-2 | 4 | NADS-2 | NASS-2 | 1, new run | B-first connect; unchanged values |
+| A | HIL-05 | RF-1 | 0 | NADS-1 | NASS-1 | 1, new run | A-second connect; unchanged values |
+| A | HIL-06-before review of HIL-05 | RF-1 | 0 | NADS-1 | NASS-1 | 1, HIL-05 run | Baseline references saved; no additional ACK |
+| B | HIL-06-before review of HIL-05 | RF-2 | 4 | NADS-2 | NASS-2 | 1, HIL-05 run | Baseline references saved; no additional ACK |
 
 NADS payloads were 12 bytes; NASS payloads were 13 bytes. No parser notes were
 reported for these four ACKs. A/B differed independently in both namespaces; NADS
@@ -57,7 +61,7 @@ not been isolated; do not attribute the failure to a removed pairing registratio
 B's response to the individual power-cycle instruction described both trackers'
 LEDs progressing to solid blue, then breathing blue. B also emitted APF followed by
 DeviceUnpaired, with no subsequent DevicePaired or identity ACK. The capture ended
-cleanly. Both trackers' power-cycle identity stability remains untested.
+cleanly. Identity stability could not be evaluated in that isolated capture.
 The [official LED description](https://www.vive.com/au/support/ultimate-tracker/category_howto/status-led.html)
 labels breathing blue as standby; this does not establish pairing registration state.
 
@@ -69,8 +73,32 @@ attempt, including failed attempts; it is not a count of physical reconnections.
 No pair or identity ACK was received after reopen, and the human reported unchanged
 LEDs. Transport recovery was observed; candidate stability was not evaluated. VIVE
 Hub application remained absent on a read-only process recheck; ViveAgentService and
-SteamVR vrserver remained running. The capture ended cleanly. HIL-05 is now observing
-B-first power-on after both trackers are switched off.
+SteamVR vrserver remained running. The capture ended cleanly.
+
+HIL-05 run `17915009835473812`: after HIL-04's dongle reconnect, the human switched
+both trackers OFF, waited, powered B ON alone, and confirmed B's green LED; then powered
+A ON while B remained ON and confirmed A's green LED. Fresh connect events and full
+device-info ACK bursts were recorded for B then A. Each NADS and NASS value exactly
+matched the corresponding HIL-01 value. Both RF addresses and slots were unchanged.
+The comparison independently confirmed reversed pair-event order under bounded human
+bindings, no raw/parser mismatch, no duplicate live candidate, and no changing value.
+This confirms persistence through the combined intervening restart/power/dongle
+sequence. It does not establish automatic rediscovery on restart, power cycle or
+dongle reconnect alone, which failed to produce identity ACKs in HIL-02/03/04.
+The HIL-05 capture ended cleanly.
+
+HIL-07 replacement discrimination: the physically confirmed fresh A/B values from
+HIL-05 were compared independently, and both NADS_A != NADS_B and NASS_A != NASS_B
+were confirmed. This is a comparison of existing observations, not a separate device
+operation or capture. The automated comparison tool conservatively still lists the
+missing HIL-07 capture marker and does not consume this review annotation.
+
+HIL-06 before-operation references preserve the original HIL-05 run, generation,
+RF, slot, raw ACK/report references and timestamps in private evidence. Raw capture
+scenario markers were not rewritten and no fresh ACK is claimed for this annotation.
+Capture is closed for the human to inspect an official single-tracker unpair operation.
+No repo unpair command exists; the [official pairing guide](https://www.vive.com/eu/support/ultimate-tracker/category_howto/pairing-ultimate-tracker-with-the-dongle.html) describes pairing,
+but does not document that single-tracker removal UI. No guessed command is sent.
 
 ## Exact namespace correlation
 
@@ -92,8 +120,8 @@ serial have not been correlated in this HIL.
 
 | Candidate | A/B unique | Restart | Power cycle | Dongle reconnect | Slot/order | Re-pair | PC restart | Class |
 |---|---|---|---|---|---|---|---|---|
-| NADS | PASS, HIL-01 | No fresh ACK; stability untested | A/B: no reconnect ACK | Transport recovered; no identity ACK | Pending | Not run | Not run | B |
-| NASS | PASS, HIL-01 | No fresh ACK; stability untested | A/B: no reconnect ACK | Transport recovered; no identity ACK | Pending | Not run | Not run | B |
+| NADS | PASS, HIL-01/05/07 review | No fresh ACK on restart alone | Unchanged in later HIL-05; isolated rediscovery missing | Unchanged in later HIL-05; immediate ACK missing | PASS, reversed order; slots unchanged | Pending | Not run | B |
+| NASS | PASS, HIL-01/05/07 review | No fresh ACK on restart alone | Unchanged in later HIL-05; isolated rediscovery missing | Unchanged in later HIL-05; immediate ACK missing | PASS, reversed order; slots unchanged | Pending | Not run | B |
 
 NADS classification: **Class B**.
 NASS classification: **Class B**.
@@ -101,9 +129,8 @@ Recommended persistent identity: **none verified**. NADS is the device-serial
 candidate supported by exact Hub SerialNumber correlation; NASS is the separate
 ship-serial candidate matching strTrackerSN. These are research candidates only.
 Production integration readiness: **not ready**; no provider has been implemented.
-Remaining HIL: individual power cycles, dongle reconnect with fresh generation
-evidence, reversed connection order/slot test, actual unpair/re-pair with changed RF
-for A and B, replacement discrimination, and restart discovery resolution. PC restart
+Remaining HIL: isolated restart/power/dongle rediscovery resolution, a slot-change
+test if available, and actual unpair/re-pair with changed RF for A and B. PC restart
 and a second dongle remain optional.
 
 ## Instrumentation validation
