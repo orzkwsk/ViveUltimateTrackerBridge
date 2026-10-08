@@ -1,4 +1,5 @@
 #include "vut/assignment_store.hpp"
+#include "vut/assignment_lock.hpp"
 #include "nlohmann/json.hpp"
 #include <chrono>
 #include <fstream>
@@ -11,7 +12,7 @@
 #include <unistd.h>
 #endif
 
-namespace vut::setup {
+namespace vut::setup::provisional {
 namespace {
 using Json = nlohmann::json;
 std::optional<std::string> read(const std::filesystem::path& path) {
@@ -74,12 +75,14 @@ private:
 };
 }
 struct AssignmentStore::Impl {
+    explicit Impl(std::vector<std::string> labels) : values(std::move(labels)) {}
     std::filesystem::path path;
     std::optional<std::string> original;
     Json document;
     Assignments values;
 };
-AssignmentStore::AssignmentStore(std::filesystem::path path) : impl_(std::make_unique<Impl>()) {
+AssignmentStore::AssignmentStore(std::filesystem::path path, std::vector<std::string> labels)
+    : impl_(std::make_unique<Impl>(std::move(labels))) {
     impl_->path = std::move(path); impl_->original = read(impl_->path);
     auto& doc = impl_->document;
     doc = impl_->original ? parse(*impl_->original) : Json{{"schema_version", 1}, {"assignments", Json::object()}};
@@ -107,8 +110,7 @@ void AssignmentStore::save() {
     doc["assignments"] = std::move(records);
     const auto bytes = doc.dump(2) + "\n";
     if (bytes.size() > 1024*1024) throw std::runtime_error("assignment output exceeds 1 MiB");
-    auto lockPath = impl_->path; lockPath += ".lock";
-    ExclusiveFile lock(lockPath);
+    WriterLock lock(impl_->path);
     if (read(impl_->path) != impl_->original) throw std::runtime_error("assignments changed on disk; reload before saving");
     auto tempPath = impl_->path;
     tempPath += ".tmp-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
