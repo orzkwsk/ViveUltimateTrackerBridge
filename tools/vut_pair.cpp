@@ -1,4 +1,4 @@
-#include "vut/backend.hpp"
+#include "vut/pairing.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -60,18 +60,14 @@ bool parseArgs(int argc, char** argv, Options& options) {
     return true;
 }
 
-bool disablePairing(vut::Backend& backend) {
-    if (!backend.pairingActive()) return true;
-    // One bounded retry covers an uncertain feature response. Backend::stop()
-    // makes one final best-effort attempt before closing the HID handle.
-    for (int attempt = 0; attempt < 2; ++attempt)
-        if (backend.endPairing()) return true;
-    return false;
+std::int64_t nowNs() {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
 } // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) try {
     Options options;
     if (!parseArgs(argc, argv, options)) {
         printUsage();
@@ -79,14 +75,14 @@ int main(int argc, char** argv) {
     }
 
     std::signal(SIGINT, onSignal);
+    std::signal(SIGTERM, onSignal);
     vut::Backend backend;
+    vut::setup::PairingController pairing(backend);
     vut::BackendConfig config;
     config.exclusiveHidAccess = true;
 
-    std::optional<vut::DeviceId> paired;
     backend.setEventCallback([&](const vut::BackendEvent& event) {
-        if (event.kind == vut::BackendEvent::Kind::DevicePaired && !paired)
-            paired = event.device;
+        pairing.observe(event);
     });
 
     if (!backend.start(config)) {
@@ -97,40 +93,41 @@ int main(int argc, char** argv) {
 
     std::cout << "Start pairing...\n"
               << "Put VIVE Ultimate Tracker into pairing mode.\n";
-    if (!backend.beginPairing(options.slot)) {
-        std::cerr << "Failed to enable pairing: " << backend.lastError() << '\n';
-        const bool disabled = disablePairing(backend);
+    if (!pairing.begin(nowNs(), options.slot, std::chrono::seconds(options.timeoutSeconds))) {
+        std::cerr << "Failed to enable pairing: " << pairing.result().reason << '\n';
+        const bool disabled = pairing.result().cleanupConfirmed;
         backend.stop();
         if (disabled) std::cout << "Pairing disabled.\n";
         else std::cerr << "WARNING: PairDevice disable could not be confirmed before HID close.\n";
         return 4;
     }
 
-    const auto deadline = std::chrono::steady_clock::now() +
-                          std::chrono::seconds(options.timeoutSeconds);
     bool transportError = false;
-    while (gRun && !paired && std::chrono::steady_clock::now() < deadline) {
+    while (gRun && pairing.active()) {
         if (!backend.pollOnce()) {
             transportError = true;
+            pairing.transportLost(backend.lastError());
             break;
         }
+        pairing.tick(nowNs());
     }
-
+    if (!gRun) (void)pairing.cancel();
+    const auto result = pairing.result();
+    const auto& paired = result.paired;
     if (paired) {
         std::cout << "\nPaired:\n"
                   << "slot: " << paired->slot << '\n'
                   << "device: " << paired->toString() << '\n';
     }
 
-    const bool disabled = disablePairing(backend);
-    const std::string cleanupError = backend.lastError();
+    const bool disabled = result.cleanupConfirmed;
     backend.stop();
     if (disabled) std::cout << "\nPairing disabled.\n";
     else std::cerr << "WARNING: PairDevice disable could not be confirmed before HID close: "
-                   << cleanupError << '\n';
+                   << result.cleanupError << '\n';
 
     if (transportError) {
-        std::cerr << "Pairing aborted after HID error: " << cleanupError << '\n';
+        std::cerr << "Pairing aborted after HID error: " << result.reason << '\n';
         return 5;
     }
     if (!gRun) {
@@ -151,4 +148,6 @@ int main(int argc, char** argv) {
               << "map " << paired->toString() << " tracker-" << paired->slot << "-map\n"
               << "The six-byte RF address is an observed admission key, not a persistent hardware ID.\n";
     return 0;
+} catch (const std::exception& error) {
+    std::cerr << "Pairing failed: " << error.what() << '\n'; return 1;
 }
