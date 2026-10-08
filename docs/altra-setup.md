@@ -1,154 +1,124 @@
-# Altra / VIVE tracker setup: implementation and open boundaries
+# Altra direct-HID setup and responsibility boundaries
 
-Base: `refactor/monaka-layer-separation`, commit
-`e8ecd513391ab4f15af2941380631e7f05049bea`.
-Work branch: `feature/altra-pairing-assignment-ux`.
+This console is a standalone bring-up path, not the final product live setup
+architecture. It exclusively owns the official dongle; stop `vut_service` and
+VIVE Hub / VIVE Streaming Hub first. No process is killed automatically.
+Physical Pairing and Identify evaluation for this rework are **HIL_REQUIRED**.
 
-**This is a setup foundation, not a completed config-free body-role workflow.**
-Current Windows HID events contain an RF address but no verified hardware serial,
-stable runtime UUID, or persistent individual identifier. The production setup tool
-cannot safely assign and auto-restore a physical tracker. It displays the limitation
-and blocks that operation. No RF address or slot is promoted to stable identity.
-There is also no upper consumer body-role application API in this repository.
+## Pairing, listing and Identify in one session
 
-## Read-only architecture audit
+Run `Setup_Altra_Trackers.cmd` or `vut_setup` with no sidecar argument.
+Normal discovery/start/reconnect never sends PairDevice enable.
 
-| Question | Current code and behavior |
+```text
+pair [all|0|1|2|3|4]
+pair-status
+pair-cancel
+refresh
+identify
+confirm RF_ADDRESS
+next
+quit
+```
+
+After `pair`, physically put one tracker into pairing mode. Default timeout: 60 s.
+Feature-response matching confirms command exchange, not successful pairing;
+`DevicePaired` is required. The registry sees that event first, then PairDevice
+is disabled after the poll callback returns. The dongle stays open for listing
+and Identify. `all` uses the existing five-selector payload; a specific selector
+only accepts its own slot. Actual first-pair assignment and multi-tracker effects
+remain **UNKNOWN / HIL_REQUIRED**.
+
+`vut_pair --slot all --timeout-seconds 60` remains an auxiliary frontend to the
+same `PairingController`, printing observed RF data and a diagnostic map suggestion.
+Both frontends share begin, event admission, timeout, cancel, result and cleanup.
+
+States: Idle, Enabling, Pairing, Paired, Cancelling, TimedOut, Failed, CleanupFailed.
+Pair events must match generation, selector and operation time window. Success,
+timeout, cancel, quit, SIGINT/SIGTERM and exceptions attempt disable. Cleanup uses
+two bounded attempts; Backend retains one final best-effort attempt before close.
+On read loss, retries happen before closing the old handle. Unconfirmed disable
+remains CleanupFailed and blocks another enable. Reopen resolves pending disable
+before accepting another operation; confirmed enable never carries across transport
+generations and reconnect never resumes pairing. A disconnected dongle cannot
+be guaranteed to receive cleanup: the tool reports unconfirmed disable explicitly.
+
+## Separate states and responsibilities
+
+Listing separates observed connection, tracking, pose age, stable identity and
+body-assignment availability. Observed connection is event evidence, not a heartbeat
+guarantee. Paired establishes neither persistent identity nor body assignment.
+RF address and slot remain addressing/diagnostic data. Metadata never refreshes pose
+age. Unpair/transport loss retires identity bindings; history is bounded to 256 RF IDs.
+
+`StableIdentity` admits verified serial, stable UUID or persistent identifier
+provenance. `Devices::observeIdentity` remains the provider boundary;
+**production has no verified per-tracker provider and never calls it**. Injected
+serial tests do not prove hardware acquisition or automatic restore. RF MAC, slot,
+packet index, session and discovery order never become stable identity.
+
+The fixed C1/C2 and inspected Bridge mapping contract place body targets in
+MonakaVR. Bridge maps source/device to logical tracker and owns approved spatial
+transforms/routing. Cross-backend body assignment belongs to the upper consumer.
+No authoritative role enum or body-role apply API is available to this VUT path.
+See [Phase 1 audit](altra-setup-rework-audit.md) for exact read-only sources.
+
+The VUT `roles()` list is removed. Normal setup exposes no assign/reassign/roles/save
+commands; the launcher creates no sidecar. `Assignments`/`AssignmentStore` are in
+`vut::setup::provisional` and a separate internal `vut_assignment_lab`, built only
+for tests or explicit `-DVUT_BUILD_ASSIGNMENT_LAB=ON`. Accepted opaque labels must
+be supplied by the caller. No built-in body vocabulary or downstream adapter exists.
+Retained legacy `schema_version: 1`/`role` fields are private experiment compatibility,
+**not a production schema or future compatibility promise**. Existing sidecars are
+preserved without automatic migration. An authoritative upper API is required
+before implementing a body-assignment adapter.
+
+## Identify evaluation
+
+`IdentifyPolicy` is injected into `Devices`/`SetupSession`. Defaults are
+**provisional / HIL_REQUIRED**, retained for synthetic regression continuity:
+
+| Parameter | Default |
 | --- | --- |
-| Altra discovery entry | There is no separate Altra runtime adapter. `Backend::start` opens official dongle VID 0x0bb4 / PID 0x0350 through Windows SetupAPI/HID. `pollOnce` detects trackers from pair/unpair and pose packets. |
-| Device identifier | `DeviceId::toString` emits the full lowercase six-byte RF address; `slotFromMac` derives an RF selector. Neither is verified persistent hardware identity. |
-| Multiple trackers | Backend maps states/devices/buttons by vendor slot 0..4. Adapter streams and configured coordinate maps use full RF address. |
-| Config | Line format: `source INSTALLATION_ID`, `map RF_ADDRESS COORDINATE_MAP_ID`, optional `reconnect_revision strict|preserve`. This is not body assignment. |
-| Role enum / assignment | None in backend, service, or protocol Observation contract. Historical architecture delegates body roles to MonakaVR. |
-| Reconnect | Service retries start after transport loss, creates a new session UUID/epoch/generation. Adapter unknown RF admission fails closed; absence then same-address pair requests restart. Strict advances coordinate revision; explicit preserve applies only to proved in-process same-map reconnect. |
-| Stable identity retention | Address matching only. `src/backend.cpp` explicitly describes address change on re-pair. Automatic stable individual recognition is unavailable. |
-| Identify | No LED, vibration, or haptic backend API. New setup module observes motion only. |
-| Physical pairing | `beginPairing/endPairing` send real PairDevice enable/disable feature commands through `kCmdRequestRfChangeBehavior`. Feature response matching is not proof of successful pairing; `DevicePaired` is awaited. Tracker still needs physical pairing mode. |
-| Existing pairing tool | `vut_pair` exclusive HID, selector/timeout, one pair event, bounded cleanup and exit codes. Prints admission-address/map suggestion; never edits config, assigns roles, or acquires serial. |
-| GUI / interactive path | Previously probe, pairing, service and launcher CLI only. New `vut_setup` interactive console and launcher; no GUI added. |
-| Headless | Existing `vut_service`, probe, pairing and diagnostic-only targets retained. Setup is optional and not launched by service. `--offline` and `--validate` never open HID. |
-| Config compatibility | Existing service config parser and files unchanged. Versioned assignment sidecar is independent; no coordinate-map-to-body-role migration is valid. |
-| Old branch | `dev/vivehub-bypass` is an ancestor. Selected backend/protocol comparison found no old-only behavior to import. Current passive start, cleanup and revised status policy must be preserved. |
-| Existing tests | Decoder/status, fake pairing command/cleanup/exclusive transport, Observation MAC/slot/replay/loss semantics, session/revision reconnect, config/journal, publisher/loopback/cross-language. No existing body assignment tests. |
+| Minimum samples / movement increments | 6 / 3 |
+| Minimum span / freshness / window | 100 ms / 250 ms / 5 s |
+| Accumulated position / angle | 0.12 m / 0.52 rad |
+| Position / angle noise floor | 0.015 m / 0.05 rad |
+| Position / angle single-step jump limit | 0.5 m / 1.57 rad |
 
-Official Linux SDK documentation exposes LED `Echo` Identify, but does not establish
-an equivalent command for this repository's Windows HID transport. No guessed vendor
-LED command was added. Reference:
-https://github.com/ViveRoboticsSoftware/vive-ultimate-tracker-sdk
+Listing reports sample/movement counts, accumulated position/angle, maximum
+single-step position/angle, latest interval, maximum gap and tracking status.
+Rejected jumps preserve diagnostic maxima while retiring candidate evidence;
+a new Identify window resets diagnostics. Duplicate/reordered RF indices, gaps,
+invalid quaternions, unusable state and localization jumps never qualify motion.
+Only Ok position and verified RecentlyLost orientation are usable. Multiple
+candidates stay ambiguous and require human confirmation. Neither motion nor
+confirmation creates stable identity or body assignment.
 
-## Available workflow
+## Persistence experiment and script errors
 
-On Windows run `Setup_Altra_Trackers.cmd`, or after building:
+The internal store retains corrupt/duplicate/schema fail-closed parsing, unknown
+fields, optimistic stale-writer checks, durable same-directory temp writes and
+atomic replacement. Writers use a stable adjacent `.lock` path with exclusive
+`OPEN_ALWAYS` handle ownership on Windows or nonblocking `flock` on POSIX. OS
+process termination releases ownership. The file is deliberately not unlinked;
+its existence, including an old sentinel, cannot permanently block saving. Do not
+remove it while writers exist, since replacing its inode would split ownership.
+An orphan unique temp file does not block later saves.
 
-```powershell
-.\build\assignment-ux\Release\vut_setup.exe .\assignments.json
-```
+`vut_setup --offline` opens no HID. Command/syntax/input errors return nonzero even
+if later commands succeed. Interactive command errors permit continued operation;
+unconfirmed cleanup at shutdown returns nonzero. Internal lab scripts also return
+nonzero for malformed input, validation and save failure. The lab is not linked
+into normal setup/pair/service/probe targets or exposed by the launcher.
 
-The launcher builds setup and pairing tools and defaults its sidecar to
-`%LOCALAPPDATA%/MonakaVR/ViveUltimateTrackerBridge/assignments.json`.
-Use `scripts/setup_altra_trackers.ps1 -CMake PATH` when CMake is outside PATH.
-Setup holds the dongle exclusively; stop the service and Hub yourself. No process
-is killed, no physical pairing is entered automatically, and no pose is published.
+## Future live control and readiness
 
-1. If needed, exit setup and use `vut_pair`; put the tracker into pairing mode.
-2. Start setup, power on trackers, and enter `refresh` for the event-driven list.
-3. Enter `identify`, move one tracker, then `refresh` and `confirm RF_ADDRESS`
-   during the five-second observation window. Re-run Identify if expired or ambiguous.
-4. The list displays name, stable ID availability, serial/UUID availability,
-   RF address, connection evidence, tracking state, role, last-seen/pose age,
-   pose freshness, movement/sample totals, position/angular delta and warning.
-5. `next` suggests the next connected unassigned device. `roles` lists the local
-   setup vocabulary. `assign RF_ADDRESS ROLE [swap|replace|cancel]` requires both
-   human-confirmed motion and verified stable identity; current live backend
-   reports the missing identity rather than saving an RF address.
-6. For already-saved identities, `reassign STABLE_ID ROLE [swap|replace|cancel]`,
-   `unassign STABLE_ID`, `swap STABLE_ID STABLE_ID`, and `clear-all confirm` edit
-   local assignments. `validate` checks local rules and explicitly reports the
-   unresolved hardware/upper consumer boundary. `save` persists edits; quit with
-   pending edits reports that they were discarded.
+SetupSession separates the supplied Backend, registry/Identify, shared controller
+and SetupConsole presentation. A future service-owned control API can host these
+boundaries; this rework does not invent IPC or interrupt tracking automatically.
 
-`refresh` is a passive event-list refresh, not an undocumented hardware enumeration
-request. Connection means observed pair/pose presence; there is no guaranteed
-liveness heartbeat. Stale pose is displayed separately and never treated as proof
-of physical disconnect. Metadata does not refresh pose age. Transport/unpair marks
-devices disconnected and retires live identity bindings. History is bounded to
-256 RF addresses; restart setup to clear session history.
-
-Motion Identify requires at least six distinct RF pose samples, three movement
-increments, at least 100 ms span, and 250 ms freshness. Qualifying total motion is
-0.12 m or 0.52 rad. Subthreshold noise is excluded; duplicate/old RF indices,
-large reception gaps, invalid quaternions, localization/status jumps and large
-single deltas do not create candidates. Only Ok position and verified post-loss
-RecentlyLost orientation are usable. There is no numeric confidence field in
-the current backend; status/numeric validity are the available evidence. Multiple
-candidates remain ambiguous. Neither motion nor confirmation creates hardware identity.
-
-## Assignment module and persistence
-
-`vut::setup::Assignments` implements assign/reassign, unassign, swap, replace,
-clear, role uniqueness and unknown-role rejection. `StableIdentity` admits explicit
-hardware serial, stable runtime UUID, or persistent identifier provenance. Provider
-integration should select serial first, stable UUID second, persistent identifier
-third. No stable composite fingerprint can be derived from current packets, so no
-fingerprint fallback was invented. `Devices::observeIdentity` is the injection
-boundary for a future verified provider; **production does not call it**.
-
-The `roles()` list is local setup vocabulary, not a substitute for an authoritative
-MonakaVR enum. It must be reconciled when the actual consumer API is available.
-
-`AssignmentStore` stores:
-
-```json
-{
-  "schema_version": 1,
-  "assignments": {
-    "serial:EXAMPLE-FACTORY-SERIAL": { "role": "LeftFoot" }
-  }
-}
-```
-
-This example is illustrative, not discovered hardware. Do not seed production
-assignments using unverified identifiers. Existing records survive absence and
-reconnecting with verified matching identity retrieves the saved role independently
-of RF selector, address, enumeration order and session. Replacing a physical device
-with a different verified identity does not inherit the old assignment. The current
-live path cannot perform this identity match automatically.
-
-Parser rejects corrupt JSON, duplicate fields, invalid records/roles, duplicate roles,
-unsupported schema versions, more than 256 records, excessive nesting and files over
-1 MiB. Errors preserve the original; missing file is explicitly a new empty sidecar.
-Save retains unknown top-level and retained-record fields. Explicit unassign/clear
-removes those records. An exclusive `.lock`, optimistic original-byte check, durable
-same-directory temporary write and atomic Windows replacement protect saves. Stale
-writers fail rather than overwrite. A crashed writer may leave a lock/temp file;
-remove only after verifying no setup writer remains. No automatic stale-lock deletion.
-No prior assignment schema exists, so migration is unnecessary; older service config
-is neither rewritten nor interpreted as a role mapping.
-
-## Verification and unfinished integration
-
-New tests cover assignment operations, duplicate/unknown rejection, identity kinds,
-disconnected records, injected identity reconnect/order/slot/session changes,
-simultaneous devices, replacement, TrackingLost/recovery, movement noise/replay/
-freshness/ambiguity/rotation-only/invalid quaternion, save/load, unknown JSON fields,
-invalid config, stale writers, lock rejection, and atomic-replacement failure.
-Windows fake HID integration exercises pair/unpair/transport reconnect. The injected
-serial tests prove module behavior, not production serial acquisition or hardware restoration.
-
-To complete the requested workflow, supply/integrate:
-
-- A verified per-tracker serial/stable ID discovery API or packet contract for the
-  current dongle path, including stability across re-pair and replacement. Dongle
-  HID serial alone identifies the receiver, not its individual trackers.
-- The authoritative body role enum and consumer assignment/apply API. Sidecar roles
-  currently do not change observations or downstream body slots.
-- Service-safe setup/state exposure and immediate assignment application after the
-  upper interface is known; current exclusive setup requires a stopped service.
-
-MonakaProtocol packet schema/codec, MonakaBridge and all existing tracking modules
-are unchanged. No body role was smuggled into device_id or coordinate_space. Full
-config-free setup/auto-restore is **not complete**, and this branch is not presented
-as merge-ready for that full requirement. Hardware tests are **NOT RUN**: one/multiple
-trackers, physical Identify, role assignment, Bridge restart, power cycle, changed
-enumeration, simultaneous reconnect, replacement, duplicate-role UX, TrackingLost/
-recovery and config-free end-to-end completion.
+Persistent assignment and full config-free setup are **blocked by missing verified
+per-tracker identity and authoritative upper assignment/apply APIs**. Pairing/Identify
+software readiness is assessed independently in the [validation receipt](altra-setup-validation.md).
+Hardware tests remain separate from unit/fake-HID/CLI results.

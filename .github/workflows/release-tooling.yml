@@ -17,3 +17,30 @@ jobs:
         run: python -O scripts/test_release_v2.py
       # Unit tests only. Release artifacts require the documented clean-tree
       # scripts/release_v2.py build on a configured Windows x64 release host.
+  native-regressions:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Configure Release (including setup, provisional store and fixed codecs)
+        run: cmake -S . -B build/ci -DBUILD_TESTING=ON -DVUT_BUILD_OBSERVATION=ON -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build/ci --config Release --parallel
+      - name: Native, CLI and process-lock regressions (fake HID on Windows only)
+        run: ctest --test-dir build/ci -C Release --output-on-failure --no-tests=error --output-junit results.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-results-${{ matrix.os }}
+          path: |
+            build/ci/results.xml
+            build/ci/Testing/Temporary/LastTest.log

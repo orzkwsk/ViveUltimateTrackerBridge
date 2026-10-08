@@ -5,12 +5,14 @@ Current integration lineage: `refactor/monaka-layer-separation`.
 For current wire-v2 behavior, production defaults and diagnostic/HIL limits, see
 [production integration](docs/production-integration.md) and [software release evidence](docs/release-v2.md).
 
-For the new optional tracker discovery/motion Identify console, run
-`Setup_Altra_Trackers.cmd` or see [Altra setup and assignment boundaries](docs/altra-setup.md).
-This setup foundation includes a versioned local assignment model/store, but the
-current HID path cannot acquire stable per-tracker identity and no upper body-role
-apply API exists here. Live persistent assignment/automatic restoration are blocked
-explicitly; the complete config-free body-role workflow is not delivered yet.
+For the optional direct-HID bring-up console, run `Setup_Altra_Trackers.cmd`.
+It supports Pairing, device listing and provisional motion Identify in one dongle
+session; see [Altra setup boundaries](docs/altra-setup.md). Stop the service and
+Hub first. This is not the final service-owned live setup architecture.
+Per-tracker stable identity acquisition and the upper body-assignment API remain
+implementation blockers. No production body-role store is exposed by this console.
+The full config-free workflow remains incomplete; physical Pairing/Identify
+validation is HIL_REQUIRED.
 
 Native backend for using VIVE Ultimate Trackers through the official USB dongle without running VIVE Hub / VIVE Streaming Hub.
 
@@ -42,7 +44,7 @@ This phase intentionally does **not** implement Wi-Fi-only tracker transport or 
 - button-fragment accumulation;
 - normalized in-process `TrackerState` snapshot/event API;
 - `vut_probe` command-line hardware probe;
-- explicit one-shot `vut_pair` first-pairing setup tool;
+- same-session `vut_setup` Pairing/listing/Identify console and auxiliary one-shot `vut_pair`;
 - protocol unit tests independent of hardware.
 
 See `docs/INITIAL_RESEARCH.md` for protocol evidence, assumptions, and current limitations.
@@ -112,8 +114,14 @@ diagnostic/setup action; restarting the service must not change pairing state.
 
 ## Explicit first pairing
 
-Normal operation is for already-paired trackers only. For an intentional first-pair setup, stop
-`vut_service` and VIVE Hub / VIVE Streaming Hub, then run the separate one-shot tool:
+Normal operation is for already-paired trackers only. For intentional pairing,
+stop `vut_service` and VIVE Hub / VIVE Streaming Hub, launch
+`Setup_Altra_Trackers.cmd`, and enter `pair all` (or a selector `0..4`).
+`pair-status` shows progress; `pair-cancel` cancels. After `DevicePaired` and
+auto-disable, use `refresh` then `identify` in the same session.
+The shared controller applies bounded cleanup on success, timeout, cancel,
+quit, exceptions and transport loss; unconfirmed disable is reported explicitly.
+Standalone `vut_pair` remains an auxiliary one-shot frontend:
 
 ```powershell
 .\build\Release\vut_pair.exe --slot all --timeout-seconds 60
