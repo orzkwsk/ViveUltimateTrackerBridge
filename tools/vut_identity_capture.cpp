@@ -88,7 +88,8 @@ int main(int argc, char** argv) try {
                 {"physical_tracker_label",nullptr},{"rf_address",rf},{"slot",e.device.slot},
                 {"transport_generation",e.transportGeneration},{"observed_monotonic_ns",e.observedMonotonicNs},
                 {"raw_report_reference",reference},{"raw_report_index",rawIndex}});
-            std::cout << "pair-event rf=" << rf << " slot=" << e.device.slot << std::endl;
+            std::cout << (e.kind==vut::BackendEvent::Kind::DevicePaired?"connect-event rf=":"disconnect-event rf=")
+                << rf << " slot=" << e.device.slot << std::endl;
             return;
         }
         if(e.kind!=vut::BackendEvent::Kind::Ack) return;

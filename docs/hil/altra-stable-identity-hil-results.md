@@ -30,6 +30,10 @@ backend capture executable with both trackers left ON, run `17915002331153955`.
 | B | HIL-01 | RF-2 | 4 | NADS-2 | NASS-2 | 1 | Natural connect ACK observed |
 | A | HIL-02 | Unbound | — | Not received | Not received | 1, new run | No identity ACK in 90 seconds |
 | B | HIL-02 | Unbound | — | Not received | Not received | 1, new run | No identity ACK in 90 seconds |
+| A | HIL-03 | RF-1 at disconnect; ON binding unavailable | 0 at disconnect | Not received | Not received | 1, new run | Simple OFF→ON confirmed; disconnect observed, no reconnect identity ACK |
+| B | HIL-03 | RF-2 at disconnect; ON binding unavailable | 4 at disconnect | Not received | Not received | 1, new run | Individual power-cycle instruction followed; disconnect observed, no reconnect identity ACK |
+| A | HIL-04 | Unbound | — | Not received | Not received | 1→8, new run | Transport reopened; no identity ACK |
+| B | HIL-04 | Unbound | — | Not received | Not received | 1→8, new run | Transport reopened; no identity ACK |
 
 NADS payloads were 12 bytes; NASS payloads were 13 bytes. No parser notes were
 reported for these four ACKs. A/B differed independently in both namespaces; NADS
@@ -41,6 +45,32 @@ HIL-02 saved 31 non-pose raw reports but no pair or ACK events. Restart identity
 stability could not be evaluated because there was no fresh candidate evidence;
 automatic rediscovery did not occur in the observed 90-second window. Values from
 HIL-01 were not carried into the new binding.
+
+HIL-03 run `17915003355876539`: the human explicitly confirmed A underwent only
+OFF→ON, with no re-pair. An `APF` ACK and decoded DeviceUnpaired event were received
+from RF-1. No later DevicePaired or NADS/NASS ACK was observed at this checkpoint.
+DeviceUnpaired is an input decoder event name; it is not proof that a pairing database
+entry was removed. No power-cycle stability result can be inferred from missing ACKs.
+The normal backend's slot-local RxPowerSaving(false) recovery is suppressed by the
+passive command guard, as are all feature exchanges. Its effect on this reconnect has
+not been isolated; do not attribute the failure to a removed pairing registration.
+B's response to the individual power-cycle instruction described both trackers'
+LEDs progressing to solid blue, then breathing blue. B also emitted APF followed by
+DeviceUnpaired, with no subsequent DevicePaired or identity ACK. The capture ended
+cleanly. Both trackers' power-cycle identity stability remains untested.
+The [official LED description](https://www.vive.com/au/support/ultimate-tracker/category_howto/status-led.html)
+labels breathing blue as standby; this does not establish pairing registration state.
+
+HIL-04 run `17915008682883821`: with both trackers left ON, the human unplugged the
+official dongle and reinserted it into the same USB port. HID read failure and six
+not-found open failures were recorded, followed by successful exclusive reopen at
+generation 8 (initial open was generation 1). Generation increments on every start
+attempt, including failed attempts; it is not a count of physical reconnections.
+No pair or identity ACK was received after reopen, and the human reported unchanged
+LEDs. Transport recovery was observed; candidate stability was not evaluated. VIVE
+Hub application remained absent on a read-only process recheck; ViveAgentService and
+SteamVR vrserver remained running. The capture ended cleanly. HIL-05 is now observing
+B-first power-on after both trackers are switched off.
 
 ## Exact namespace correlation
 
@@ -62,8 +92,8 @@ serial have not been correlated in this HIL.
 
 | Candidate | A/B unique | Restart | Power cycle | Dongle reconnect | Slot/order | Re-pair | PC restart | Class |
 |---|---|---|---|---|---|---|---|---|
-| NADS | PASS, HIL-01 | No fresh ACK; stability untested | Pending | Not run | Not run | Not run | Not run | B |
-| NASS | PASS, HIL-01 | No fresh ACK; stability untested | Pending | Not run | Not run | Not run | Not run | B |
+| NADS | PASS, HIL-01 | No fresh ACK; stability untested | A/B: no reconnect ACK | Transport recovered; no identity ACK | Pending | Not run | Not run | B |
+| NASS | PASS, HIL-01 | No fresh ACK; stability untested | A/B: no reconnect ACK | Transport recovered; no identity ACK | Pending | Not run | Not run | B |
 
 NADS classification: **Class B**.
 NASS classification: **Class B**.
