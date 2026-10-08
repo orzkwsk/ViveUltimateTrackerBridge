@@ -26,7 +26,10 @@ add_executable(vut_probe tools/vut_probe.cpp)
 target_link_libraries(vut_probe PRIVATE vut_backend)
 
 add_executable(vut_pair tools/vut_pair.cpp)
-target_link_libraries(vut_pair PRIVATE vut_backend)
+add_library(vut_pairing STATIC src/pairing.cpp)
+target_include_directories(vut_pairing PUBLIC include)
+target_link_libraries(vut_pairing PUBLIC vut_backend)
+target_link_libraries(vut_pair PRIVATE vut_pairing)
 
 add_library(vut_setup_model STATIC src/setup.cpp src/assignment_store.cpp)
 target_include_directories(vut_setup_model PUBLIC include PRIVATE third_party/monaka-protocol-v2/cpp/third_party)
