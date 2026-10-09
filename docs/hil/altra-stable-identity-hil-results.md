@@ -1,17 +1,18 @@
-# Altra identity HIL: interrupted report and continuation
+# Altra identity HIL: results and acquisition gap
 
 Research branch: `research/altra-stable-identity-hil`; instrumentation `cce2216`.
-Status: **interrupted at the user's request, 2026-10-09 JST**.
-Interruption reason: **user temporarily away (「一旦離席のため中断」)**.
-The user requested the results so far and preparation for continuation. This interruption
-is distinct from the observed reconnect/discovery gaps below. The last capture ended
-cleanly with capture_stop at generation 9; no research recorder remains running.
+Status: **resumed on 2026-10-09 JST; passive HIL stopped at an acquisition gap**.
+Original interruption reason: **user temporarily away (「一旦離席のため中断」)**.
+The user subsequently requested continuation after charging/sleep. The initial capture
+ended cleanly at generation 9; the resumed B-only capture ended cleanly at generation 11.
+No research recorder remains running. The original absence and the current inability to
+obtain fresh B identity ACKs are separate reasons for stopping.
 
 This hardware trial is incomplete, not Class A approval. Raw serials and RF addresses
 stay in local gitignored `hil-private/`. Aliases below preserve byte equality within
 each namespace; RF aliases are diagnostic labels, not persistent identities.
 
-## Conditions and physical confirmation
+## Initial trial conditions and physical confirmation
 
 Windows x64, official HID dongle VID 0bb4 / PID 0350. VIVE Hub application was absent
 when capture began. VIVE Streaming Service, ViveAgentService and SteamVR vrserver
@@ -46,6 +47,7 @@ backend capture executable with both trackers left ON, run `17915002331153955`.
 | B | HIL-06-before review of HIL-05 | RF-2 | 4 | NADS-2 | NASS-2 | 1, HIL-05 run | Baseline references saved; no additional ACK |
 | A | HIL-06-after | RF-3 | 3 | NADS-1 | NASS-1 | 9 | RF and slot changed; candidate bytes unchanged |
 | B | HIL-06-after | Unbound | — | Not received | Not received | 9 | Blue/breathing with A ON; B-only retry interrupted |
+| B | HIL-06-after, resumed run | Unbound | — | Not received | Not received | 1→11, new run | B-only ON after both-OFF/dongle reset; blue→breathing blue; no connect or ACK |
 | A | HIL-07 review of HIL-05 | RF-1 | 0 | NADS-1 | NASS-1 | 1, HIL-05 run | A/B byte comparison; no additional ACK |
 | B | HIL-07 review of HIL-05 | RF-2 | 4 | NADS-2 | NASS-2 | 1, HIL-05 run | Both namespaces differ from A |
 | A/B | HIL-08 | — | — | — | — | — | Optional PC restart: not run |
@@ -150,6 +152,49 @@ The comparer consumes raw scenario markers, not HIL-06-before/HIL-07 review anno
 its missing-marker results are conservative and are not substitutes for the manual
 provenance and incomplete-operation assessment in this report.
 
+## Resumed B-only trial, 2026-10-09 JST
+
+The user reported A green / B blue after charging/sleep, then confirmed both trackers
+OFF for ten seconds and both charging USB cables removed. An initial exclusive-open
+attempt failed. A both-OFF dongle unplug/replug also failed to resolve exclusive access.
+Only VIVE Streaming Service was initially authorized for stopping. The ordinary service
+stop lacked privileges; the normal Windows UAC elevation completed successfully, and
+read-only inspection verified the service Stopped. Exclusive capture still failed.
+A separate open-only diagnostic succeeded with shared access and failed with exclusive
+access, Win32 error 32 (sharing violation); it performed no packet or feature I/O.
+The actual HID-owning process was not identified. After the user's instruction to
+continue the pending SteamVR-stop step, inspection found SteamVR already absent, so
+this agent stopped no SteamVR process. Capture then acquired exclusive access. This
+sequence does not isolate which process or state change had held the HID interface.
+
+The new passive run `17915485064264249` used the research source at `d78dab2`.
+VIVE Hub and SteamVR were absent and VIVE Streaming Service was Stopped. Both trackers
+were still OFF. The human unplugged/replugged the official dongle during capture and
+waited; transport loss, nine not-found start attempts and successful reopen were recorded,
+advancing generation 1→11. Generation includes failed attempts and does not count
+physical reconnects. The human was then asked to power B ON alone with A kept OFF,
+and reported the pairing indicator followed by steady blue then breathing blue.
+No connect event, disconnect event or ACK was recorded in the entire resumed run:
+19 non-pose raw reports, zero NADS/NASS, clean capture_stop at generation 11.
+No current RF/slot or physical identity binding could be established for B; saved RF,
+Hub cache and serial values were not reused as fresh evidence. A was not powered ON
+in this resumed run. The earlier A re-pair result remains historical evidence only.
+Blue/breathing is the human's LED observation and does not prove registration loss.
+
+The rebuilt passive instrumentation and identity_capture/identity_compare/identity_offline
+CTest checks passed (3/3). Offline analysis of the six prior captures plus this new run
+reported INSUFFICIENT_EVIDENCE with no fail-closed failures; the comparer still classified
+NADS and NASS independently as B_HIL_REQUIRED with no parser/equality issues. No new
+candidate bytes were available to test stability or mutation. No NA, ADS, ASS or other
+feature exchange was sent; no production code or shared protocol change was made.
+
+The passive HIL phase is stopped rather than repeating the same missing-ACK recovery.
+The next phase is a read-only acquisition/queryability audit and a review of a verified
+single-tracker unpair operation. It must identify a safe way to obtain fresh evidence
+before more hardware trials; it does not authorize speculative queries. Both candidates
+remain Class B and production integration remains not ready. At this checkpoint VIVE
+Streaming Service is still Stopped; the last human state was A OFF and B blue/breathing.
+
 ## Exact namespace correlation
 
 For both physically confirmed trackers:
@@ -170,8 +215,8 @@ serial have not been correlated in this HIL.
 
 | Candidate | A/B unique | Restart | Power cycle | Dongle reconnect | Slot/order | Re-pair | PC restart | Class |
 |---|---|---|---|---|---|---|---|---|
-| NADS | PASS, HIL-01/05/07 review | No fresh ACK on restart alone | Unchanged in later HIL-05; isolated rediscovery missing | Unchanged in later HIL-05; immediate ACK missing | Reversed order PASS; A slot 0→3 unchanged after re-pair | A: RF changed/value unchanged; B incomplete; explicit unpair unverified | Not run | B |
-| NASS | PASS, HIL-01/05/07 review | No fresh ACK on restart alone | Unchanged in later HIL-05; isolated rediscovery missing | Unchanged in later HIL-05; immediate ACK missing | Reversed order PASS; A slot 0→3 unchanged after re-pair | A: RF changed/value unchanged; B incomplete; explicit unpair unverified | Not run | B |
+| NADS | PASS, HIL-01/05/07 review | No fresh ACK on restart alone | Unchanged in later HIL-05; isolated rediscovery missing | Unchanged in later HIL-05; immediate ACK missing | Reversed order PASS; A slot 0→3 unchanged after re-pair | A: RF changed/value unchanged; B incomplete after resumed missing-ACK trial; explicit unpair unverified | Not run | B |
+| NASS | PASS, HIL-01/05/07 review | No fresh ACK on restart alone | Unchanged in later HIL-05; isolated rediscovery missing | Unchanged in later HIL-05; immediate ACK missing | Reversed order PASS; A slot 0→3 unchanged after re-pair | A: RF changed/value unchanged; B incomplete after resumed missing-ACK trial; explicit unpair unverified | Not run | B |
 
 NADS classification: **Class B**.
 NASS classification: **Class B**.
@@ -186,9 +231,10 @@ and a second dongle remain optional.
 
 ## Continuation preparation
 
-Resume only when the user returns and explicitly requests continuation. There is no
-background retry, scheduled task, pending device query or automatic vendor operation.
-The pending B-only instruction was superseded by the interruption request.
+The user returned and explicitly requested continuation. The resumed B-only trial above
+ended without fresh ACKs; no background retry, scheduled task, pending device query or
+automatic vendor operation remains. The steps below preserve the original continuation
+plan; repeating them is deferred until the acquisition gap has a verified resolution.
 
 1. Read this report and the passive procedure in `altra-stable-identity-hil.md`.
    Keep branch `research/altra-stable-identity-hil`; do not merge into the base branch.
