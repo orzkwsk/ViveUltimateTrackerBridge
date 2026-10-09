@@ -110,6 +110,8 @@ int main() try {
     CHECK(!backend.beginPairing(5));
     CHECK(fake->writes.empty());
     CHECK(backend.beginPairing(-1));
+    CHECK(backend.pairingEnableExchange().matched());
+    CHECK(backend.pairingEnableExchange().effect == vut::SemanticEffect::Unverified);
     CHECK(fake->writes.size() == 1);
     checkPairCommand(fake->writes[0], true, -1);
     CHECK(backend.beginPairing(-1));
@@ -177,8 +179,8 @@ int main() try {
     CHECK(uncertainFake->writes.size() == 2);
     checkPairCommand(uncertainFake->writes[1], false, 4);
 
-    // An unconfirmed disable must not become a confirmed enable in the next
-    // generation. Reopen resolves the old cleanup before passive operation.
+    // An unmatched disable must not become an enable exchange match in the next
+    // generation. Reopen observes a fresh cleanup exchange, not vendor effect.
     auto recoveryTransport = std::make_unique<FakeTransport>();
     auto* recoveryFake = recoveryTransport.get();
     vut::Backend recoveryBackend(std::move(recoveryTransport));
@@ -192,6 +194,9 @@ int main() try {
     CHECK(recoveryBackend.start(config));
     CHECK(recoveryBackend.transportGeneration() > oldGeneration);
     CHECK(!recoveryBackend.pairingActive());
+    CHECK(recoveryBackend.pairingCleanupEvidence().state == vut::CleanupExchangeState::Matched);
+    CHECK(recoveryBackend.pairingCleanupEvidence().disable.transportGeneration > oldGeneration);
+    CHECK(recoveryBackend.pairingCleanupEvidence().effect == vut::SemanticEffect::Unverified);
     CHECK(recoveryFake->writes.size() == 3);
     checkPairCommand(recoveryFake->writes.back(), false, 1);
     CHECK(recoveryBackend.beginPairing(1));

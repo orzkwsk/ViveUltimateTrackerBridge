@@ -1,9 +1,11 @@
 #pragma once
 
 #include "vut/types.hpp"
+#include "vut/command_exchange.hpp"
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -38,17 +40,26 @@ public:
     Backend& operator=(const Backend&) = delete;
 
     bool start(const BackendConfig& config = {});
-    void stop();
+    void stop() noexcept;
     [[nodiscard]] bool running() const noexcept;
     [[nodiscard]] const std::string& lastError() const noexcept;
 
+    // Bool success means a well-formed host feature exchange matched (or an
+    // idempotent no-op), never pairing/disable vendor semantic confirmation.
     // Explicit setup operation only. start() never calls this. Slot is 0..4,
     // or -1 for all selectors, matching buildRfBehaviorPayload semantics.
     bool beginPairing(int slot = -1);
     bool endPairing();
     // Shared bounded cleanup for setup controllers and transport-loss close.
     bool endPairingWithRetry(unsigned attempts = 2);
+    // Compatibility name: unresolved cleanup eligibility after a possible
+    // enable write, not proof of the current vendor RF pairing-mode state.
     [[nodiscard]] bool pairingActive() const noexcept;
+    // Metadata only: no raw feature payload or identifier is exported here.
+    [[nodiscard]] const FeatureExchangeEvidence& lastFeatureExchange() const noexcept;
+    [[nodiscard]] const std::optional<FeatureExchangeEvidence>& lastFailedFeatureExchange() const noexcept;
+    [[nodiscard]] const FeatureExchangeEvidence& pairingEnableExchange() const noexcept;
+    [[nodiscard]] const PairingCleanupEvidence& pairingCleanupEvidence() const noexcept;
 
     bool pollOnce();
     [[nodiscard]] std::uint64_t transportGeneration() const noexcept;
