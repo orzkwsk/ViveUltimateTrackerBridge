@@ -1,3 +1,178 @@
+# Official B controlled Pair new / normal reconnect: Connected-equivalent PASS
+
+2026-10-10 JST. **Official Pair: PASS. Official reconnect: PASS** under the instruction's
+Connected-equivalent gate: official UI 1/1 plus fresh association/device-info/data stream.
+**Map Ready and valid optical tracking: NOT CONFIRMED.** UI requires setup; all decoded
+pose statuses are Lost 0x03/0x13. Numeric pose updates are not a valid tracked pose claim.
+
+Source of Truth: `MonakaVR_Altra_Official_B_Pairing_Baseline_Reconnect_HIL_Codex指示書.md`,
+SHA256 `7c692c20fae9d8a8c0199d943ca520743a73c22461e2f8213286e8b30bbd313b`.
+Research branch `research/altra-stable-identity-hil`, starting checkpoint
+`0dd677bc0af2fca0936cc1321fe0926433dad4cd`; prepared-lineage ancestry verified.
+Existing other checkout and historical evidence preserved. Production code unchanged.
+
+## Acquisition and physical binding
+
+Human confirmed A/B OFF, both charging USB removed, dongle present before capture.
+Current PnP target/parent exactly matched private inventory; current extcap interface,
+config, unique selected device and TShark preference keys were checked, without guessing.
+Tools retained installed versions/hashes. VIVE Hub, ViveHubServer, ViveTrackerServer and
+Virtual Desktop were running; Streaming Service was Stopped, SteamVR/ViveAgentService
+absent in inspected inventory. No service/runtime restart was performed. No direct-HID
+actor or concurrent capture was present; actual HID handle ownership was not proven.
+
+Each new capture's valid header, 0bb4:0350 descriptor and same-target live traffic were
+verified before the physical operation. TShark used installed USBPcap extcap and normal
+duration autostop (Pair 360 s; reconnect 300 s), exit 0. No legacy launcher/q injection.
+A shared-read snapshot was needed because a default file read lacked writer sharing;
+this was an inspection restriction, not capture corruption or a second hardware capture.
+
+Automated Hub input encountered parent/child window geometry and detected-user-input
+errors. Human performed one official Pair new. Initial gesture confirmation was followed
+by blue then breathing blue; later the human confirmed the effective blue-state 2-second
+hold changed B to green then breathing green, with A still OFF. New DevicePaired and
+N-burst lie inside the B-only gesture request-to-effective-confirmation interval.
+Do not bind B from historical RF/slot/cache. Fresh pair RF and identity-envelope RF match
+within each capture. Both identities exactly match immutable HIL-05 B raw references,
+independently verified against the original raw envelope and saved candidate bytes.
+
+UI became 1/1 / setup required. The Connected-equivalent observation receipt was saved
+before capture end; capture continued about 18 seconds afterward. Human then completed
+the same pairing dialog using Done, kept B ON, and reconnection capture started with UI
+1/1 and pairing dialog closed. Done/disable is in the uncaptured inter-capture interval.
+
+In the second capture, human confirmed B OFF / A OFF; a monotonic wait exceeded 10 s
+before requesting normal B ON, with no pairing gesture or Pair new. Human confirmed
+normal ON, no Pair operation and A OFF. Fresh disconnect -> association -> burst ->
+pose stream establishes recovery; UI alone is insufficient because its 1/1 value was
+still present at the OFF observation. No Unpair, Remove, reset, map setup or DB edit.
+Bridge/direct-HID processes were never launched and no manual vendor command was sent.
+Capture ended normally with B kept ON and final official UI still 1/1 / setup required.
+
+## Observed sequence and four-way matrix
+
+All times below are relative to the first packet of the corresponding capture.
+Counts refer to classified USB records; submission/completion are not independent commands.
+SetFeature data is exposed by this TShark as `usb.data_fragment`. The private extractor
+passes those exact bytes into the existing sanitizer's payload input when other fields
+are empty. It never concatenates fields. The official 0x18 TX uses payload-kind 0x03,
+where current Backend uses 0x04. Strict length-consistent allowlisted ASCII is reported
+as a supplemental observation; sanitizer command remains unknown and destination
+semantics are unverified. Unknown host payloads remain unknown.
+
+| Phase | Official Pair | Official reconnect | Current Backend (static) | Passive guard (static) | Confidence |
+|---|---|---|---|---|---|
+| PairDevice | on at 133.665 s, 3 selected receiver positions; off not captured | on/off not observed in this capture | explicit enable/disable, bounded cleanup | all feature exchanges suppressed | High bytes; disable lifecycle incomplete |
+| OFF host action | N/A | behavior 2, flag 1, one selected position at 46.386 and 46.393 s; surrounds disconnect 46.389 s | DeviceUnpaired -> slot-local behavior 1 / PWS-off | suppressed | High raw ordering; RestartRf label is historical CODE candidate |
+| PWS | behavior 1 not observed | behavior 1 / PWS-off not observed | observed-disconnect PWS-off | suppressed | Capture-local absence; no necessity/safety inference |
+| RF/status | 36 RF status records; host 0x1e query variant before Pair enable | 30 RF records; host 0x1e query variant after OFF | status does not trigger configureOnPair | receive only; queries suppressed | RF words/slot/RF private; no bit/state inference |
+| DevicePaired | 296.045 s | 115.552 s after OFF/ON | triggers configureOnPair before callback | receive event only | High; event name is not registration creation proof |
+| NA | exact NA not observed | exact NA not observed | no NA request path | suppressed | No NA causal/refresh/safety claim |
+| N-burst | NANA 296.525 -> NADS 296.557 -> NASS 296.589 -> NASI -> NAPI -> NAV1 -> NARI -> NAGN -> NAZZ 296.813 s | NANA 115.888 -> NADS 115.920 -> NASS 115.952 -> NASI -> NAPI -> NAV1 -> NARI -> NAGN -> NAZZ 116.184 s | incoming info accepted | receive only | High; fresh B values and RF correlation |
+| Slot/post-pair init | after NAZZ: ANI<slot> 296.821; unknown; Wc<country>; unknown behavior 6 twice | after NAZZ: ANI<slot> 116.185; unknown; Wc<country>; further unknown | DevicePaired -> ARI1/ATM-1; host ATH1/AWH1/ANI0/ATM20, client ATH0/AWH0/ANI(slot)/ATM11 | configure flag and central guard suppress sends | High literal/order; unknown semantics retained |
+| FW1/FW2/mode | FW2 296.846 -> ATM21 296.851; FW1 not observed | FW2 116.199 -> ATM21 116.201; FW1 not observed | NAZZ -> FW1; host ATM20/client ATM11 | suppressed | High exact ASCII; applicability/safety unisolated |
+| First pose after fresh pair | 298.741 s, pair +2.696 s; burst complete then host init then pose | 118.536 s, pair +2.984 s; pre-OFF pose excluded | existing decoder; successful connection not a PairingController result condition | receive only | High data arrival; Lost status, map Ready unconfirmed |
+
+ARI1/ATM-1/ATH1/ATH0/AWH1/AWH0/ATM20/ATM11 were not exact observed host labels here.
+ANI is observed as the fresh B slot alias, not a persistent identity. Behavior 6 remains
+unknown: it is not labeled Unpair/delete/reset and is not copied into Backend policy.
+The 0x1e host query variant is outside the existing classifier's framing support
+(`malformed-vendor` label); this does not mean a corrupt pcap or invalid official command.
+
+## RF diagnostic transitions
+
+These aliases compare whole opaque RF status vectors; they do not map bits to SDK state.
+
+| Capture | Relative transitions |
+|---|---|
+| pairing | RF-STATE-1 at 4.144 s -> RF-STATE-2 at 134.152 s -> RF-STATE-3 at 304.159 s |
+| reconnect | RF-STATE-4 at 3.857 s -> RF-STATE-5 at 53.858 s -> RF-STATE-4 at 123.864 s |
+
+Fresh Pair/reconnect RF diagnostic bytes are equal to each other and HIL-05 B.
+This equality is not the basis for physical B binding; the B-only operation window is.
+
+## Identity and pose evidence
+
+| Check | Pair | Normal reconnect |
+|---|---|---|
+| NADS-B vs HIL-05 B | byte-exact equal | byte-exact equal |
+| NASS-B vs HIL-05 B | byte-exact equal | byte-exact equal |
+| Pose records after fresh DevicePaired | 7671 | 22699 |
+| Finite position/quaternion samples | all 7671 | all 22699 |
+| Distinct numeric samples | 7629 | 16273 |
+| Status | 0x03 / 0x13 (Lost) only | 0x03 / 0x13 (Lost) only |
+
+Pair vs reconnect NADS and NASS also individually byte-exact equal. Acquisition is now
+demonstrated through this official B Pair/reconnect, not through passive/direct-HID.
+Both candidates remain Class B overall: other unresolved stability/acquisition scenarios,
+explicit unpair and broader rediscovery gates are not completed by this single B trial.
+
+## Timing and validation limits
+
+Private sidecar contains immediate request/confirmation receipts, UTC and monotonic
+ticks, launch/exit timestamps. Physical click/gesture/switch times themselves were
+not directly measured. Pair enable appears before the later human click acknowledgement
+and handoff request receipt, so that receipt must not bound the actual click. Effective
+green gesture confirmation arrived after capture ended; the fresh pair is nevertheless
+inside the initial B-only request-to-effective-confirmation interval. Public JSON keeps
+relative receipts and these limitations, without absolute timestamps. OFF/ON are bounded
+by human request/reply intervals, plus the measured >10 s OFF-confirmation wait.
+
+| Evidence | Size / packets | SHA256 |
+|---|---|---|
+| PAIR-B | 1438800 bytes / 15636 | `47b7495f93b897a1ed1d51ac147d52ac8ce49516e51e740081f1c5f92db55067` |
+| RECONNECT-B | 5265616 bytes / 57232 | `157d896f08b9a0471419431e34a5a1d74451016c8d251bb6fa589b191677d69d` |
+
+Both pcapng files parse offline with exit 0. Sanitizer unit tests 8/8 PASS; existing
+fake-transport/offline protocol/backend_pairing/setup_pairing/identity_capture/
+identity_compare/identity_offline CTest 6/6 PASS. These fake tests do not open hardware.
+Production build NOT RUN; production source unchanged. Leakage validation is recorded
+in the public sequence metadata after scanning actual private candidates/RF/topology,
+raw payload representations and absolute timestamps. Raw pcapng/CSV, inventory,
+identity bytes, topology, operator receipts and exact commands stay gitignored/private.
+
+## Final classification
+
+```text
+Official Pair: PASS (Connected-equivalent, setup required)
+PairDevice: on observed; disable not captured
+PWS: not observed
+Post-pair init: after N-burst; ANI<slot>, Wc<country>, unknowns, FW2, ATM21
+NA: not observed; DO NOT SEND from Bridge
+Device-info burst: full nine-token burst observed
+NADS: fresh NADS-B; HIL-05 byte-exact equal
+NASS: fresh NASS-B; HIL-05 byte-exact equal
+FW1: not observed
+FW2: observed
+First pose: after N-burst and FW2/ATM21; Lost status only
+B stable identity comparison: NADS equal; NASS equal
+Official reconnect: PASS (normal OFF/ON, no Pair operation)
+Reconnect PairDevice: not observed
+Reconnect PWS: not observed
+Reconnect slot init: ANI<slot> and further init after NAZZ
+Reconnect NA: not observed
+Reconnect N-burst: full fresh burst; NADS/NASS both equal to HIL-05 and Pair
+Reconnect pose: restored changing finite data; Lost status only
+Most likely acquisition blocker: B / host-recovery candidate;
+  official behavior 2 and init differ from current/passive paths.
+  Causal discrimination remains F; no sole-effect experiment.
+NADS stability: Class B; this B Pair/reconnect equality added
+NADS acquisition: official B acquisition achieved; passive refresh unresolved
+NASS stability: Class B; this B Pair/reconnect equality added
+NASS acquisition: official B acquisition achieved; passive refresh unresolved
+Current PairingController correctness: Unknown end-to-end;
+  bounded software lifecycle acceptable in fake tests
+Current reconnect path correctness: Unknown end-to-end;
+  current PWS differs from official behavior 2; no production fix inferred
+Next action: review official behavior 2 / 0x18 kind 3 / FW2-ATM21 differences
+  and unknown commands offline; require separate gates before active Bridge HIL.
+```
+
+No integration merge or production cherry-pick. No additional hardware trial follows
+this acquisition. Prior STOP evaluations below are historical and remain preserved.
+
+---
+
 # Altra official extcap Health Gate PASS; official B baseline STOP
 
 ## Current run, 2026-10-09 to 2026-10-10 JST
