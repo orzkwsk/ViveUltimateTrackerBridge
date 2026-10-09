@@ -47,26 +47,46 @@ def label_ack(data, incoming=False):
         return text
     if re.fullmatch(r'ANI[0-4]', text):
         return text
+    if text == 'ATW':
+        return text
+    if re.fullmatch(r'ACF[0-9]{1,3}', text):
+        return 'ACF<number>'
+    if re.fullmatch(r'ATS[0-9]{10}', text):
+        return 'ATS<epoch>'
+    if re.fullmatch(r'pAS_[A-Z]{2}[0-9]{3}', text):
+        return 'pAS<parameters>'
     if re.fullmatch(r'Wc[A-Z]{2}', text):
         return 'Wc<country>'
     return 'unknown'
 
 
+def payload_bytes(row):
+    fields = ('usbhid.data', 'usb.capdata', 'usbhid.data.vendor', 'usb.data_fragment')
+    nonempty = [hex_bytes(row.get(k, '')) for k in fields if row.get(k)]
+    if len(set(nonempty)) > 1:
+        raise ValueError('Conflicting payload fields')
+    return nonempty[0] if nonempty else b''
+
+
 def classify(data, direction):
-    """Repository protocol framing only; unsupported variants remain unknown."""
+    """Research framing recognition only; no command safety is inferred."""
     if len(data) >= 2 and data[0] == 0 and data[1] in (0x18, 0x1d, 0x1e, 0x28):
         data = data[1:]
     if not data:
         return 'empty'
     if direction == 'host-to-device':
+        if data[:2] == b'\x1e\x01' and len(data) == 64 and not any(data[2:]):
+            return '0x1e query variant'
         if len(data) < 2 or data[1] < 2 or data[1] > len(data):
             return 'malformed-vendor'
         payload = data[2:data[1]]
         if data[0] == 0x1d and len(payload) == 7:
+            if payload[0] in (2, 6) and payload[1] in (0, 1) and all(x in (0, 1) for x in payload[2:]):
+                return 'RF behavior ' + str(payload[0])
             if payload[0] in (0, 1) and payload[1] in (0, 1) and all(x in (0, 1) for x in payload[2:]):
                 name = 'PairDevice' if payload[0] == 0 else 'RxPowerSaving'
                 return name + ('(on)' if payload[1] else '(off)')
-        if data[0] == 0x18 and len(payload) >= 10 and payload[0] == 4:
+        if data[0] == 0x18 and len(payload) >= 10 and payload[0] in (3, 4) and payload[7:9] == b'\x00\x01':
             size = payload[9]
             if len(payload) == 10 + size:
                 return label_ack(payload[10:])
@@ -140,9 +160,7 @@ def sanitize(rows):
         stage = number(row.get('usb.control_stage'))
         if transfer_type is None or endpoint is None or endpoint > 255 or length is None:
             raise ValueError('Missing/invalid USB metadata')
-        payloads = [hex_bytes(row.get(k, '')) for k in ('usbhid.data', 'usb.capdata', 'usbhid.data.vendor')]
-        nonempty = [p for p in payloads if p]
-        data = nonempty[0] if nonempty else b''
+        data = payload_bytes(row)
         # Never concatenate fields: dissectors may expose the same bytes twice.
         if len(data) > length:
             raise ValueError('Payload exceeds captured data length')
@@ -183,11 +201,13 @@ def sanitize(rows):
             category = 'unknown transfer'
         # Descriptor and standard-control data cannot be vendor command evidence.
         vendor = classify(data, direction) if data and (feature or transfer_type == 1) else 'not classified'
+        if re.fullmatch(r'ANI[0-4]', vendor):
+            vendor = 'ANI<slot>'
         event = {'frame': frame, 'relative_s': float(timestamp - origin), 'bus_alias': 'DONGLE-BUS',
                  'device_alias': 'DONGLE', 'urb_alias': irps.get(irp), 'direction': direction,
                  'transfer_type': transfer_type, 'category': category, 'control_stage': stage,
                  'report_id': report_id, 'captured_data_length': length,
-                 'request_length': number(row.get('usb.setup.wLength')), 'command': vendor,
+                 'request_length': number(row.get('usbhid.setup.wLength') or row.get('usb.setup.wLength')), 'command': vendor,
                  'usb_status': number(row.get('usb.usbd_status'))}
         events.append(event)
         if stage == 3 and irp:

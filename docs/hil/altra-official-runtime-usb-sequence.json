@@ -3934,5 +3934,3671 @@
       "historical_content_preserved": true,
       "public_source_changes": false
     }
+  },
+  "official_wire_backend_reconciliation": {
+    "schema": "altra-offline-wire-backend-reconciliation-1",
+    "capture_checkpoint": "d788dcaf17192312fed8434fee6172a9ebfaf0c0",
+    "production_base": "a594e4377ef2b5cca04e915187b0c12e59064839",
+    "hardware_io": "NONE",
+    "production_changes": "NONE",
+    "source_of_truth_sha256": "f11615083be2c1d7e9d60e76de0e095eeab75fe5d80d5be1fc79fac75683d47f",
+    "captures": {
+      "pairing": {
+        "schema": "altra-offline-wire-reconciliation-1",
+        "hardware_io": "NONE",
+        "setfeature": [
+          {
+            "frame": 33,
+            "relative_s": 133.65911,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "host-query-1e01",
+              "command": "0x1e query variant",
+              "vendor_semantics": "UNKNOWN"
+            },
+            "usb_completion": {
+              "frame": 34,
+              "relative_s": 133.660943,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": null,
+            "following_classified_frame": {
+              "frame": 37,
+              "command": "PairDevice"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 37,
+            "relative_s": 133.665076,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "rf-behavior",
+              "behavior": 0,
+              "flag": 1,
+              "selected_position_count": 3,
+              "command": "PairDevice",
+              "vendor_semantics": "RE label only",
+              "selector_relation": "includes-SLOT-B"
+            },
+            "usb_completion": {
+              "frame": 38,
+              "relative_s": 133.680947,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 33,
+              "command": "0x1e query variant"
+            },
+            "following_classified_frame": {
+              "frame": 73,
+              "command": "DevicePaired event"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 147,
+            "relative_s": 296.821018,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 4,
+              "command": "ANI<slot>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality",
+              "argument_relation": "equals-SLOT-B-under-current-CODE-slot-rule"
+            },
+            "usb_completion": {
+              "frame": 150,
+              "relative_s": 296.822368,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 145,
+              "command": "NAZZ"
+            },
+            "following_classified_frame": {
+              "frame": 151,
+              "command": "ATW"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 151,
+            "relative_s": 296.822402,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 3,
+              "command": "ATW",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 152,
+              "relative_s": 296.825371,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 147,
+              "command": "ANI<slot>"
+            },
+            "following_classified_frame": {
+              "frame": 153,
+              "command": "ACF<number>"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 153,
+            "relative_s": 296.825401,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 5,
+              "command": "ACF<number>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 154,
+              "relative_s": 296.828372,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 151,
+              "command": "ATW"
+            },
+            "following_classified_frame": {
+              "frame": 155,
+              "command": "ATS<epoch>"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 2
+          },
+          {
+            "frame": 155,
+            "relative_s": 296.828404,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 13,
+              "command": "ATS<epoch>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 156,
+              "relative_s": 296.831368,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 153,
+              "command": "ACF<number>"
+            },
+            "following_classified_frame": {
+              "frame": 157,
+              "command": "Wc<country>"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 157,
+            "relative_s": 296.831442,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 4,
+              "command": "Wc<country>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 158,
+              "relative_s": 296.834371,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 155,
+              "command": "ATS<epoch>"
+            },
+            "following_classified_frame": {
+              "frame": 159,
+              "command": "ACF<number>"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 159,
+            "relative_s": 296.834598,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 5,
+              "command": "ACF<number>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 160,
+              "relative_s": 296.837371,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 157,
+              "command": "Wc<country>"
+            },
+            "following_classified_frame": {
+              "frame": 161,
+              "command": "RF behavior 6"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 2
+          },
+          {
+            "frame": 161,
+            "relative_s": 296.838749,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "rf-behavior",
+              "behavior": 6,
+              "flag": 1,
+              "selected_position_count": 1,
+              "command": "RF behavior 6",
+              "vendor_semantics": "UNKNOWN",
+              "selector_relation": "RECEIVER-OTHER-excludes-SLOT-B"
+            },
+            "usb_completion": {
+              "frame": 163,
+              "relative_s": 296.845376,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 159,
+              "command": "ACF<number>"
+            },
+            "following_classified_frame": {
+              "frame": 162,
+              "command": "pAS<parameters>"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 2
+          },
+          {
+            "frame": 162,
+            "relative_s": 296.841555,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 9,
+              "command": "pAS<parameters>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 165,
+              "relative_s": 296.848372,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 161,
+              "command": "RF behavior 6"
+            },
+            "following_classified_frame": {
+              "frame": 164,
+              "command": "FW2"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 164,
+            "relative_s": 296.845635,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 3,
+              "command": "FW2",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 166,
+              "relative_s": 296.851365,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 162,
+              "command": "pAS<parameters>"
+            },
+            "following_classified_frame": {
+              "frame": 167,
+              "command": "ATM21"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 167,
+            "relative_s": 296.851427,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 5,
+              "command": "ATM21",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 168,
+              "relative_s": 296.854373,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 164,
+              "command": "FW2"
+            },
+            "following_classified_frame": {
+              "frame": 171,
+              "command": "RF behavior 6"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 171,
+            "relative_s": 296.9071,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "rf-behavior",
+              "behavior": 6,
+              "flag": 1,
+              "selected_position_count": 1,
+              "command": "RF behavior 6",
+              "vendor_semantics": "UNKNOWN",
+              "selector_relation": "RECEIVER-OTHER-excludes-SLOT-B"
+            },
+            "usb_completion": {
+              "frame": 174,
+              "relative_s": 296.913475,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 167,
+              "command": "ATM21"
+            },
+            "following_classified_frame": {
+              "frame": 267,
+              "command": "pose"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 2
+          }
+        ],
+        "incoming_order": [
+          {
+            "frame": 73,
+            "relative_s": 296.045396,
+            "command": "DevicePaired event"
+          },
+          {
+            "frame": 105,
+            "relative_s": 296.525408,
+            "command": "NANA"
+          },
+          {
+            "frame": 109,
+            "relative_s": 296.557406,
+            "command": "NADS"
+          },
+          {
+            "frame": 113,
+            "relative_s": 296.589412,
+            "command": "NASS"
+          },
+          {
+            "frame": 119,
+            "relative_s": 296.621406,
+            "command": "NASI"
+          },
+          {
+            "frame": 123,
+            "relative_s": 296.653408,
+            "command": "NAPI"
+          },
+          {
+            "frame": 127,
+            "relative_s": 296.685413,
+            "command": "NAV1"
+          },
+          {
+            "frame": 133,
+            "relative_s": 296.717407,
+            "command": "NARI"
+          },
+          {
+            "frame": 137,
+            "relative_s": 296.749409,
+            "command": "NAGN"
+          },
+          {
+            "frame": 145,
+            "relative_s": 296.813411,
+            "command": "NAZZ"
+          }
+        ],
+        "pose_report_count": 7671,
+        "first_pose": {
+          "frame": 267,
+          "relative_s": 298.741451
+        },
+        "form_counts": {
+          "host-query-1e01": 1,
+          "rf-behavior": 3,
+          "tx-ascii": 9
+        },
+        "privacy": "No raw serial/RF, selector positions, country, epoch, topology or payload.",
+        "anonymous_command_fixture": {
+          "purpose": "64-byte exact framing only; never execute/transmit",
+          "redactions": "synthetic destination; all selector positions permuted; ANI slot/country/ATS epoch/pAS arguments substituted",
+          "commands": [
+            {
+              "frame": 33,
+              "wire_hex": "1e010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "0x1e query variant"
+            },
+            {
+              "frame": 37,
+              "wire_hex": "1d090001010001010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "PairDevice"
+            },
+            {
+              "frame": 147,
+              "wire_hex": "181003aab0ccddeeff000104414e4930000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ANI<slot>"
+            },
+            {
+              "frame": 151,
+              "wire_hex": "180f03aab0ccddeeff00010341545700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ATW"
+            },
+            {
+              "frame": 153,
+              "wire_hex": "181103aab0ccddeeff00010541434636300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ACF<number>"
+            },
+            {
+              "frame": 155,
+              "wire_hex": "181903aab0ccddeeff00010d41545330303030303030303030000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ATS<epoch>"
+            },
+            {
+              "frame": 157,
+              "wire_hex": "181003aab0ccddeeff00010457635a5a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "Wc<country>"
+            },
+            {
+              "frame": 159,
+              "wire_hex": "181103aab0ccddeeff00010541434635300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ACF<number>"
+            },
+            {
+              "frame": 161,
+              "wire_hex": "1d090601000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "RF behavior 6"
+            },
+            {
+              "frame": 162,
+              "wire_hex": "181503aab0ccddeeff0001097041535f5a5a30303000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "pAS<parameters>"
+            },
+            {
+              "frame": 164,
+              "wire_hex": "180f03aab0ccddeeff00010346573200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "FW2"
+            },
+            {
+              "frame": 167,
+              "wire_hex": "181103aab0ccddeeff00010541544d32310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ATM21"
+            },
+            {
+              "frame": 171,
+              "wire_hex": "1d090601000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "RF behavior 6"
+            }
+          ]
+        },
+        "exact_csv_reexport_equality": true,
+        "identity_comparison": {
+          "NADS": "BYTE_EXACT_HIL05_B",
+          "NASS": "BYTE_EXACT_HIL05_B",
+          "classification": "Class B candidate; not stable identity proof"
+        },
+        "query_response": {
+          "evidence": "WIRE",
+          "setfeature_frame": 33,
+          "getfeature_request_frame": 35,
+          "getfeature_completion_frame": 36,
+          "request_in_matches": true,
+          "usb_status": 0,
+          "response_bytes": 64,
+          "command_id": "0x1e",
+          "declared_response_length": 29,
+          "classification": "RF status structure under current CODE parser",
+          "csv_response_payload_absent": true,
+          "extraction": "read-only tshark JSON frame_raw minus validated USBPcap header",
+          "semantic_ack": "NOT_PROVEN"
+        },
+        "first_pose_after_pair": {
+          "frame": 267,
+          "relative_s": 298.741451,
+          "status": 3
+        },
+        "post_pair_pose_reports": 7671,
+        "post_pair_status_values": [
+          3,
+          19
+        ],
+        "distinct_post_pair_pose_payloads": 7671,
+        "finite_position_quaternion": true,
+        "neighbor_scope": "selected host commands, DevicePaired/Unpaired, N-category info labels and pose; RF status excluded"
+      },
+      "reconnect": {
+        "schema": "altra-offline-wire-reconciliation-1",
+        "hardware_io": "NONE",
+        "setfeature": [
+          {
+            "frame": 11515,
+            "relative_s": 46.385946,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "rf-behavior",
+              "behavior": 2,
+              "flag": 1,
+              "selected_position_count": 1,
+              "command": "RF behavior 2",
+              "vendor_semantics": "UNKNOWN",
+              "selector_relation": "includes-SLOT-B"
+            },
+            "usb_completion": {
+              "frame": 11516,
+              "relative_s": 46.387834,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11511,
+              "command": "pose"
+            },
+            "following_classified_frame": {
+              "frame": 11517,
+              "command": "DeviceUnpaired event"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 2
+          },
+          {
+            "frame": 11519,
+            "relative_s": 46.392974,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "rf-behavior",
+              "behavior": 2,
+              "flag": 1,
+              "selected_position_count": 1,
+              "command": "RF behavior 2",
+              "vendor_semantics": "UNKNOWN",
+              "selector_relation": "includes-SLOT-B"
+            },
+            "usb_completion": {
+              "frame": 11520,
+              "relative_s": 46.394835,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11517,
+              "command": "DeviceUnpaired event"
+            },
+            "following_classified_frame": {
+              "frame": 11521,
+              "command": "0x1e query variant"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 2
+          },
+          {
+            "frame": 11521,
+            "relative_s": 46.395474,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "host-query-1e01",
+              "command": "0x1e query variant",
+              "vendor_semantics": "UNKNOWN"
+            },
+            "usb_completion": {
+              "frame": 11522,
+              "relative_s": 46.397837,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11519,
+              "command": "RF behavior 2"
+            },
+            "following_classified_frame": {
+              "frame": 11539,
+              "command": "DevicePaired event"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 11617,
+            "relative_s": 116.184775,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 4,
+              "command": "ANI<slot>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality",
+              "argument_relation": "equals-SLOT-B-under-current-CODE-slot-rule"
+            },
+            "usb_completion": {
+              "frame": 11618,
+              "relative_s": 116.186302,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11615,
+              "command": "NAZZ"
+            },
+            "following_classified_frame": {
+              "frame": 11619,
+              "command": "ATW"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 11619,
+            "relative_s": 116.186356,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 3,
+              "command": "ATW",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 11620,
+              "relative_s": 116.189302,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11617,
+              "command": "ANI<slot>"
+            },
+            "following_classified_frame": {
+              "frame": 11621,
+              "command": "ACF<number>"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 11621,
+            "relative_s": 116.189357,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 5,
+              "command": "ACF<number>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 11624,
+              "relative_s": 116.192393,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11619,
+              "command": "ATW"
+            },
+            "following_classified_frame": {
+              "frame": 11625,
+              "command": "ATS<epoch>"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 11625,
+            "relative_s": 116.19244,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 13,
+              "command": "ATS<epoch>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 11626,
+              "relative_s": 116.195302,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11621,
+              "command": "ACF<number>"
+            },
+            "following_classified_frame": {
+              "frame": 11627,
+              "command": "Wc<country>"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 11627,
+            "relative_s": 116.195367,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 4,
+              "command": "Wc<country>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 11628,
+              "relative_s": 116.198305,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11625,
+              "command": "ATS<epoch>"
+            },
+            "following_classified_frame": {
+              "frame": 11629,
+              "command": "FW2"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 11629,
+            "relative_s": 116.198959,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 3,
+              "command": "FW2",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 11630,
+              "relative_s": 116.201304,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11627,
+              "command": "Wc<country>"
+            },
+            "following_classified_frame": {
+              "frame": 11631,
+              "command": "ATM21"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 11631,
+            "relative_s": 116.201406,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 5,
+              "command": "ATM21",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 11632,
+              "relative_s": 116.204304,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11629,
+              "command": "FW2"
+            },
+            "following_classified_frame": {
+              "frame": 11633,
+              "command": "pAS<parameters>"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          },
+          {
+            "frame": 11633,
+            "relative_s": 116.215115,
+            "report_bytes": 64,
+            "request_length": 64,
+            "wire": {
+              "form": "tx-ascii",
+              "payload_kind": "0x03",
+              "destination_width_bytes": 6,
+              "controls": [
+                0,
+                1
+              ],
+              "ascii_length": 9,
+              "command": "pAS<parameters>",
+              "address_matching_semantics": "UNKNOWN",
+              "destination_relation": "fresh-B-full-six-byte-equality"
+            },
+            "usb_completion": {
+              "frame": 11634,
+              "relative_s": 116.217305,
+              "status": 0,
+              "meaning": "USB transfer result only; not semantic vendor ACK"
+            },
+            "evidence": "WIRE",
+            "framing_confidence": "HIGH",
+            "safe_to_transmit": "NOT_ESTABLISHED",
+            "preceding_classified_frame": {
+              "frame": 11631,
+              "command": "ATM21"
+            },
+            "following_classified_frame": {
+              "frame": 11751,
+              "command": "pose"
+            },
+            "direction": "host-to-device",
+            "usb_hid_command": "SetFeature(report-id-0)",
+            "repeat_count_in_capture": 1
+          }
+        ],
+        "incoming_order": [
+          {
+            "frame": 11517,
+            "relative_s": 46.388871,
+            "command": "DeviceUnpaired event"
+          },
+          {
+            "frame": 11539,
+            "relative_s": 115.552331,
+            "command": "DevicePaired event"
+          },
+          {
+            "frame": 11571,
+            "relative_s": 115.888336,
+            "command": "NANA"
+          },
+          {
+            "frame": 11575,
+            "relative_s": 115.920338,
+            "command": "NADS"
+          },
+          {
+            "frame": 11581,
+            "relative_s": 115.952344,
+            "command": "NASS"
+          },
+          {
+            "frame": 11585,
+            "relative_s": 115.984337,
+            "command": "NASI"
+          },
+          {
+            "frame": 11591,
+            "relative_s": 116.02434,
+            "command": "NAPI"
+          },
+          {
+            "frame": 11597,
+            "relative_s": 116.056339,
+            "command": "NAV1"
+          },
+          {
+            "frame": 11601,
+            "relative_s": 116.088338,
+            "command": "NARI"
+          },
+          {
+            "frame": 11605,
+            "relative_s": 116.120342,
+            "command": "NAGN"
+          },
+          {
+            "frame": 11615,
+            "relative_s": 116.184344,
+            "command": "NAZZ"
+          }
+        ],
+        "pose_report_count": 28441,
+        "first_pose": {
+          "frame": 7,
+          "relative_s": 0.004901
+        },
+        "form_counts": {
+          "rf-behavior": 2,
+          "host-query-1e01": 1,
+          "tx-ascii": 8
+        },
+        "privacy": "No raw serial/RF, selector positions, country, epoch, topology or payload.",
+        "anonymous_command_fixture": {
+          "purpose": "64-byte exact framing only; never execute/transmit",
+          "redactions": "synthetic destination; all selector positions permuted; ANI slot/country/ATS epoch/pAS arguments substituted",
+          "commands": [
+            {
+              "frame": 11515,
+              "wire_hex": "1d090201010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "RF behavior 2"
+            },
+            {
+              "frame": 11519,
+              "wire_hex": "1d090201010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "RF behavior 2"
+            },
+            {
+              "frame": 11521,
+              "wire_hex": "1e010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "0x1e query variant"
+            },
+            {
+              "frame": 11617,
+              "wire_hex": "181003aab0ccddeeff000104414e4930000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ANI<slot>"
+            },
+            {
+              "frame": 11619,
+              "wire_hex": "180f03aab0ccddeeff00010341545700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ATW"
+            },
+            {
+              "frame": 11621,
+              "wire_hex": "181103aab0ccddeeff00010541434635300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ACF<number>"
+            },
+            {
+              "frame": 11625,
+              "wire_hex": "181903aab0ccddeeff00010d41545330303030303030303030000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ATS<epoch>"
+            },
+            {
+              "frame": 11627,
+              "wire_hex": "181003aab0ccddeeff00010457635a5a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "Wc<country>"
+            },
+            {
+              "frame": 11629,
+              "wire_hex": "180f03aab0ccddeeff00010346573200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "FW2"
+            },
+            {
+              "frame": 11631,
+              "wire_hex": "181103aab0ccddeeff00010541544d32310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "ATM21"
+            },
+            {
+              "frame": 11633,
+              "wire_hex": "181503aab0ccddeeff0001097041535f5a5a30303000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "command": "pAS<parameters>"
+            }
+          ]
+        },
+        "exact_csv_reexport_equality": true,
+        "identity_comparison": {
+          "NADS": "BYTE_EXACT_HIL05_B",
+          "NASS": "BYTE_EXACT_HIL05_B",
+          "classification": "Class B candidate; not stable identity proof"
+        },
+        "query_response": {
+          "evidence": "WIRE",
+          "setfeature_frame": 11521,
+          "getfeature_request_frame": 11523,
+          "getfeature_completion_frame": 11524,
+          "request_in_matches": true,
+          "usb_status": 0,
+          "response_bytes": 64,
+          "command_id": "0x1e",
+          "declared_response_length": 29,
+          "classification": "RF status structure under current CODE parser",
+          "csv_response_payload_absent": true,
+          "extraction": "read-only tshark JSON frame_raw minus validated USBPcap header",
+          "semantic_ack": "NOT_PROVEN"
+        },
+        "first_pose_after_pair": {
+          "frame": 11751,
+          "relative_s": 118.536383,
+          "status": 3
+        },
+        "post_pair_pose_reports": 22699,
+        "post_pair_status_values": [
+          3,
+          19
+        ],
+        "distinct_post_pair_pose_payloads": 22698,
+        "finite_position_quaternion": true,
+        "neighbor_scope": "selected host commands, DevicePaired/Unpaired, N-category info labels and pose; RF status excluded"
+      }
+    },
+    "evidence_classes": [
+      "WIRE",
+      "CODE",
+      "API",
+      "STATIC",
+      "HIL-HIST",
+      "RE",
+      "INFERENCE"
+    ],
+    "git_audit": {
+      "scope": "All locally available heads and fetched origin refs; reachable relevant history. Deleted/unavailable remote refs cannot be claimed audited.",
+      "refs": [
+        {
+          "ref": "refs/heads/design/altra-service-control-architecture",
+          "commit": "ab1eeb596e450480c48ba876be1f7ef153c6c725",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/heads/feature/altra-control-model",
+          "commit": "7ac12198a5c785f79f09b0d80139a41a844468f5",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/heads/feature/altra-pairing-assignment-ux",
+          "commit": "68af2d05ad8ef7cfceff624cff66c58569edd853",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "4f83361650f584e998a356bf12a8c004597316ad"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "1822aff25c240271d4beea6f6931a60a5f38bd93"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/heads/feature/altra-service-control-owner",
+          "commit": "56b9a269ea3f76068a7e69c54b108efa2c1556a8",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/heads/fix/altra-pairing-assignment-ux-rework",
+          "commit": "a594e4377ef2b5cca04e915187b0c12e59064839",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/heads/main",
+          "commit": "5fc42af3d1b71b7a0ccde207b7e322c6120fc50a",
+          "files": []
+        },
+        {
+          "ref": "refs/heads/refactor/monaka-layer-separation",
+          "commit": "a594e4377ef2b5cca04e915187b0c12e59064839",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/heads/research/altra-stable-identity-hil",
+          "commit": "d788dcaf17192312fed8434fee6172a9ebfaf0c0",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "a28f5674a41491ec68aea9be81e5e46350526ec2"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "d1cd6600dc95fd8570a043746bb3be097e8261ac"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            },
+            {
+              "path": "tools/vut_identity_capture.cpp",
+              "blob": "458de651751c00a26d8a76c4159cd0828f755c3b"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/design/altra-service-control-architecture",
+          "commit": "ab1eeb596e450480c48ba876be1f7ef153c6c725",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/dev/vivehub-bypass",
+          "commit": "db7c6795055fc00054b43a64e3bbd658a3575932",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "24689fb221a22766854ee203f337fa8e0fb3401b"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "fa89171cd8845a2b140f3650d40969d46c897e18"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "9a32ea5f628008335853d3f14c19df5c12d0eea2"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "c9e17025513b2382cead87481641e817662da895"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/diagnostic/runtime-restart-observability",
+          "commit": "36f4990f8e649f0f2d6c440343041988e5bc9684",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "8990c9baba7f99a6f79be5dc8c88f0f2216b610c"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "0bf6187870bf94949fbbac841e2d789bca98c04e"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/diagnostic/vive-slam-recovery-controls",
+          "commit": "c8a2030872edb3461a1e29a9915f277dad89a129",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "8990c9baba7f99a6f79be5dc8c88f0f2216b610c"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "0bf6187870bf94949fbbac841e2d789bca98c04e"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/experiment/vive-auto-reconnect",
+          "commit": "24228627f535c3fec253451a6598ef1540e26be5",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "aa47a9a0f0c6e1714e3e7521466d4a27ac7b0a07"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "9f2204b55dc63acb7225a9de9c26970524ae00a0"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "3f1b4edfe4144618ae599799cacede2f4a66d99d"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "2b122a5362c141ff5e5fa5927d4391e9af1d010f"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/experiment/vive-debug-console",
+          "commit": "1e92903673180fbf2d2964bf239dcf94dcbfcb53",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "ff6a52fed1905192c05326c189fa3fc349899b2e"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "9f2204b55dc63acb7225a9de9c26970524ae00a0"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "a2b8d7daadc43162e218f1338cd64ee6344efeb9"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "2b122a5362c141ff5e5fa5927d4391e9af1d010f"
+            },
+            {
+              "path": "tools/vut_debug_console.cpp",
+              "blob": "6624dfcdb2a5a5cdf66f222d94812977e5c8c3cb"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/experiment/vive-test-harness",
+          "commit": "7ee46d6ca3e725d6c2d8dff8c996dbf70546a85c",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "d07df7afe775b3f1d1fcb48fd916f1b9906f0c3e"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "9f2204b55dc63acb7225a9de9c26970524ae00a0"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "2dc7225a40fe382ed739af134207bd49c5586657"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "2b122a5362c141ff5e5fa5927d4391e9af1d010f"
+            },
+            {
+              "path": "tools/vut_debug_console.cpp",
+              "blob": "31795626badea4ad6421be5b70e8a6da4680157e"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/feature/altra-control-model",
+          "commit": "7ac12198a5c785f79f09b0d80139a41a844468f5",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/feature/altra-pairing-assignment-ux",
+          "commit": "e2d0c01fe7633acb3f7fc8e628b2acad624a602a",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "4f83361650f584e998a356bf12a8c004597316ad"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "1822aff25c240271d4beea6f6931a60a5f38bd93"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/feature/altra-service-control-owner",
+          "commit": "56b9a269ea3f76068a7e69c54b108efa2c1556a8",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/fix/altra-pairing-assignment-ux-rework",
+          "commit": "a594e4377ef2b5cca04e915187b0c12e59064839",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/main",
+          "commit": "5fc42af3d1b71b7a0ccde207b7e322c6120fc50a",
+          "files": []
+        },
+        {
+          "ref": "refs/remotes/origin/refactor/monaka-layer-separation",
+          "commit": "a594e4377ef2b5cca04e915187b0c12e59064839",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            }
+          ]
+        },
+        {
+          "ref": "refs/remotes/origin/research/altra-stable-identity-hil",
+          "commit": "d788dcaf17192312fed8434fee6172a9ebfaf0c0",
+          "files": [
+            {
+              "path": "src/backend.cpp",
+              "blob": "a28f5674a41491ec68aea9be81e5e46350526ec2"
+            },
+            {
+              "path": "src/pairing.cpp",
+              "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+            },
+            {
+              "path": "src/protocol.cpp",
+              "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+            },
+            {
+              "path": "include/vut/backend.hpp",
+              "blob": "d1cd6600dc95fd8570a043746bb3be097e8261ac"
+            },
+            {
+              "path": "include/vut/protocol.hpp",
+              "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+            },
+            {
+              "path": "tools/vut_identity_capture.cpp",
+              "blob": "458de651751c00a26d8a76c4159cd0828f755c3b"
+            }
+          ]
+        }
+      ],
+      "source_blobs": {
+        "37b674f9b7ffae5dc3d4cd11775759c210bb49fa": {
+          "path": "src/backend.cpp",
+          "matches": {
+            "pair_control": [
+              313,
+              325,
+              341,
+              367,
+              372,
+              392,
+              393,
+              400,
+              408,
+              416,
+              417,
+              430,
+              433,
+              435,
+              458,
+              485
+            ],
+            "power_saving": [
+              251,
+              252,
+              320,
+              487
+            ],
+            "rf_restart": [
+              485
+            ],
+            "post_pair": [
+              264,
+              266,
+              267,
+              275,
+              280,
+              479
+            ],
+            "info_complete_reply": [
+              497
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "3c3b103de15728414876a2041be186f1f06d4156": {
+          "path": "src/pairing.cpp",
+          "matches": {
+            "pair_control": [
+              37,
+              78
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "efa5c890f6b4aaa3711721af51c57972732eb4ce": {
+          "path": "src/protocol.cpp",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1": {
+          "path": "include/vut/backend.hpp",
+          "matches": {
+            "pair_control": [
+              47,
+              48,
+              50
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "9cf2b23933b4d93ec465e6f57dae1df1f513c972": {
+          "path": "include/vut/protocol.hpp",
+          "matches": {
+            "pair_control": [
+              26
+            ],
+            "power_saving": [
+              27
+            ],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "4f83361650f584e998a356bf12a8c004597316ad": {
+          "path": "src/backend.cpp",
+          "matches": {
+            "pair_control": [
+              313,
+              332,
+              357,
+              362,
+              381,
+              382,
+              389,
+              397,
+              405,
+              406,
+              463
+            ],
+            "power_saving": [
+              251,
+              252,
+              320,
+              465
+            ],
+            "rf_restart": [
+              463
+            ],
+            "post_pair": [
+              264,
+              266,
+              267,
+              275,
+              280,
+              457
+            ],
+            "info_complete_reply": [
+              475
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "1822aff25c240271d4beea6f6931a60a5f38bd93": {
+          "path": "include/vut/backend.hpp",
+          "matches": {
+            "pair_control": [
+              47,
+              48
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "a28f5674a41491ec68aea9be81e5e46350526ec2": {
+          "path": "src/backend.cpp",
+          "matches": {
+            "pair_control": [
+              313,
+              325,
+              341,
+              367,
+              376,
+              396,
+              397,
+              404,
+              412,
+              420,
+              421,
+              434,
+              437,
+              439,
+              462,
+              492
+            ],
+            "power_saving": [
+              251,
+              252,
+              320,
+              494
+            ],
+            "rf_restart": [
+              492
+            ],
+            "post_pair": [
+              264,
+              266,
+              267,
+              275,
+              280,
+              486
+            ],
+            "info_complete_reply": [
+              504
+            ],
+            "info_request": [],
+            "passive_guard": [
+              229,
+              368,
+              469
+            ]
+          }
+        },
+        "d1cd6600dc95fd8570a043746bb3be097e8261ac": {
+          "path": "include/vut/backend.hpp",
+          "matches": {
+            "pair_control": [
+              53,
+              54,
+              56
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": [
+              28
+            ]
+          }
+        },
+        "458de651751c00a26d8a76c4159cd0828f755c3b": {
+          "path": "tools/vut_identity_capture.cpp",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": [
+              74
+            ]
+          }
+        },
+        "24689fb221a22766854ee203f337fa8e0fb3401b": {
+          "path": "src/backend.cpp",
+          "matches": {
+            "pair_control": [
+              237
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [
+              203,
+              205,
+              206,
+              214,
+              219,
+              294
+            ],
+            "info_complete_reply": [
+              307
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "fa89171cd8845a2b140f3650d40969d46c897e18": {
+          "path": "src/protocol.cpp",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "9a32ea5f628008335853d3f14c19df5c12d0eea2": {
+          "path": "include/vut/backend.hpp",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "c9e17025513b2382cead87481641e817662da895": {
+          "path": "include/vut/protocol.hpp",
+          "matches": {
+            "pair_control": [
+              24
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "8990c9baba7f99a6f79be5dc8c88f0f2216b610c": {
+          "path": "src/backend.cpp",
+          "matches": {
+            "pair_control": [
+              312,
+              331,
+              356,
+              361,
+              380,
+              381,
+              388,
+              396,
+              404,
+              405,
+              511
+            ],
+            "power_saving": [
+              251,
+              252,
+              319,
+              513
+            ],
+            "rf_restart": [
+              511
+            ],
+            "post_pair": [
+              263,
+              265,
+              266,
+              274,
+              279,
+              445,
+              446,
+              505
+            ],
+            "info_complete_reply": [
+              523
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "0bf6187870bf94949fbbac841e2d789bca98c04e": {
+          "path": "include/vut/backend.hpp",
+          "matches": {
+            "pair_control": [
+              56,
+              57
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "aa47a9a0f0c6e1714e3e7521466d4a27ac7b0a07": {
+          "path": "src/backend.cpp",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [
+              257,
+              259,
+              261,
+              263,
+              341,
+              347,
+              349
+            ],
+            "post_pair": [
+              219,
+              221,
+              222,
+              230,
+              235,
+              358
+            ],
+            "info_complete_reply": [
+              371
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "9f2204b55dc63acb7225a9de9c26970524ae00a0": {
+          "path": "src/protocol.cpp",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "3f1b4edfe4144618ae599799cacede2f4a66d99d": {
+          "path": "include/vut/backend.hpp",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "2b122a5362c141ff5e5fa5927d4391e9af1d010f": {
+          "path": "include/vut/protocol.hpp",
+          "matches": {
+            "pair_control": [
+              26
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "ff6a52fed1905192c05326c189fa3fc349899b2e": {
+          "path": "src/backend.cpp",
+          "matches": {
+            "pair_control": [
+              330,
+              336
+            ],
+            "power_saving": [
+              316,
+              320,
+              324,
+              338
+            ],
+            "rf_restart": [
+              276,
+              297,
+              303,
+              305,
+              311,
+              312,
+              319,
+              323,
+              326,
+              329,
+              332,
+              335,
+              340,
+              352,
+              356,
+              407,
+              409,
+              411,
+              413
+            ],
+            "post_pair": [
+              369,
+              371,
+              372,
+              380,
+              385,
+              557
+            ],
+            "info_complete_reply": [
+              570
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "a2b8d7daadc43162e218f1338cd64ee6344efeb9": {
+          "path": "include/vut/backend.hpp",
+          "matches": {
+            "pair_control": [
+              27
+            ],
+            "power_saving": [
+              28
+            ],
+            "rf_restart": [
+              15,
+              17,
+              19,
+              20,
+              21,
+              23,
+              29,
+              49
+            ],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "6624dfcdb2a5a5cdf66f222d94812977e5c8c3cb": {
+          "path": "tools/vut_debug_console.cpp",
+          "matches": {
+            "pair_control": [
+              117,
+              118,
+              397,
+              399
+            ],
+            "power_saving": [
+              119,
+              120,
+              402,
+              404
+            ],
+            "rf_restart": [
+              70,
+              72,
+              74,
+              75,
+              76,
+              78,
+              87,
+              88,
+              90,
+              91,
+              92,
+              94,
+              116,
+              136,
+              394
+            ],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "d07df7afe775b3f1d1fcb48fd916f1b9906f0c3e": {
+          "path": "src/backend.cpp",
+          "matches": {
+            "pair_control": [
+              322,
+              328
+            ],
+            "power_saving": [
+              316,
+              330
+            ],
+            "rf_restart": [
+              276,
+              297,
+              303,
+              305,
+              311,
+              312,
+              315,
+              318,
+              321,
+              324,
+              327,
+              332,
+              344,
+              348,
+              399,
+              401,
+              403,
+              405
+            ],
+            "post_pair": [
+              361,
+              363,
+              364,
+              372,
+              377,
+              549
+            ],
+            "info_complete_reply": [
+              562
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "2dc7225a40fe382ed739af134207bd49c5586657": {
+          "path": "include/vut/backend.hpp",
+          "matches": {
+            "pair_control": [
+              26
+            ],
+            "power_saving": [
+              27
+            ],
+            "rf_restart": [
+              15,
+              17,
+              18,
+              19,
+              20,
+              22,
+              28,
+              48
+            ],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "31795626badea4ad6421be5b70e8a6da4680157e": {
+          "path": "tools/vut_debug_console.cpp",
+          "matches": {
+            "pair_control": [
+              115,
+              116,
+              363,
+              365
+            ],
+            "power_saving": [
+              117,
+              118,
+              368,
+              370
+            ],
+            "rf_restart": [
+              70,
+              72,
+              73,
+              74,
+              75,
+              77,
+              86,
+              87,
+              88,
+              89,
+              90,
+              92,
+              114,
+              134,
+              360
+            ],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        }
+      },
+      "reachable_change_commits": [
+        "eac1b56798247947bfae48c6e2631dd4d49f34e0",
+        "d0918087cd4f99bd38efad09fdf73431cc3f0287",
+        "0abf50a922a738e8424f4da9fc3f0850efb384ab",
+        "629abe44222d35c0b9bcf697f35d0a41a542afbe",
+        "ffcb8946f2f68c90a03ea25e0492e915f2c17790",
+        "1615ba3333bd4083e7c35bce30ccad65076107b3",
+        "bf6ba291b61ba9d20803f942cd3183aaeb0e6ba2",
+        "07fbef4dd1367bfe970bb58dc3bb86ae0e4178fd",
+        "937bd9be4e8266ba369a8d5795c6521784e50783",
+        "d9223ad9077aaafaa90e5e6aebe160c67c83be79",
+        "dd4205f1ac4af1fbbdd49328d55a0bd2ece286cc",
+        "b88889429b05ca3f3825600316a1f9719d049dfa",
+        "1c8f8a599dc92062bf44e3b79503f921d64636dd",
+        "08290bb67dfbc6eaf6559178c8bad89cb9a5640d",
+        "8df0f91bb82141b7ad97de3ad1c108e0fbe19080",
+        "96c4edb9cd3855b7a43e3797088f8ac69ac65373"
+      ],
+      "reachable_source_blobs": {
+        "37b674f9b7ffae5dc3d4cd11775759c210bb49fa": {
+          "path": "src/backend.cpp",
+          "commit": "eac1b56798247947bfae48c6e2631dd4d49f34e0",
+          "matches": {
+            "pair_control": [
+              313,
+              325,
+              341,
+              367,
+              372,
+              392,
+              393,
+              400,
+              408,
+              416,
+              417,
+              430,
+              433,
+              435,
+              458,
+              485
+            ],
+            "power_saving": [
+              251,
+              252,
+              320,
+              487
+            ],
+            "rf_restart": [
+              485
+            ],
+            "post_pair": [
+              264,
+              266,
+              267,
+              275,
+              280,
+              479
+            ],
+            "info_complete_reply": [
+              497
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "3c3b103de15728414876a2041be186f1f06d4156": {
+          "path": "src/pairing.cpp",
+          "commit": "eac1b56798247947bfae48c6e2631dd4d49f34e0",
+          "matches": {
+            "pair_control": [
+              37,
+              78
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "efa5c890f6b4aaa3711721af51c57972732eb4ce": {
+          "path": "src/protocol.cpp",
+          "commit": "eac1b56798247947bfae48c6e2631dd4d49f34e0",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1": {
+          "path": "include/vut/backend.hpp",
+          "commit": "eac1b56798247947bfae48c6e2631dd4d49f34e0",
+          "matches": {
+            "pair_control": [
+              47,
+              48,
+              50
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "9cf2b23933b4d93ec465e6f57dae1df1f513c972": {
+          "path": "include/vut/protocol.hpp",
+          "commit": "eac1b56798247947bfae48c6e2631dd4d49f34e0",
+          "matches": {
+            "pair_control": [
+              26
+            ],
+            "power_saving": [
+              27
+            ],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "8990c9baba7f99a6f79be5dc8c88f0f2216b610c": {
+          "path": "src/backend.cpp",
+          "commit": "d0918087cd4f99bd38efad09fdf73431cc3f0287",
+          "matches": {
+            "pair_control": [
+              312,
+              331,
+              356,
+              361,
+              380,
+              381,
+              388,
+              396,
+              404,
+              405,
+              511
+            ],
+            "power_saving": [
+              251,
+              252,
+              319,
+              513
+            ],
+            "rf_restart": [
+              511
+            ],
+            "post_pair": [
+              263,
+              265,
+              266,
+              274,
+              279,
+              445,
+              446,
+              505
+            ],
+            "info_complete_reply": [
+              523
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "0bf6187870bf94949fbbac841e2d789bca98c04e": {
+          "path": "include/vut/backend.hpp",
+          "commit": "d0918087cd4f99bd38efad09fdf73431cc3f0287",
+          "matches": {
+            "pair_control": [
+              56,
+              57
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "4f83361650f584e998a356bf12a8c004597316ad": {
+          "path": "src/backend.cpp",
+          "commit": "ffcb8946f2f68c90a03ea25e0492e915f2c17790",
+          "matches": {
+            "pair_control": [
+              313,
+              332,
+              357,
+              362,
+              381,
+              382,
+              389,
+              397,
+              405,
+              406,
+              463
+            ],
+            "power_saving": [
+              251,
+              252,
+              320,
+              465
+            ],
+            "rf_restart": [
+              463
+            ],
+            "post_pair": [
+              264,
+              266,
+              267,
+              275,
+              280,
+              457
+            ],
+            "info_complete_reply": [
+              475
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "1822aff25c240271d4beea6f6931a60a5f38bd93": {
+          "path": "include/vut/backend.hpp",
+          "commit": "ffcb8946f2f68c90a03ea25e0492e915f2c17790",
+          "matches": {
+            "pair_control": [
+              47,
+              48
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "a73e7faa6bac0d47fdf207e3314a07e1fbe6dd12": {
+          "path": "src/protocol.cpp",
+          "commit": "1615ba3333bd4083e7c35bce30ccad65076107b3",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "df4c061b0b6193e3771c782f9ff68b7d7c4b7b29": {
+          "path": "src/backend.cpp",
+          "commit": "bf6ba291b61ba9d20803f942cd3183aaeb0e6ba2",
+          "matches": {
+            "pair_control": [
+              263,
+              341
+            ],
+            "power_saving": [
+              212,
+              213,
+              270,
+              343
+            ],
+            "rf_restart": [
+              341
+            ],
+            "post_pair": [
+              225,
+              227,
+              228,
+              236,
+              241,
+              335
+            ],
+            "info_complete_reply": [
+              353
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "8cfebe482c2b603bb2ba101f3fb0e1773c81b05a": {
+          "path": "src/protocol.cpp",
+          "commit": "bf6ba291b61ba9d20803f942cd3183aaeb0e6ba2",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "c997c582f7e82f74bd32b6a5e8ed63947ea0cfba": {
+          "path": "include/vut/backend.hpp",
+          "commit": "bf6ba291b61ba9d20803f942cd3183aaeb0e6ba2",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "6bbcce90ae6f94256f85316f6e7a94e232a38bd5": {
+          "path": "src/backend.cpp",
+          "commit": "07fbef4dd1367bfe970bb58dc3bb86ae0e4178fd",
+          "matches": {
+            "pair_control": [
+              261,
+              337
+            ],
+            "power_saving": [
+              210,
+              211,
+              268,
+              339
+            ],
+            "rf_restart": [
+              337
+            ],
+            "post_pair": [
+              223,
+              225,
+              226,
+              234,
+              239,
+              331
+            ],
+            "info_complete_reply": [
+              349
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "556eb77fab70110569c517310a918f3d261204d6": {
+          "path": "src/protocol.cpp",
+          "commit": "07fbef4dd1367bfe970bb58dc3bb86ae0e4178fd",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "3f1b4edfe4144618ae599799cacede2f4a66d99d": {
+          "path": "include/vut/backend.hpp",
+          "commit": "07fbef4dd1367bfe970bb58dc3bb86ae0e4178fd",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "97330c78d1964d449adde155b6e95071f0b69ca6": {
+          "path": "src/backend.cpp",
+          "commit": "937bd9be4e8266ba369a8d5795c6521784e50783",
+          "matches": {
+            "pair_control": [
+              261,
+              265,
+              338
+            ],
+            "power_saving": [
+              210,
+              211,
+              265,
+              340
+            ],
+            "rf_restart": [
+              338
+            ],
+            "post_pair": [
+              223,
+              225,
+              226,
+              234,
+              239,
+              332
+            ],
+            "info_complete_reply": [
+              350
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "5fc785059816a1e8aefc60fd7b39de34650f2688": {
+          "path": "src/backend.cpp",
+          "commit": "d9223ad9077aaafaa90e5e6aebe160c67c83be79",
+          "matches": {
+            "pair_control": [
+              261,
+              266,
+              342
+            ],
+            "power_saving": [
+              210,
+              211,
+              265,
+              272,
+              344
+            ],
+            "rf_restart": [
+              266,
+              342
+            ],
+            "post_pair": [
+              223,
+              225,
+              226,
+              234,
+              239,
+              336
+            ],
+            "info_complete_reply": [
+              354
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "ff6a52fed1905192c05326c189fa3fc349899b2e": {
+          "path": "src/backend.cpp",
+          "commit": "dd4205f1ac4af1fbbdd49328d55a0bd2ece286cc",
+          "matches": {
+            "pair_control": [
+              330,
+              336
+            ],
+            "power_saving": [
+              316,
+              320,
+              324,
+              338
+            ],
+            "rf_restart": [
+              276,
+              297,
+              303,
+              305,
+              311,
+              312,
+              319,
+              323,
+              326,
+              329,
+              332,
+              335,
+              340,
+              352,
+              356,
+              407,
+              409,
+              411,
+              413
+            ],
+            "post_pair": [
+              369,
+              371,
+              372,
+              380,
+              385,
+              557
+            ],
+            "info_complete_reply": [
+              570
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "9f2204b55dc63acb7225a9de9c26970524ae00a0": {
+          "path": "src/protocol.cpp",
+          "commit": "dd4205f1ac4af1fbbdd49328d55a0bd2ece286cc",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "a2b8d7daadc43162e218f1338cd64ee6344efeb9": {
+          "path": "include/vut/backend.hpp",
+          "commit": "dd4205f1ac4af1fbbdd49328d55a0bd2ece286cc",
+          "matches": {
+            "pair_control": [
+              27
+            ],
+            "power_saving": [
+              28
+            ],
+            "rf_restart": [
+              15,
+              17,
+              19,
+              20,
+              21,
+              23,
+              29,
+              49
+            ],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "2b122a5362c141ff5e5fa5927d4391e9af1d010f": {
+          "path": "include/vut/protocol.hpp",
+          "commit": "dd4205f1ac4af1fbbdd49328d55a0bd2ece286cc",
+          "matches": {
+            "pair_control": [
+              26
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "abd88342db6ad0d40df63f5daa5c19df293e9ee9": {
+          "path": "tools/vut_debug_console.cpp",
+          "commit": "dd4205f1ac4af1fbbdd49328d55a0bd2ece286cc",
+          "matches": {
+            "pair_control": [
+              115,
+              116,
+              395,
+              397
+            ],
+            "power_saving": [
+              117,
+              118,
+              400,
+              402
+            ],
+            "rf_restart": [
+              70,
+              72,
+              73,
+              74,
+              75,
+              77,
+              86,
+              87,
+              88,
+              89,
+              90,
+              92,
+              114,
+              134,
+              392
+            ],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "d07df7afe775b3f1d1fcb48fd916f1b9906f0c3e": {
+          "path": "src/backend.cpp",
+          "commit": "b88889429b05ca3f3825600316a1f9719d049dfa",
+          "matches": {
+            "pair_control": [
+              322,
+              328
+            ],
+            "power_saving": [
+              316,
+              330
+            ],
+            "rf_restart": [
+              276,
+              297,
+              303,
+              305,
+              311,
+              312,
+              315,
+              318,
+              321,
+              324,
+              327,
+              332,
+              344,
+              348,
+              399,
+              401,
+              403,
+              405
+            ],
+            "post_pair": [
+              361,
+              363,
+              364,
+              372,
+              377,
+              549
+            ],
+            "info_complete_reply": [
+              562
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "2dc7225a40fe382ed739af134207bd49c5586657": {
+          "path": "include/vut/backend.hpp",
+          "commit": "b88889429b05ca3f3825600316a1f9719d049dfa",
+          "matches": {
+            "pair_control": [
+              26
+            ],
+            "power_saving": [
+              27
+            ],
+            "rf_restart": [
+              15,
+              17,
+              18,
+              19,
+              20,
+              22,
+              28,
+              48
+            ],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "31795626badea4ad6421be5b70e8a6da4680157e": {
+          "path": "tools/vut_debug_console.cpp",
+          "commit": "b88889429b05ca3f3825600316a1f9719d049dfa",
+          "matches": {
+            "pair_control": [
+              115,
+              116,
+              363,
+              365
+            ],
+            "power_saving": [
+              117,
+              118,
+              368,
+              370
+            ],
+            "rf_restart": [
+              70,
+              72,
+              73,
+              74,
+              75,
+              77,
+              86,
+              87,
+              88,
+              89,
+              90,
+              92,
+              114,
+              134,
+              360
+            ],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "aa47a9a0f0c6e1714e3e7521466d4a27ac7b0a07": {
+          "path": "src/backend.cpp",
+          "commit": "1c8f8a599dc92062bf44e3b79503f921d64636dd",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [
+              257,
+              259,
+              261,
+              263,
+              341,
+              347,
+              349
+            ],
+            "post_pair": [
+              219,
+              221,
+              222,
+              230,
+              235,
+              358
+            ],
+            "info_complete_reply": [
+              371
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "2b011b8c711916c7ed18bcec482a132babc5675e": {
+          "path": "src/backend.cpp",
+          "commit": "08290bb67dfbc6eaf6559178c8bad89cb9a5640d",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [
+              255,
+              257,
+              259,
+              261,
+              325,
+              328,
+              330
+            ],
+            "post_pair": [
+              217,
+              219,
+              220,
+              228,
+              233,
+              338
+            ],
+            "info_complete_reply": [
+              351
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "80095b5b39088d6161e247bdc96da02bb57b1ad9": {
+          "path": "src/protocol.cpp",
+          "commit": "08290bb67dfbc6eaf6559178c8bad89cb9a5640d",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "c9e17025513b2382cead87481641e817662da895": {
+          "path": "include/vut/protocol.hpp",
+          "commit": "08290bb67dfbc6eaf6559178c8bad89cb9a5640d",
+          "matches": {
+            "pair_control": [
+              24
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "578f717ec9522939bb612721cec8374fd4ae520a": {
+          "path": "src/backend.cpp",
+          "commit": "8df0f91bb82141b7ad97de3ad1c108e0fbe19080",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [
+              255,
+              257,
+              259,
+              261
+            ],
+            "post_pair": [
+              217,
+              219,
+              220,
+              228,
+              233,
+              326
+            ],
+            "info_complete_reply": [
+              339
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "24689fb221a22766854ee203f337fa8e0fb3401b": {
+          "path": "src/backend.cpp",
+          "commit": "96c4edb9cd3855b7a43e3797088f8ac69ac65373",
+          "matches": {
+            "pair_control": [
+              237
+            ],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [
+              203,
+              205,
+              206,
+              214,
+              219,
+              294
+            ],
+            "info_complete_reply": [
+              307
+            ],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "fa89171cd8845a2b140f3650d40969d46c897e18": {
+          "path": "src/protocol.cpp",
+          "commit": "96c4edb9cd3855b7a43e3797088f8ac69ac65373",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        },
+        "9a32ea5f628008335853d3f14c19df5c12d0eea2": {
+          "path": "include/vut/backend.hpp",
+          "commit": "96c4edb9cd3855b7a43e3797088f8ac69ac65373",
+          "matches": {
+            "pair_control": [],
+            "power_saving": [],
+            "rf_restart": [],
+            "post_pair": [],
+            "info_complete_reply": [],
+            "info_request": [],
+            "passive_guard": []
+          }
+        }
+      }
+    },
+    "installed_static": [
+      {
+        "file": "vive_tracker_driver.dll",
+        "bytes": 527336,
+        "sha256": "49ed00b392b5b915aa71f3845d8b1b2d73f3192a7610d4781e8fb2b3fb910a09",
+        "token_presence": {
+          "Pairing": true,
+          "Unpair": false,
+          "RestartRf": false,
+          "RxPowerSaving": false,
+          "NADS": true,
+          "NASS": true,
+          "NAZZ": true,
+          "FW1": true,
+          "DeviceInfo": true,
+          "con_bit_pairing": false,
+          "con_bit_connecting": false,
+          "con_bit_rf_connected": false,
+          "FW2": true,
+          "ATM21": false,
+          "TX_ACK_TO_MAC": false,
+          "ANI": true,
+          "ATW": true,
+          "ACF": true,
+          "ATS": true,
+          "Wc": true,
+          "pAS": true
+        },
+        "exact_NA_string_present": false,
+        "interpretation": "String presence/absence does not prove dispatch, causal ordering, wire bytes, or safety."
+      },
+      {
+        "file": "ViveTrackerServer.exe",
+        "bytes": 1601512,
+        "sha256": "f459ecc348e7459ae6f3a4f3212e66433de7b1834c9d80b1776d3694d3fbe088",
+        "token_presence": {
+          "Pairing": true,
+          "Unpair": true,
+          "RestartRf": false,
+          "RxPowerSaving": false,
+          "NADS": false,
+          "NASS": false,
+          "NAZZ": false,
+          "FW1": false,
+          "DeviceInfo": true,
+          "con_bit_pairing": false,
+          "con_bit_connecting": false,
+          "con_bit_rf_connected": false,
+          "FW2": false,
+          "ATM21": false,
+          "TX_ACK_TO_MAC": false,
+          "ANI": false,
+          "ATW": false,
+          "ACF": false,
+          "ATS": false,
+          "Wc": false,
+          "pAS": false
+        },
+        "exact_NA_string_present": true,
+        "interpretation": "String presence/absence does not prove dispatch, causal ordering, wire bytes, or safety."
+      },
+      {
+        "file": "VS_PC_SDK.dll",
+        "bytes": 35328,
+        "sha256": "9676846b577a33afa7afe3abee68bbe8df0825bcdfe16f19f8943509d24a35a9",
+        "token_presence": {
+          "Pairing": false,
+          "Unpair": false,
+          "RestartRf": false,
+          "RxPowerSaving": false,
+          "NADS": false,
+          "NASS": false,
+          "NAZZ": false,
+          "FW1": false,
+          "DeviceInfo": false,
+          "con_bit_pairing": false,
+          "con_bit_connecting": false,
+          "con_bit_rf_connected": false,
+          "FW2": false,
+          "ATM21": false,
+          "TX_ACK_TO_MAC": false,
+          "ANI": false,
+          "ATW": false,
+          "ACF": false,
+          "ATS": false,
+          "Wc": false,
+          "pAS": false
+        },
+        "exact_NA_string_present": false,
+        "interpretation": "String presence/absence does not prove dispatch, causal ordering, wire bytes, or safety."
+      }
+    ],
+    "external_sources": [
+      {
+        "repo": "shinyquagsire23/vive_ultimate_tracker_re",
+        "commit": "11ae3cbfd9a331694c72890df7dced77248b4ba6",
+        "path": "rf_hid_test.py",
+        "url": "https://raw.githubusercontent.com/shinyquagsire23/vive_ultimate_tracker_re/11ae3cbfd9a331694c72890df7dced77248b4ba6/rf_hid_test.py",
+        "sha256": "c28a57ba94b1ca11dda21093c0067a81a403468736c2787178d1d3da3a076c90",
+        "git_blob": "51b3c36e058a2f45570a1b1b2ba93b34030d5e59",
+        "bytes": 39294,
+        "status": "PASS"
+      },
+      {
+        "repo": "shinyquagsire23/vive_ultimate_tracker_re",
+        "commit": "11ae3cbfd9a331694c72890df7dced77248b4ba6",
+        "path": "tracker_toybox/tracker_toybox.py",
+        "url": "https://raw.githubusercontent.com/shinyquagsire23/vive_ultimate_tracker_re/11ae3cbfd9a331694c72890df7dced77248b4ba6/tracker_toybox/tracker_toybox.py",
+        "sha256": "76bffcddd381aaaf4f2cb8261086de69a215744cf6d17f2f7ed62c8006c7d80f",
+        "git_blob": "f58def975691879cd0688abb723059c87cb9a123",
+        "bytes": 38762,
+        "status": "PASS"
+      },
+      {
+        "repo": "shinyquagsire23/vive_ultimate_tracker_re",
+        "commit": "11ae3cbfd9a331694c72890df7dced77248b4ba6",
+        "path": "tracker_toybox/enums_horusd_ack.py",
+        "url": "https://raw.githubusercontent.com/shinyquagsire23/vive_ultimate_tracker_re/11ae3cbfd9a331694c72890df7dced77248b4ba6/tracker_toybox/enums_horusd_ack.py",
+        "sha256": "217079797d8d5974ec06c0b69d14d76450aea6dd32ebbb72b83813627779f119",
+        "git_blob": "f6c6b8d6e3ceec8ccd1290f20f724f95796d9ee9",
+        "bytes": 2519,
+        "status": "PASS"
+      },
+      {
+        "repo": "shinyquagsire23/vive_ultimate_tracker_re",
+        "commit": "11ae3cbfd9a331694c72890df7dced77248b4ba6",
+        "path": "tracker_toybox/enums_horusd_dongle.py",
+        "url": "https://raw.githubusercontent.com/shinyquagsire23/vive_ultimate_tracker_re/11ae3cbfd9a331694c72890df7dced77248b4ba6/tracker_toybox/enums_horusd_dongle.py",
+        "sha256": "8a4086b32ea97b2780d8d14fb80147a44692f6ced01ae5b7df95c5fe1934f5df",
+        "git_blob": "be0e49ae33f5604baffbf8bbcf9af7dca32f78b8",
+        "bytes": 4198,
+        "status": "PASS"
+      },
+      {
+        "repo": "shinyquagsire23/vive_ultimate_tracker_re",
+        "commit": "11ae3cbfd9a331694c72890df7dced77248b4ba6",
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/shinyquagsire23/vive_ultimate_tracker_re/11ae3cbfd9a331694c72890df7dced77248b4ba6/README.md",
+        "sha256": "85894dc3d955b01da64d299aa5a949aa47d661a1fb4370df39a4600a9c530455",
+        "git_blob": "f90031b2b1a2b9813928b7c77ac18e94638a5344",
+        "bytes": 661,
+        "status": "PASS"
+      },
+      {
+        "repo": "nijkah/pyvut",
+        "commit": "fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a",
+        "path": "pyvut/tracker_core.py",
+        "url": "https://raw.githubusercontent.com/nijkah/pyvut/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/pyvut/tracker_core.py",
+        "sha256": "a63029ea8057b76760daa33c7b4d3b909d3ba6e3ea821c7fe6ecd32a69c1aadd",
+        "git_blob": "461a81b25ecc3c6ca96c89ed403d8394c5726f76",
+        "bytes": 43054,
+        "status": "PASS"
+      },
+      {
+        "repo": "nijkah/pyvut",
+        "commit": "fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a",
+        "path": "pyvut/api.py",
+        "url": "https://raw.githubusercontent.com/nijkah/pyvut/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/pyvut/api.py",
+        "sha256": "5ae50225c00e221d0997a7933d80cff47e2f4cd57e67b890c837638ddaed5126",
+        "git_blob": "f5f2985e81cf0c39ab5a00eccd0452779a1a190f",
+        "bytes": 10629,
+        "status": "PASS"
+      },
+      {
+        "repo": "nijkah/pyvut",
+        "commit": "fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a",
+        "path": "pyvut/enums_horusd_ack.py",
+        "url": "https://raw.githubusercontent.com/nijkah/pyvut/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/pyvut/enums_horusd_ack.py",
+        "sha256": "217079797d8d5974ec06c0b69d14d76450aea6dd32ebbb72b83813627779f119",
+        "git_blob": "f6c6b8d6e3ceec8ccd1290f20f724f95796d9ee9",
+        "bytes": 2519,
+        "status": "PASS"
+      },
+      {
+        "repo": "nijkah/pyvut",
+        "commit": "fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a",
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/nijkah/pyvut/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/README.md",
+        "sha256": "e6c2ca813d6b2cc11cef9872f3fc9599b631abb64f67f2e11b9fbafcf5ea91da",
+        "git_blob": "8ababb32a5c63e5f69d04cdd62ddd558c5584187",
+        "bytes": 8064,
+        "status": "PASS"
+      },
+      {
+        "repo": "nijkah/pyvut",
+        "commit": "fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a",
+        "path": "how-to-use.md",
+        "url": "https://raw.githubusercontent.com/nijkah/pyvut/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/how-to-use.md",
+        "sha256": "c2efdb9f70ad4d863c1319ac4c0af1a6da6fbae945596a5e60a1deb2a5cb483d",
+        "git_blob": "eb8a15409383ea6bd6d5ea737254109ac895ab6f",
+        "bytes": 5308,
+        "status": "PASS"
+      },
+      {
+        "repo": "mgschwan/ViveUltimateTrackerMobile",
+        "commit": "79e8d3fb71cb34187d369596aefe2aabc195c318",
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/mgschwan/ViveUltimateTrackerMobile/79e8d3fb71cb34187d369596aefe2aabc195c318/README.md",
+        "sha256": "7b09996c4e1fd6afcce362966706f48db8c9b4588d3768acda66e7b86d0c9df8",
+        "git_blob": "8ea4a76e1dc1f435e311fbc50a785146d207c660",
+        "bytes": 2290,
+        "status": "PASS"
+      },
+      {
+        "repo": "mgschwan/ViveUltimateTrackerMobile",
+        "commit": "79e8d3fb71cb34187d369596aefe2aabc195c318",
+        "path": "android/app/src/main/java/io/xrworkout/htctrackerdongle/HidBridge.java",
+        "url": "https://raw.githubusercontent.com/mgschwan/ViveUltimateTrackerMobile/79e8d3fb71cb34187d369596aefe2aabc195c318/android/app/src/main/java/io/xrworkout/htctrackerdongle/HidBridge.java",
+        "sha256": "e88d5d5829dd9bca886680b75ffe6cdf8916d87b1b22a2d94bdac977116ce950",
+        "git_blob": "2cfa43aefd70a0523f8bdde33e1a8ab46adb2e3a",
+        "bytes": 60427,
+        "status": "PASS"
+      },
+      {
+        "repo": "mgschwan/ViveUltimateTrackerMobile",
+        "commit": "79e8d3fb71cb34187d369596aefe2aabc195c318",
+        "path": "android/app/src/main/java/io/xrworkout/htctrackerdongle/HTCConnectionHandler.kt",
+        "url": "https://raw.githubusercontent.com/mgschwan/ViveUltimateTrackerMobile/79e8d3fb71cb34187d369596aefe2aabc195c318/android/app/src/main/java/io/xrworkout/htctrackerdongle/HTCConnectionHandler.kt",
+        "sha256": "45912d7b5d703f150cfeb204881655a466561edc8473ef5a4c3631194c0311ab",
+        "git_blob": "42d72d4a592a7d91ecc51bdbb78b76824a62ff33",
+        "bytes": 580,
+        "status": "PASS"
+      },
+      {
+        "repo": "mgschwan/ViveUltimateTrackerMobile",
+        "commit": "79e8d3fb71cb34187d369596aefe2aabc195c318",
+        "path": "android/app/src/main/java/io/xrworkout/htctrackerdongle/HorusdAck.java",
+        "url": "https://raw.githubusercontent.com/mgschwan/ViveUltimateTrackerMobile/79e8d3fb71cb34187d369596aefe2aabc195c318/android/app/src/main/java/io/xrworkout/htctrackerdongle/HorusdAck.java",
+        "sha256": "49dde513eea8bb3b819a6bcea651321b7dc707e24b42d8897060b5bcca204127",
+        "git_blob": "e0f8e339bc73f41c6f1f6a5a4b57ff9ee1c20734",
+        "bytes": 4244,
+        "status": "PASS"
+      },
+      {
+        "repo": "ViveRoboticsSoftware/vive-ultimate-tracker-sdk",
+        "commit": "8685112780734c2513c66d53b9eb104db47afcf9",
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/ViveRoboticsSoftware/vive-ultimate-tracker-sdk/8685112780734c2513c66d53b9eb104db47afcf9/README.md",
+        "sha256": "caa8021597be7c401761f8a49909cfe1d6497e8cb1d8d79f47879772d133b961",
+        "git_blob": "512dc32b471115fb057801f01f0c6380c165b5c4",
+        "bytes": 7202,
+        "status": "PASS"
+      },
+      {
+        "repo": "ViveRoboticsSoftware/vive-ultimate-tracker-sdk",
+        "commit": "8685112780734c2513c66d53b9eb104db47afcf9",
+        "path": "include/ultimate_tracker.h",
+        "url": "https://raw.githubusercontent.com/ViveRoboticsSoftware/vive-ultimate-tracker-sdk/8685112780734c2513c66d53b9eb104db47afcf9/include/ultimate_tracker.h",
+        "sha256": "b4e956bcfb0841ee201f9edfacb42397ad60d234e5f671a338142b4f4784545c",
+        "git_blob": "007cdc44efc36b5d9461c9696c81d1469b4959dc",
+        "bytes": 7930,
+        "status": "PASS"
+      },
+      {
+        "repo": "ViveRoboticsSoftware/vive-ultimate-tracker-sdk",
+        "commit": "8685112780734c2513c66d53b9eb104db47afcf9",
+        "path": "VIVE-Ultimate-Tracker-SDK-Guide-EN.md",
+        "url": "https://raw.githubusercontent.com/ViveRoboticsSoftware/vive-ultimate-tracker-sdk/8685112780734c2513c66d53b9eb104db47afcf9/VIVE-Ultimate-Tracker-SDK-Guide-EN.md",
+        "sha256": "ee5abfda206dee82a00139d6029d8df44762311037f6cb1cdc7e30195d203bc7",
+        "git_blob": "c3ef2fbd73efa7be9fe4d50a0b799223ab2029ac",
+        "bytes": 22006,
+        "status": "PASS"
+      },
+      {
+        "repo": "h228zhou/pyvut",
+        "commit": "7b3a7ad16b0c1b0a62afe7bef743fdb8094a67d9",
+        "path": "pyvut/tracker_core.py",
+        "url": "https://raw.githubusercontent.com/h228zhou/pyvut/7b3a7ad16b0c1b0a62afe7bef743fdb8094a67d9/pyvut/tracker_core.py",
+        "sha256": "81bbb4e4ee7b139c19ce1cd318645cc1ebba048d3dde44ea079b4f49850f4755",
+        "git_blob": "021958383f042401238898f70eb4e1145e5ec2d7",
+        "bytes": 52555,
+        "status": "PASS"
+      },
+      {
+        "repo": "h228zhou/pyvut",
+        "commit": "7b3a7ad16b0c1b0a62afe7bef743fdb8094a67d9",
+        "path": "README.md",
+        "url": "https://raw.githubusercontent.com/h228zhou/pyvut/7b3a7ad16b0c1b0a62afe7bef743fdb8094a67d9/README.md",
+        "sha256": "9c8be1f1013f1ea9b63c24e7b685164dc915159fa907be9e3218f1a6c97cc870",
+        "git_blob": "94e416917937d59c8a8434f90bf57f26a4c2a049",
+        "bytes": 9634,
+        "status": "PASS"
+      },
+      {
+        "repo": "mscheibl/pyvut",
+        "commit": "fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a",
+        "path": "pyvut/tracker_core.py",
+        "url": "https://raw.githubusercontent.com/mscheibl/pyvut/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/pyvut/tracker_core.py",
+        "sha256": "a63029ea8057b76760daa33c7b4d3b909d3ba6e3ea821c7fe6ecd32a69c1aadd",
+        "git_blob": "461a81b25ecc3c6ca96c89ed403d8394c5726f76",
+        "bytes": 43054,
+        "status": "PASS"
+      },
+      {
+        "repo": "HukoOo/pyvut",
+        "commit": "fe38eac54fdfe156f49de630c890fc7efbd509c7",
+        "path": "pyvut/tracker_core.py",
+        "url": "https://raw.githubusercontent.com/HukoOo/pyvut/fe38eac54fdfe156f49de630c890fc7efbd509c7/pyvut/tracker_core.py",
+        "sha256": "a63029ea8057b76760daa33c7b4d3b909d3ba6e3ea821c7fe6ecd32a69c1aadd",
+        "git_blob": "461a81b25ecc3c6ca96c89ed403d8394c5726f76",
+        "bytes": 43054,
+        "status": "PASS"
+      },
+      {
+        "repo": "nijkah/pyvut",
+        "commit": "fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a",
+        "path": "pyvut/enums_horusd_dongle.py",
+        "url": "https://raw.githubusercontent.com/nijkah/pyvut/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/pyvut/enums_horusd_dongle.py",
+        "sha256": "8a4086b32ea97b2780d8d14fb80147a44692f6ced01ae5b7df95c5fe1934f5df",
+        "git_blob": "be0e49ae33f5604baffbf8bbcf9af7dca32f78b8",
+        "bytes": 4198,
+        "status": "PASS"
+      },
+      {
+        "repo": "h228zhou/pyvut",
+        "commit": "7b3a7ad16b0c1b0a62afe7bef743fdb8094a67d9",
+        "path": "pyvut/enums_horusd_dongle.py",
+        "url": "https://raw.githubusercontent.com/h228zhou/pyvut/7b3a7ad16b0c1b0a62afe7bef743fdb8094a67d9/pyvut/enums_horusd_dongle.py",
+        "sha256": "8a4086b32ea97b2780d8d14fb80147a44692f6ced01ae5b7df95c5fe1934f5df",
+        "git_blob": "be0e49ae33f5604baffbf8bbcf9af7dca32f78b8",
+        "bytes": 4198,
+        "status": "PASS"
+      },
+      {
+        "repo": "shinyquagsire23/vive_ultimate_tracker_re",
+        "commit": "11ae3cbfd9a331694c72890df7dced77248b4ba6",
+        "path": "tracker_toybox/enums_horusd_status.py",
+        "url": "https://raw.githubusercontent.com/shinyquagsire23/vive_ultimate_tracker_re/11ae3cbfd9a331694c72890df7dced77248b4ba6/tracker_toybox/enums_horusd_status.py",
+        "sha256": "9a122d7ed951f54de88e2d8591ee1ff0b9d07662c23db8b6cfca1bf32edc2c02",
+        "git_blob": "2bbc8afa10578511c5e4c97c00065cf5e83c9d75",
+        "bytes": 3098,
+        "status": "PASS"
+      },
+      {
+        "repo": "mgschwan/ViveUltimateTrackerMobile",
+        "commit": "79e8d3fb71cb34187d369596aefe2aabc195c318",
+        "path": "android/app/src/main/java/io/xrworkout/htctrackerdongle/HorusdStatusCmds.java",
+        "url": "https://raw.githubusercontent.com/mgschwan/ViveUltimateTrackerMobile/79e8d3fb71cb34187d369596aefe2aabc195c318/android/app/src/main/java/io/xrworkout/htctrackerdongle/HorusdStatusCmds.java",
+        "sha256": "a3f9c863bdc8b96361f70b7e1a2d4a1adcab53566e64c3eb95df45f9e6a37612",
+        "git_blob": "76b4470743b00564540fbd50826b1e2e7e00cc75",
+        "bytes": 5337,
+        "status": "PASS"
+      }
+    ],
+    "behavior_aliases": {
+      "2": {
+        "meaning": "RestartRf candidate",
+        "confidence": "Strong candidate; not Verified semantic",
+        "safe_to_implement_now": false
+      },
+      "6": {
+        "meaning": "Unknown; historical pairing-clear hypothesis remains unresolved for RECEIVER-OTHER",
+        "confidence": "Historical label only",
+        "safe_to_implement_now": false
+      }
+    },
+    "unknown_remaining": [
+      "behavior 2 causal effect, flag and selector dispatch semantics",
+      "behavior 6 effect on selected RECEIVER-OTHER and persistent pairing database",
+      "kind 03/04 full-versus-partial matching semantics outside single-B trace",
+      "FW2 purpose, FW1 relationship and safe prerequisites",
+      "ATM21 map/host/client/multiple-tracker policy",
+      "ATW semantics",
+      "ACF numeric units/effect",
+      "ATS epoch clock side effects",
+      "Wc country/regulatory semantics and pAS parameters/effect",
+      "query poll cadence and status-word semantics"
+    ],
+    "raw_read_only_hash_check": "PASS; all original evidence files unchanged",
+    "validation": {
+      "python_research_tests": "15/15 PASS",
+      "anonymous_fixture_frames": "24/24 PASS",
+      "leakage_scan": "PASS",
+      "cpp_build": "NOT RUN; no C++ or build configuration changed",
+      "hardware_hil": "NOT RUN; forbidden in this task"
+    }
   }
 }
