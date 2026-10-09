@@ -35,9 +35,12 @@ DeviceRegistry::Record* DeviceRegistry::find(std::uint64_t id) {
 }
 bool DeviceRegistry::consistent() const {
     std::size_t live = 0;
-    std::map<std::uint64_t, bool> ids;
+    // Records are append-only, in strictly increasing epoch order. Check that
+    // invariant without allocating a temporary tree on each receive/admission.
+    std::uint64_t previousId = 0;
     for (const auto& r : records_) {
-        if (!ids.emplace(r.id, true).second || r.id == 0) return false;
+        if (r.id <= previousId) return false;
+        previousId = r.id;
         if (!r.handle) continue;
         ++live;
         if (!transport_ || faulted_ || r.binding.scope != scope_ ||

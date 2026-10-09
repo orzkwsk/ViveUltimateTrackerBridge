@@ -1,6 +1,4 @@
-#include "vut/backend.hpp"
-#include "vut/observation_adapter.hpp"
-#include "vut/observation_publisher.hpp"
+#include "vut/service_runtime.hpp"
 #include "vut/service_options.hpp"
 #include "vut/service_session.hpp"
 #include <windows.h>
@@ -32,12 +30,12 @@ std::string uuid() {
         id.Data1, id.Data2, id.Data3, id.Data4[0],id.Data4[1],id.Data4[2],id.Data4[3],id.Data4[4],id.Data4[5],id.Data4[6],id.Data4[7]);
     return result;
 }
-void printAdmissionDiagnostics(const vut::ViveObservationAdapter& adapter, const char* prefix) {
-    const auto& d = adapter.diagnostics();
+void printAdmissionDiagnostics(const vut::ServiceRuntimeStatistics& statistics, const char* prefix) {
+    const auto& d = statistics.admission;
     std::cerr << prefix
               << " accepted_pose=" << d.acceptedPose
               << " accepted_state=" << d.acceptedState
-              << " rejected_total=" << adapter.rejected()
+              << " rejected_total=" << statistics.rejected
               << " generation=" << d.rejectGeneration
               << " before_epoch=" << d.rejectBeforeEpoch
               << " unknown_device=" << d.rejectUnknownDevice
@@ -200,34 +198,36 @@ int main(int argc,char** argv) try {
     auto configured=config(argv[1]);
     auto c=std::move(configured.observation);
     RevisionJournal journal(argv[2]);
-    vut::SessionRevisionCoordinator revisionCoordinator(configured.reconnectRevision);
-    const vut::CoordinateMapIdentity coordinateIdentity{c.sourceId, c.spaces};
-    auto nextStartCause = vut::SessionStartCause::InitialStart;
     vut::LoopbackSender sender(options.port);
     UnknownStatusEvidence unknownStatusEvidence;
     std::signal(SIGINT,stop); std::signal(SIGTERM,stop);
-    vut::Backend backend;
+    vut::ServiceRuntimeConfig runtimeConfig;
+    runtimeConfig.observation = c;
+    runtimeConfig.reconnectRevision = configured.reconnectRevision;
+    runtimeConfig.diagnostics = options.diagnostics;
+    vut::ServiceRuntimeDependencies dependencies;
+    dependencies.clock = nowNs;
+    dependencies.advanceRevision = [&] { return journal.advance(); };
+    dependencies.makeSessionId = uuid;
+    dependencies.send = [&](auto bytes) { return sender.send(bytes); };
+    vut::ServiceRuntime runtime(vut::Backend{}, std::move(runtimeConfig), std::move(dependencies));
+    const auto reportFault = [&] {
+        const auto snapshot = runtime.snapshot();
+        if (snapshot->state != vut::ServiceRuntimeState::Faulted) return;
+        std::cerr << "[service-control-fault] code=" << static_cast<int>(snapshot->outcome.code)
+                  << " reason=" << static_cast<int>(snapshot->outcome.reason)
+                  << " stage=" << static_cast<int>(snapshot->failure)
+                  << " history_full=" << (snapshot->outcome.reason == vut::control::Reason::HistoryFull) << '\n';
+        throw std::runtime_error("passive service runtime fault; no automatic control-model reset");
+    };
     while(run) {
-        if(!backend.start()) { std::cerr << backend.lastError() << '\n'; std::this_thread::sleep_for(std::chrono::seconds(1)); continue; }
-        const auto session = revisionCoordinator.begin(
-            coordinateIdentity, nextStartCause, backend.transportGeneration(),
-            [&] { return journal.advance(); }, uuid, nowNs);
-        c.sessionId=session.sessionId; c.epochNs=session.epochNs;
-        c.revision=session.revision; c.generation=session.transportGeneration;
-        vut::ViveObservationAdapter adapter(c);
-        vut::ObservationPublisher publisher(c.sessionId,[&](auto bytes){return sender.send(bytes);},[&]{return nowNs()-c.epochNs;});
-        backend.setEventCallback([&](const auto& event) {
-            if (options.diagnostics) unknownStatusEvidence.observe(event);
-            if(options.diagnostics && event.kind == vut::BackendEvent::Kind::Diagnostic) {
-                std::cerr << "[tracking-diagnostic] device=" << event.device.toString()
-                          << " " << event.text << '\n';
-            } else if(options.diagnostics && event.kind == vut::BackendEvent::Kind::Ack) {
-                std::cerr << "[tracking-ack] device=" << event.device.toString()
-                          << " " << event.text << '\n';
-            }
-            if(auto observation=adapter.admit(event)) publisher.enqueue(std::move(*observation));
-        });
-        std::cerr << "session=" << c.sessionId << " revision=" << c.revision
+        if(!runtime.start().ok()) {
+            reportFault();
+            std::cerr << runtime.snapshot()->backendError << '\n';
+            std::this_thread::sleep_for(std::chrono::seconds(1)); continue;
+        }
+        const auto session = *runtime.snapshot()->observationSession;
+        std::cerr << "session=" << session.sessionId << " revision=" << session.revision
                   << " revision_action=" << (session.revisionAdvanced ? "advanced" : "preserved")
                   << " reconnect_revision=" << vut::reconnectRevisionPolicyName(configured.reconnectRevision) << '\n';
         if (options.diagnostics) {
@@ -237,30 +237,38 @@ int main(int argc,char** argv) try {
         }
         std::uint64_t lastReportedRejections = 0;
         auto nextAdmissionReport = std::chrono::steady_clock::now() + std::chrono::seconds(5);
-        while(run && backend.running() && !adapter.restartRequired()) {
-            if(!backend.pollOnce()) break;
-            publisher.flush();
+        while(run) {
+            const bool polled = runtime.pollOnce();
+            for (const auto& event : runtime.takeDiagnostics()) {
+                unknownStatusEvidence.observe(event);
+                if(event.kind == vut::BackendEvent::Kind::Diagnostic)
+                    std::cerr << "[tracking-diagnostic] device=" << event.device.toString() << " " << event.text << '\n';
+                else if(event.kind == vut::BackendEvent::Kind::Ack)
+                    std::cerr << "[tracking-ack] device=" << event.device.toString() << " " << event.text << '\n';
+            }
+            if(!polled) break;
             const auto now = std::chrono::steady_clock::now();
             if(now >= nextAdmissionReport) {
-                if (options.diagnostics) printAdmissionDiagnostics(adapter, "[admission]");
-                else if (adapter.rejected() != lastReportedRejections) {
-                    const auto& d = adapter.diagnostics();
-                    std::cerr << "[admission] rejected=" << adapter.rejected()
+                const auto statistics = runtime.statistics();
+                if (options.diagnostics) printAdmissionDiagnostics(statistics, "[admission]");
+                else if (statistics.rejected != lastReportedRejections) {
+                    const auto& d = statistics.admission;
+                    std::cerr << "[admission] rejected=" << statistics.rejected
                               << " unknown_device=" << d.rejectUnknownDevice
                               << " last_unknown_device=" << (d.lastUnknownDevice.empty() ? "-" : d.lastUnknownDevice) << '\n';
                 }
-                lastReportedRejections = adapter.rejected();
+                lastReportedRejections = statistics.rejected;
                 nextAdmissionReport = now + std::chrono::seconds(5);
             }
         }
-        backend.setEventCallback({}); backend.stop(); publisher.clear();
-        nextStartCause = adapter.coordinateContinuityUncertain()
-            ? vut::SessionStartCause::ContinuityUncertain
-            : vut::SessionStartCause::TransportReconnect;
-        const auto& counts=publisher.counters();
+        if (!run) runtime.shutdown();
+        const auto statistics = runtime.statistics();
+        const auto& counts=statistics.publication;
         std::cerr << "sent=" << counts.sent << " send_errors=" << counts.sendErrors << " encode_errors=" << counts.encodeErrors
-                  << " dropped=" << counts.dropped << " admission_rejected=" << adapter.rejected() << '\n';
-        if (options.diagnostics) printAdmissionDiagnostics(adapter, "[admission-final]");
+                  << " dropped=" << counts.dropped << " admission_rejected=" << statistics.rejected << '\n';
+        if (options.diagnostics) printAdmissionDiagnostics(statistics, "[admission-final]");
+        reportFault();
     }
+    runtime.shutdown();
     return 0;
 } catch(const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
