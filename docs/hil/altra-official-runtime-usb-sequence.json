@@ -525,5 +525,89 @@
     "representation_count": 33,
     "private_capture_files_scanned": 10,
     "full_preflight_payloads_scanned": true
+  },
+  "health_gate": {
+    "date_jst": "2026-10-09",
+    "base_commit": "1aa753ffc132223cec1a2507efdaf75645a0750f",
+    "instruction_sha256": "1e74acdde1cdb720d17b9de77841fc368d1aae35c006b6117a1a41e68e019e7a",
+    "status": "STOP_DIRECT_CAPTURE_1_NO_FILE",
+    "physical_initial_state": "human confirmed A OFF; B OFF; charging USB disconnected; official dongle connected",
+    "capture_method_attempted": "USBPcapCMD direct-to-file; selected device only; descriptor injection enabled",
+    "target": {
+      "vid_pid": "0bb4:0350",
+      "bus_alias": "DONGLE-BUS",
+      "device_alias": "DONGLE",
+      "inventory_verified": true,
+      "root_match": "USBPcap read-only hub symlink normalized to current PnP parent: exact match",
+      "address_match": "one direct USB input device on verified root; capture confirmation not obtained"
+    },
+    "direct_capture_1": {
+      "result": "FAIL",
+      "file_created": false,
+      "bytes": null,
+      "sha256": null,
+      "first_32_bytes": null,
+      "header": "NOT AVAILABLE",
+      "tshark_parse": "NOT RUN: no capture file",
+      "packet_count": null,
+      "target_packets": "NOT CONFIRMED",
+      "capture_exit_code": null,
+      "launch_shell_exit_code": 0,
+      "launch_observation": "PowerShell GUI invocation returned without waiting for worker; native exit code not returned",
+      "post_check": "no USBPcap worker or concurrent capture process; no output file",
+      "valid_short_capture_duration_established": false,
+      "classification": "DIRECT_CAPTURE_LAUNCH_OR_LIFETIME_FAILURE; worker cause undetermined",
+      "events": []
+    },
+    "direct_capture_2": {
+      "result": "NOT RUN",
+      "reason": "direct capture 1 failed",
+      "events": []
+    },
+    "extcap_pipe": {
+      "result": "NOT RUN",
+      "classification": "previous pipe failure not retested"
+    },
+    "chosen_production_research_capture_path": "NONE: health gate not established",
+    "official_baseline": {
+      "result": "NOT RUN",
+      "b_on_attempted": false,
+      "connected": "NOT TESTED",
+      "pose": "NOT OBSERVED",
+      "n_burst": "UNKNOWN",
+      "host_sequence": []
+    },
+    "power_cycle_reconnect": {
+      "result": "NOT RUN",
+      "attempted": false,
+      "pair_operation_used": false,
+      "reconnected": "NOT TESTED",
+      "n_burst": "UNKNOWN",
+      "host_sequence": []
+    },
+    "official_command_observation": "UNKNOWN_NO_VALID_OFFICIAL_TRACE",
+    "manual_pair_unpair_operations": 0,
+    "bridge_vendor_transmissions": 0,
+    "official_runtime_role": "intended sole dongle HID owner; no handle/exclusive-open proof attempted",
+    "acquisition_blocker": "F_UNDISTINGUISHED",
+    "candidate_qualification": {
+      "NADS": "Class B / acquisition unresolved",
+      "NASS": "Class B / acquisition unresolved"
+    },
+    "raw_evidence": "private inventory and failure receipt only; no pcap or CSV generated",
+    "software_validation": {
+      "release_test_targets": "PASS",
+      "ctest": "6/6 PASS",
+      "sanitizer_unit_tests": "8/8 PASS"
+    },
+    "privacy_validation": {
+      "status": "PASS",
+      "public_files": 2,
+      "private_identifiers": 45,
+      "representations": 515,
+      "full_saved_raw_payloads": 329,
+      "historical_collection_and_events_preserved": true,
+      "new_capture_event_count": 0
+    }
   }
 }

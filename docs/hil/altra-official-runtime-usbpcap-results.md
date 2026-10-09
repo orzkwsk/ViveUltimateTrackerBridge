@@ -1,5 +1,120 @@
 # Altra official runtime USBPcap: capture transport stop
 
+## Latest: direct-to-file Health Gate, 2026-10-09 JST
+
+**STOP: Direct capture 1 FAIL (output file not created).**
+Direct capture 2 / official B baseline / OFF→ON reconnect: **NOT RUN**。
+B ONを依頼していない。新しいAltra wire sequence・protocol結論はない。
+
+Source of Truth: ユーザー指定
+`MonakaVR_Altra_USBPcap_Health_Gate_and_HIL_Resume_Codex指示書.md`。
+SHA256 `1e74acdde1cdb720d17b9de77841fc368d1aae35c006b6117a1a41e68e019e7a`。
+指定checkpoint `1aa753ffc132223cec1a2507efdaf75645a0750f` の既存
+`research/altra-stable-identity-hil` worktreeで実施。prepared lineage ancestry確認済み。
+主checkoutのfeature branchと未追跡attachmentは保持した。
+
+### Read-only preflight
+
+人間が A OFF / B OFF / charging USB disconnected / official dongle connected を確認。
+USBPcap driver RUNNING、USBPcapCMD/USBPcap extcap 1.5.4.0、Wireshark/tshark/dumpcap
+4.6.6を確認。既存extcap entriesはUSBPcapCMDとetwdump、USBPcap root entriesは5。
+extcap interface/configの**列挙だけ**を使用し、pipe captureは行っていない。
+
+USBPcapCMDは `C:/Program Files/USBPcap/USBPcapCMD.exe`。
+SHA256 `8b13173e9453fda9914d707c732880de44081e20e1113b3a2c827abd7a28b15d`。
+tshark/dumpcap/Wiresharkは既存 `C:/Program Files/Wireshark/` 配下。
+各version/hash、driver/service、process、PnP/topology inventoryをprivate保存した。
+実行callerはnon-admin。新規install、driver/filter/registry変更、rebootなし。
+
+Capture直前・失敗後にViveHubServer / ViveTrackerServerを確認。
+VHConsoleはinventory途中に一度観測し、capture直前・失敗後には不在。
+VIVE Streaming Service STOPPED、ViveAgentService process/serviceは確認した一覧に不在。
+SteamVR vrserver/vrmonitorは不在、Virtual Desktop Streamer/serviceはRUNNING。
+SteamVR / VD / official runtimeの終了・再起動は行っていない。
+Bridge/direct-HID/pyvut/debug consoleと同時capture processは確認した一覧に不在。
+禁止executableを起動していない。official runtimeを唯一のHID ownerとして扱い、
+exclusive-open / handle contention testは行っていない。実際のhandle ownershipは未実証。
+
+VID/PID `0bb4:0350` のpresent-only PnP parentと、既存USBPcap capture-controlの
+read-only hub-symlink queryを正規化後に完全一致で照合し、target rootを一意に確定。
+そのrootの唯一のdirect USB input deviceからcapture addressを選択した。
+USBPcap controlにはzero-access open + hub-symlink queryだけを行い、dongle HIDをopenしていない。
+生root/address/interface/PnP identifiersはprivate。pcapでのdescriptor一致は未確認。
+
+初回の無引数USBPcap enumerationは自身のconsoleを作るためredirected stdinを読まず、
+capture未選択のまま待機した。その自分のprocessだけを終了して、非対話のextcap inventoryへ移った。
+このenumerationはcapture試行でもvendor command送信でもない。
+
+### Direct capture 1 receipt
+
+`USBPcapCMD -d <verified-control> --devices <selected-address> --inject-descriptors
+-o <private-new-file.pcap>` を実行。出力はstdout/pipeでなくprivate filenameを指定した。
+
+| Gate item | Result |
+|---|---|
+| File created / size > header | FAIL: destination file absent; size N/A |
+| Valid pcap/pcapng header / first 32 bytes | NOT AVAILABLE: file absent |
+| tshark parse | NOT RUN: file absent |
+| USB packet count > 0 | NOT CONFIRMED; count unknown, zeroとして記録しない |
+| Target `0bb4:0350` traffic | NOT CONFIRMED; PnP inventoryだけではcapture PASSにならない |
+| Overall | **FAIL — STOP** |
+| Direct capture 2 | **NOT RUN — direct capture 1 failed** |
+| Extcap pipe | **NOT RUN — previous pipe path not retested** |
+| Chosen production research capture path | **NONE — Health Gate not established** |
+
+PowerShellのGUI executable呼び出しはworker完了を待たずに戻った。
+`$LASTEXITCODE`は空で、USBPcap native exit codeは取得できていない。
+launch shell exit 0をUSBPcap capture成功として扱わない。
+直後のread-only確認でUSBPcap worker、consent process、同時capture process、output fileは不在。
+成功した5–15秒captureは成立していない。
+stdoutにはshellの空のnative-exit表示だけがあり、USBPcap worker stdout/stderrは取得できていない。
+
+分類: **DIRECT CAPTURE LAUNCH / LIFETIME FAILURE (underlying worker cause undetermined)**。
+launcherがworkerを待たなかった事実と、worker/driver側の原因未確定を分離する。
+valid header不成立を新しい `magic=0x00000000` の観測と呼ばない。
+driver故障、再install/reboot必須、extcap/pipe原因確定とも判断しない。
+指示書§13/§27に従い、追加captureやlauncher再試行を行わず停止した。
+
+### HIL / interpretation retained
+
+| Item | Result |
+|---|---|
+| Official baseline: B ON attempted / Connected / tracking | NOT RUN / NOT TESTED / NOT OBSERVED |
+| Baseline N-burst / host sequence | Unknown / unavailable |
+| Power-cycle reconnect: attempted / Pair used / reconnected | NOT RUN / NONE / NOT TESTED |
+| Reconnect N-burst / host sequence | Unknown / unavailable |
+| NA / PWS / PairDevice / FW1 observed from official traffic | Unknown: no valid official trace |
+| Bridge manual vendor command | NONE |
+| Pair new / Unpair / Remove tracker | NOT RUN |
+| Most likely Altra acquisition blocker | F — distinguish不能を維持 |
+| NADS stability / acquisition | previous Class B / HIL_REQUIREDを維持; acquisition unresolved |
+| NASS stability / acquisition | previous Class B / HIL_REQUIREDを維持; acquisition unresolved |
+
+baseline / reconnect / Current Backend / passive guard差分は、下の歴史的matrixの
+未観測列を維持する。file未生成からcommand absenceやB接続失敗を推論しない。
+古いpreparation 28 packetsを今回のHealth Gate証明に再利用しない。
+
+### Validation / private evidence / next action
+
+raw evidenceはgitignored `hil-private/official-runtime-usbpcap/health/` の
+inventory、operator receipt、failure receiptのみ。今回pcap/CSVは生成されていない。
+Capture SHA256: N/A (no file)。topology/serial/RF/descriptor serialは公開しない。
+
+既存Windows Release test targets build PASS。実機を使わないfake-transport/offline CTest
+`protocol|backend_pairing|setup_pairing|identity_capture|identity_compare|identity_offline`
+**6/6 PASS**。既存offline USB sanitizer unit tests **8/8 PASS**。sanitizer/test source変更なし。
+これはUSBPcap/HIL成功を意味しない。対象2 public filesのprivate-value leakage scan **PASS** (45 identifiers / 515 representations; 保存raw payload 329件を含む)。
+production Backend / shared protocol変更なし。成果はsanitized report / sequence metadataのみ。
+research branchへcommit/pushし、integrationへmergeしない。
+
+Next action: このrunのcapture/HILは終了。次の別taskで、既存USBPcapをprivate fileへ
+起動するlauncherのprocess lifetime・明示wait・停止方法・native exit receiptを先に確定し、
+A/B OFFのHealth Gateを新規runとして実施する。現在のFAIL後に追加操作を行わない。
+
+## Historical: previous extcap run at checkpoint 1aa753f
+
+以下は前回runの記録。古いcaptureや当時のprocedureを今回の成功・実行権限として扱わない。
+
 2026-10-09 JST。Research base `1fbe8f8293ada00221a01afe9d558835c7331ac0`。
 **STOP: baseline capture transport failure。正常B connect/reconnect wire sequenceは未取得。**
 
