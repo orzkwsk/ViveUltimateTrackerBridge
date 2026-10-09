@@ -21,7 +21,11 @@ public:
                       std::string& error) = 0;
     virtual void close() = 0;
     [[nodiscard]] virtual std::size_t featureLength() const noexcept = 0;
+    // True means host API acceptance only. A throw may occur after writing;
+    // callers must retain that uncertainty. Neither result proves RF effects.
     virtual bool setFeature(std::span<const std::uint8_t> data) = 0;
+    // HIDAPI-style report-ID-prefixed buffer, or empty if none observed.
+    // Returned bytes require framing validation and are not semantic ACKs.
     [[nodiscard]] virtual std::vector<std::uint8_t> getFeature() = 0;
     [[nodiscard]] virtual std::vector<std::uint8_t> read(int timeoutMs) = 0;
     [[nodiscard]] virtual bool readFailed() const noexcept = 0;

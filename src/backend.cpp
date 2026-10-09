@@ -8,6 +8,7 @@
 #include <map>
 #include <limits>
 #include <mutex>
+#include <stdexcept>
 #include <utility>
 
 #ifdef _WIN32
@@ -196,8 +197,7 @@ struct Backend::Impl {
         : hid(std::move(value)) {}
 
     struct CommandResult {
-        bool sent = false;
-        bool responseMatched = false;
+        FeatureExchangeEvidence evidence;
         std::vector<std::uint8_t> response;
     };
 
@@ -215,8 +215,11 @@ struct Backend::Impl {
     std::string error;
     std::unique_ptr<detail::BackendTransport> hid;
     bool pairingMayBeEnabled = false;
-    bool pairingConfirmed = false;
+    bool pairingEnableExchangeMatched = false;
     int pairingSlot = -1;
+    FeatureExchangeEvidence lastExchange, enableExchange;
+    std::optional<FeatureExchangeEvidence> lastFailedExchange;
+    PairingCleanupEvidence cleanup;
 
     void emit(BackendEvent event) {
         event.observedMonotonicNs = receivedNs;
@@ -224,24 +227,106 @@ struct Backend::Impl {
         if (callback) callback(event);
     }
 
+    void recordExchange(const FeatureExchangeEvidence& evidence) {
+        lastExchange = evidence;
+        if (evidence.error == FeatureExchangeError::None) return;
+        // Keep failures even when a later configureOnPair send matches. No
+        // raw response bytes or exception.what() enter diagnostics.
+        lastFailedExchange = evidence;
+        switch (evidence.error) {
+        case FeatureExchangeError::TransportUnavailable: error = "feature transport unavailable"; break;
+        case FeatureExchangeError::PayloadBuildFailed: error = "feature payload build failed"; break;
+        case FeatureExchangeError::WriteRejected: error = "feature write rejected"; break;
+        case FeatureExchangeError::WriteException: error = "feature write raised an exception; write outcome unknown"; break;
+        case FeatureExchangeError::ResponseException: error = "feature response raised an exception after accepted write"; break;
+        case FeatureExchangeError::NoResponse: error = "no feature response observed"; break;
+        case FeatureExchangeError::WrongCommandOnly: error = "only unrelated feature responses observed"; break;
+        case FeatureExchangeError::MalformedResponse:
+            error = evidence.matchingMalformedResponses ? "matching feature response malformed: " : "feature response malformed: ";
+            switch (evidence.framingError) {
+            case FeatureFramingError::TooShort: error += "shorter than header"; break;
+            case FeatureFramingError::InvalidDeclaredLength: error += "invalid declared length"; break;
+            case FeatureFramingError::DeclaredLengthExceedsBuffer: error += "declared response length exceeds buffer"; break;
+            default: break;
+            }
+            break;
+        default: break;
+        }
+    }
+
     CommandResult sendCommandDetailed(std::uint8_t command, std::span<const std::uint8_t> payload) {
         CommandResult result;
-        if (!hid) return result;
+        auto& evidence = result.evidence;
+        evidence.command = command;
+        evidence.transportGeneration = generation;
+        lastExchange = evidence; // never copy stale metadata after a pre-write exception
+        const auto finish = [&]() { recordExchange(evidence); return result; };
+        if (!hid) { evidence.error = FeatureExchangeError::TransportUnavailable; return finish(); }
         auto packet = protocol::buildFeatureCommand(command, payload, hid->featureLength());
-        if (packet.empty() || !hid->setFeature(packet)) return result;
-        result.sent = true;
-        for (int i = 0; i < 10; ++i) {
-            auto response = hid->getFeature();
-            if (response.size() < 5) continue;
-            if (response[1] != command) continue;
-            const std::size_t declared = response[2];
-            if (declared < 4) return result;
-            const std::size_t len = std::min<std::size_t>(declared - 4, response.size() - 5);
-            result.response.assign(response.begin() + 5, response.begin() + 5 + len);
-            result.responseMatched = true;
-            return result;
+        if (packet.empty()) { evidence.error = FeatureExchangeError::PayloadBuildFailed; return finish(); }
+        evidence.write = FeatureWriteState::OutcomeUnknown;
+        try {
+            if (!hid->setFeature(packet)) {
+                evidence.write = FeatureWriteState::Failed;
+                evidence.error = FeatureExchangeError::WriteRejected;
+                return finish();
+            }
+        } catch (...) {
+            evidence.error = FeatureExchangeError::WriteException;
+            recordExchange(evidence);
+            throw std::runtime_error(error); // do not forward transport payload/identifier text
         }
-        return result;
+        evidence.write = FeatureWriteState::AcceptedByTransportApi;
+        for (int i = 0; i < 10; ++i) {
+            ++evidence.responseAttempts;
+            std::vector<std::uint8_t> response;
+            try { response = hid->getFeature(); }
+            catch (...) {
+                evidence.error = FeatureExchangeError::ResponseException;
+                recordExchange(evidence);
+                throw std::runtime_error(error);
+            }
+            if (response.empty()) {
+                ++evidence.emptyResponses;
+                evidence.lastObservation = FeatureResponseObservation::Empty;
+                continue;
+            }
+            FeatureFramingError framing = FeatureFramingError::None;
+            if (response.size() < 5) framing = FeatureFramingError::TooShort;
+            else if (response[2] < 4) framing = FeatureFramingError::InvalidDeclaredLength;
+            else if (static_cast<std::size_t>(response[2]) + 1 > response.size())
+                framing = FeatureFramingError::DeclaredLengthExceedsBuffer;
+            if (framing != FeatureFramingError::None) {
+                ++evidence.malformedResponses;
+                if (response.size() >= 2 && response[1] == command) ++evidence.matchingMalformedResponses;
+                evidence.response = FeatureResponseState::Malformed;
+                evidence.lastObservation = FeatureResponseObservation::Malformed;
+                evidence.framingError = framing;
+                // Preserve the previous immediate failure for a matching bad
+                // declaration, and reject truncation instead of clipping it.
+                if (response.size() >= 5 && response[1] == command) {
+                    evidence.error = FeatureExchangeError::MalformedResponse;
+                    return finish();
+                }
+                continue;
+            }
+            if (response[1] != command) {
+                ++evidence.wrongCommandResponses;
+                if (!evidence.malformedResponses) evidence.response = FeatureResponseState::WrongCommandOnly;
+                evidence.lastObservation = FeatureResponseObservation::WrongCommand;
+                continue;
+            }
+            const std::size_t declared = response[2];
+            const std::size_t len = declared - 4;
+            result.response.assign(response.begin() + 5, response.begin() + 5 + len);
+            evidence.response = FeatureResponseState::Matched;
+            evidence.lastObservation = FeatureResponseObservation::Matched;
+            return finish();
+        }
+        evidence.error = evidence.malformedResponses ? FeatureExchangeError::MalformedResponse :
+                         evidence.wrongCommandResponses ? FeatureExchangeError::WrongCommandOnly :
+                         FeatureExchangeError::NoResponse;
+        return finish();
     }
 
     std::vector<std::uint8_t> sendCommand(std::uint8_t command, std::span<const std::uint8_t> payload) {
@@ -256,9 +341,17 @@ struct Backend::Impl {
 
     bool sendAck(const DeviceId& device, const std::string& ack) {
         auto tx = protocol::buildAckTx(device, ack);
-        if (tx.empty()) return false;
-        (void)sendCommand(protocol::kCmdTx, tx);
-        return true;
+        if (tx.empty()) {
+            FeatureExchangeEvidence evidence;
+            evidence.command = protocol::kCmdTx;
+            evidence.transportGeneration = generation;
+            evidence.error = FeatureExchangeError::PayloadBuildFailed;
+            recordExchange(evidence);
+            return false;
+        }
+        // Host exchange result only. Incoming tracker ACKs are a separate
+        // event stream; configureOnPair retains its original send order.
+        return sendCommandDetailed(protocol::kCmdTx, tx).evidence.matched();
     }
 
     void configureOnPair(const DeviceId& device) {
@@ -320,8 +413,8 @@ bool Backend::start(const BackendConfig& config) {
     // Runtime DeviceUnpaired recovery remains slot-local RxPowerSaving(false).
     impl_->isRunning = true;
     // A previous explicit setup operation may have closed with uncertain
-    // disable. Resolve it on the reopened handle before admitting another
-    // operation; never carry a confirmed enable across transport generations.
+    // disable exchange. Observe a new exchange on the reopened handle before
+    // admitting another operation; this does not verify the old vendor effect.
     if (impl_->pairingMayBeEnabled && !endPairing()) {
         const auto error = impl_->error;
         stop();
@@ -335,20 +428,27 @@ bool Backend::start(const BackendConfig& config) {
 #endif
 }
 
-void Backend::stop() {
+void Backend::stop() noexcept {
     if (!impl_) return;
 #ifdef _WIN32
     if (impl_->pairingMayBeEnabled) (void)endPairingWithRetry(1);
-    if (impl_->hid) impl_->hid->close();
+    try { if (impl_->hid) impl_->hid->close(); }
+    catch (...) {
+        // A successful close cannot confirm cleanup; a close exception must
+        // not erase a failed disable exchange or escape a destructor.
+        try { impl_->error += "; HID close raised an exception"; } catch (...) {}
+    }
 #endif
-    impl_->pairingConfirmed = false;
+    impl_->pairingEnableExchangeMatched = false;
     impl_->isRunning = false;
     impl_->hostSlot = -1;
-    std::scoped_lock lock(impl_->mutex);
-    impl_->states.clear();
-    impl_->devices.clear();
-    impl_->buttons.clear();
-    impl_->lossDiagnostics.clear();
+    try {
+        std::scoped_lock lock(impl_->mutex);
+        impl_->states.clear();
+        impl_->devices.clear();
+        impl_->buttons.clear();
+        impl_->lossDiagnostics.clear();
+    } catch (...) { /* best-effort noexcept stop/destructor boundary */ }
 }
 
 std::uint64_t Backend::transportGeneration() const noexcept {
@@ -365,6 +465,12 @@ void Backend::setEventCallback(EventCallback callback) {
 }
 
 bool Backend::beginPairing(int slot) {
+    if (impl_ && !impl_->pairingMayBeEnabled) {
+        impl_->enableExchange = {};
+        impl_->enableExchange.command = protocol::kCmdRequestRfChangeBehavior;
+        impl_->enableExchange.transportGeneration = impl_->generation;
+        impl_->cleanup = {};
+    }
     if (!impl_ || !impl_->isRunning) {
         if (impl_) impl_->error = "cannot begin pairing: backend is not running";
         return false;
@@ -379,21 +485,31 @@ bool Backend::beginPairing(int slot) {
             impl_->error = "cannot change pairing selector while pairing is active";
             return false;
         }
-        return impl_->pairingConfirmed;
+        return impl_->pairingEnableExchangeMatched;
     }
     // Conservatively retain cleanup eligibility if a transport call throws
     // after writing the enable but before returning its response.
     impl_->pairingMayBeEnabled = true;
     impl_->pairingSlot = slot;
-    const auto result = impl_->sendCommandDetailed(protocol::kCmdRequestRfChangeBehavior, *payload);
-    if (!result.sent) { impl_->pairingMayBeEnabled = false; impl_->pairingSlot = -1; }
-    if (!result.responseMatched) {
-        impl_->error = result.sent
-            ? "PairDevice enable was sent but no matching feature response was observed"
-            : "failed to send PairDevice enable feature command";
+    impl_->cleanup.state = CleanupExchangeState::Unknown;
+    impl_->cleanup.enableGeneration = impl_->generation;
+    Impl::CommandResult result;
+    try { result = impl_->sendCommandDetailed(protocol::kCmdRequestRfChangeBehavior, *payload); }
+    catch (...) {
+        impl_->enableExchange = impl_->lastExchange;
+        throw; // may have written; cleanup eligibility intentionally remains
+    }
+    impl_->enableExchange = result.evidence;
+    if (result.evidence.write == FeatureWriteState::NotAttempted || result.evidence.write == FeatureWriteState::Failed) {
+        impl_->pairingMayBeEnabled = false;
+        impl_->pairingSlot = -1;
+        impl_->cleanup.state = CleanupExchangeState::NotNeeded;
+    }
+    if (!result.evidence.matched()) {
+        impl_->error = "PairDevice enable exchange failed: " + impl_->error;
         return false;
     }
-    impl_->pairingConfirmed = true;
+    impl_->pairingEnableExchangeMatched = true;
     return true;
 }
 
@@ -401,7 +517,7 @@ bool Backend::endPairing() {
     if (!impl_) return false;
     if (!impl_->pairingMayBeEnabled) return true;
     if (!impl_->isRunning) {
-        impl_->error = "cannot disable pairing: backend is not running";
+        impl_->error = "transport lost before cleanup exchange; prior cleanup evidence retained";
         return false;
     }
     const auto payload = protocol::buildRfBehaviorPayload(
@@ -410,15 +526,21 @@ bool Backend::endPairing() {
         impl_->error = "cannot disable pairing: saved selector is invalid";
         return false;
     }
-    const auto result = impl_->sendCommandDetailed(protocol::kCmdRequestRfChangeBehavior, *payload);
-    if (!result.responseMatched) {
-        impl_->error = result.sent
-            ? "PairDevice disable was sent but no matching feature response was observed"
-            : "failed to send PairDevice disable feature command";
+    Impl::CommandResult result;
+    try { result = impl_->sendCommandDetailed(protocol::kCmdRequestRfChangeBehavior, *payload); }
+    catch (...) {
+        impl_->cleanup.disable = impl_->lastExchange;
+        impl_->cleanup.state = CleanupExchangeState::Unknown;
+        throw;
+    }
+    impl_->cleanup.disable = result.evidence;
+    impl_->cleanup.state = result.evidence.matched() ? CleanupExchangeState::Matched : CleanupExchangeState::Failed;
+    if (!result.evidence.matched()) {
+        impl_->error = "PairDevice disable exchange failed: " + impl_->error;
         return false;
     }
     impl_->pairingMayBeEnabled = false;
-    impl_->pairingConfirmed = false;
+    impl_->pairingEnableExchangeMatched = false;
     impl_->pairingSlot = -1;
     return true;
 }
@@ -427,12 +549,28 @@ bool Backend::pairingActive() const noexcept {
     return impl_ && impl_->pairingMayBeEnabled;
 }
 
+const FeatureExchangeEvidence& Backend::lastFeatureExchange() const noexcept {
+    static const FeatureExchangeEvidence empty;
+    return impl_ ? impl_->lastExchange : empty;
+}
+const std::optional<FeatureExchangeEvidence>& Backend::lastFailedFeatureExchange() const noexcept {
+    static const std::optional<FeatureExchangeEvidence> empty;
+    return impl_ ? impl_->lastFailedExchange : empty;
+}
+const FeatureExchangeEvidence& Backend::pairingEnableExchange() const noexcept {
+    static const FeatureExchangeEvidence empty;
+    return impl_ ? impl_->enableExchange : empty;
+}
+const PairingCleanupEvidence& Backend::pairingCleanupEvidence() const noexcept {
+    static const PairingCleanupEvidence empty;
+    return impl_ ? impl_->cleanup : empty;
+}
+
 bool Backend::endPairingWithRetry(unsigned attempts) {
     if (!pairingActive()) return true;
     for (unsigned i = 0; i < attempts && i < 2; ++i) {
         try { if (endPairing()) return true; }
-        catch (const std::exception& error) { if (impl_) impl_->error = error.what(); }
-        catch (...) { if (impl_) impl_->error = "exception during PairDevice disable"; }
+        catch (...) { /* sanitized exchange error and write uncertainty retained */ }
     }
     return false;
 }
@@ -457,7 +595,9 @@ bool Backend::pollOnce() {
     if (impl_->hid->readFailed()) {
         (void)endPairingWithRetry();
         stop();
+        const auto cleanupError = impl_->pairingMayBeEnabled ? impl_->error : std::string{};
         impl_->error = "HID read failed: transport session lost";
+        if (!cleanupError.empty()) impl_->error += "; cleanup exchange unresolved: " + cleanupError;
         return false;
     }
     if (report.empty()) return true;
