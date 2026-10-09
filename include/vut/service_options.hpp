@@ -11,6 +11,7 @@ struct ServiceOptions {
     std::uint16_t port = 29810;
     bool diagnostics = false;
     bool interactiveDebug = false;
+    std::string_view runtimeDiagnosticPath;
 };
 inline ServiceOptions parseServiceOptions(std::span<const std::string_view> arguments) {
     ServiceOptions result;
@@ -20,6 +21,9 @@ inline ServiceOptions parseServiceOptions(std::span<const std::string_view> argu
             result.diagnostics = true;
         } else if (argument == "--interactive-debug" && !result.interactiveDebug) {
             result.interactiveDebug = true;
+        } else if (argument.starts_with("--runtime-diagnostic-jsonl=") && result.runtimeDiagnosticPath.empty()) {
+            result.runtimeDiagnosticPath = argument.substr(27);
+            if (result.runtimeDiagnosticPath.empty()) throw std::invalid_argument("runtime diagnostic output path is empty");
         } else {
             unsigned int port = 0;
             const auto parsed = std::from_chars(argument.data(), argument.data() + argument.size(), port);

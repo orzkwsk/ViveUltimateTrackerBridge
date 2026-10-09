@@ -3,6 +3,7 @@
 #include "vut/observation_publisher.hpp"
 #include "vut/service_options.hpp"
 #include "vut/service_session.hpp"
+#include "vut/runtime_diagnostics.hpp"
 #include <windows.h>
 #include <objbase.h>
 #include <conio.h>
@@ -15,6 +16,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <thread>
@@ -22,6 +24,7 @@
 
 namespace {
 std::atomic_bool run{true};
+std::unique_ptr<vut::RuntimeDiagnostics> runtimeDiagnostics;
 void stop(int) { run = false; }
 std::int64_t nowNs() {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
@@ -237,8 +240,11 @@ public:
 };
 }
 int main(int argc,char** argv) try {
+    if (argc==2 && std::string(argv[1])=="--version") {
+        std::cout << vut::diagnosticBuildJson() << '\n'; return 0;
+    }
     if (argc==2 && std::string(argv[1])=="--help") {
-        std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT] [--diagnostics] [--interactive-debug]\nConfiguration: source <persistent-installation-id> and map <full-rf-address> <map-id> lines.\n"
+        std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT] [--diagnostics] [--interactive-debug] [--runtime-diagnostic-jsonl=PATH]\nConfiguration: source <persistent-installation-id> and map <full-rf-address> <map-id> lines.\n"
                      "Optional: reconnect_revision strict|preserve (default strict).\n"
                      "preserve means: Preserve coordinate map across tracker reconnect.\n"
                      "Default destination 127.0.0.1:29810. Stop/restart after map reset or ambiguous RF gap.\n"
@@ -257,6 +263,14 @@ int main(int argc,char** argv) try {
     std::vector<std::string_view> arguments;
     for (int i = 3; i < argc; ++i) arguments.emplace_back(argv[i]);
     const auto options = vut::parseServiceOptions(arguments);
+    vut::RuntimeDiagnostics::Sink diagnosticSink;
+    if (!options.runtimeDiagnosticPath.empty()) {
+        const auto output = std::make_shared<std::ofstream>(std::string(options.runtimeDiagnosticPath), std::ios::binary | std::ios::trunc);
+        if (!*output) std::cerr << "[runtime-diagnostic] output unavailable; tracking behavior continues\n";
+        diagnosticSink = [output](const std::string& bytes) { *output << bytes; output->flush(); return bool(*output); };
+    }
+    runtimeDiagnostics = std::make_unique<vut::RuntimeDiagnostics>(std::move(diagnosticSink));
+    runtimeDiagnostics->event("component_started", "{\"inventory_complete\":false,\"role_unavailable\":\"backend has no body-role assignment\"}");
     auto configured=config(argv[1]);
     auto c=std::move(configured.observation);
     RevisionJournal journal(argv[2]);
@@ -270,15 +284,19 @@ int main(int argc,char** argv) try {
     int debugSlot = -1;
     if (options.interactiveDebug) printInteractiveDebugHelp();
     while(run) {
-        if(!backend.start()) { std::cerr << backend.lastError() << '\n'; std::this_thread::sleep_for(std::chrono::seconds(1)); continue; }
+        runtimeDiagnostics->sessionState(nextStartCause == vut::SessionStartCause::InitialStart ? "connecting" : "reconnecting");
+        if(!backend.start()) { runtimeDiagnostics->event("diagnostic_warning", "{\"reason\":\"backend start failed\",\"error\":" + vut::diagnosticQuote(backend.lastError()) + "}"); std::cerr << backend.lastError() << '\n'; std::this_thread::sleep_for(std::chrono::seconds(1)); continue; }
         const auto session = revisionCoordinator.begin(
             coordinateIdentity, nextStartCause, backend.transportGeneration(),
             [&] { return journal.advance(); }, uuid, nowNs);
         c.sessionId=session.sessionId; c.epochNs=session.epochNs;
         c.revision=session.revision; c.generation=session.transportGeneration;
+        runtimeDiagnostics->beginSession(c.sessionId, c.generation);
+        runtimeDiagnostics->event("component_ready", "{\"inventory_complete\":false,\"readiness_scope\":\"HID backend started, not a tracker inventory snapshot\"}");
         vut::ViveObservationAdapter adapter(c);
         vut::ObservationPublisher publisher(c.sessionId,[&](auto bytes){return sender.send(bytes);},[&]{return nowNs()-c.epochNs;});
         backend.setEventCallback([&](const auto& event) {
+            runtimeDiagnostics->observeBackend(event);
             if (options.interactiveDebug && event.device.slot >= 0) {
                 if (event.kind == vut::BackendEvent::Kind::DeviceUnpaired && debugSlot == event.device.slot) {
                     debugSlot = -1;
@@ -298,7 +316,10 @@ int main(int argc,char** argv) try {
                 std::cerr << "[tracking-ack] device=" << event.device.toString()
                           << " " << event.text << '\n';
             }
-            if(auto observation=adapter.admit(event)) publisher.enqueue(std::move(*observation));
+            if(auto observation=adapter.admit(event)) {
+                runtimeDiagnostics->observe(*observation);
+                publisher.enqueue(std::move(*observation));
+            }
         });
         std::cerr << "session=" << c.sessionId << " revision=" << c.revision
                   << " revision_action=" << (session.revisionAdvanced ? "advanced" : "preserved")
@@ -316,6 +337,12 @@ int main(int argc,char** argv) try {
             if (options.interactiveDebug) pollInteractiveDebug(backend, debugSlot);
             const auto now = std::chrono::steady_clock::now();
             if(now >= nextAdmissionReport) {
+                if (runtimeDiagnostics->enabled()) {
+                    const auto counters = runtimeDiagnostics->counters();
+                    runtimeDiagnostics->event("diagnostic_warning", "{\"reason\":\"observer_health\",\"dropped_events\":" + std::to_string(counters.droppedPose + counters.droppedCritical) +
+                        ",\"critical_dropped_events\":" + std::to_string(counters.droppedCritical) + ",\"write_errors\":" + std::to_string(counters.writeErrors) +
+                        ",\"observation_complete\":" + (counters.droppedCritical || counters.writeErrors ? "false" : "true") + "}");
+                }
                 if (options.diagnostics) printAdmissionDiagnostics(adapter, "[admission]");
                 else if (adapter.rejected() != lastReportedRejections) {
                     const auto& d = adapter.diagnostics();
@@ -328,6 +355,7 @@ int main(int argc,char** argv) try {
             }
         }
         backend.setEventCallback({}); backend.stop(); publisher.clear();
+        runtimeDiagnostics->sessionState("disconnected");
         nextStartCause = adapter.coordinateContinuityUncertain()
             ? vut::SessionStartCause::ContinuityUncertain
             : vut::SessionStartCause::TransportReconnect;
@@ -336,5 +364,14 @@ int main(int argc,char** argv) try {
                   << " dropped=" << counts.dropped << " admission_rejected=" << adapter.rejected() << '\n';
         if (options.diagnostics) printAdmissionDiagnostics(adapter, "[admission-final]");
     }
+    runtimeDiagnostics->event("component_stopping");
+    runtimeDiagnostics->event("component_stopped");
+    runtimeDiagnostics->close();
     return 0;
-} catch(const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
+} catch(const std::exception& e) {
+    if (runtimeDiagnostics) {
+        runtimeDiagnostics->event("fatal_error", "{\"message\":" + vut::diagnosticQuote(e.what()) + "}");
+        runtimeDiagnostics->close();
+    }
+    std::cerr << e.what() << '\n'; return 1;
+}
