@@ -1,0 +1,1064 @@
+{
+  "audit_date_jst": "2026-10-09",
+  "hardware_this_audit": "NOT_RUN",
+  "new_hardware_io": "NONE",
+  "saved_identity_analysis": {
+    "status": "INSUFFICIENT_EVIDENCE",
+    "failures": [],
+    "insufficient": [
+      "missing_human_binding",
+      "missing_required_scenario_evidence"
+    ],
+    "runs": [
+      {
+        "run": "Run-1",
+        "scenario": "HIL-01",
+        "counts": {
+          "capture_start": 1,
+          "transport_open": 1,
+          "raw_report": 118,
+          "pair": 2,
+          "ack": 32
+        },
+        "pose_order": "UNKNOWN_NOT_RECORDED",
+        "evidence_kind": "hardware-passive"
+      },
+      {
+        "run": "Run-2",
+        "scenario": "HIL-02",
+        "counts": {
+          "capture_start": 1,
+          "transport_open": 1,
+          "raw_report": 31,
+          "capture_stop": 1
+        },
+        "pose_order": "UNKNOWN_NOT_RECORDED",
+        "evidence_kind": "hardware-passive"
+      },
+      {
+        "run": "Run-3",
+        "scenario": "HIL-03",
+        "counts": {
+          "capture_start": 1,
+          "transport_open": 1,
+          "raw_report": 152,
+          "ack": 2,
+          "unpair": 2,
+          "capture_stop": 1
+        },
+        "pose_order": "UNKNOWN_NOT_RECORDED",
+        "evidence_kind": "hardware-passive"
+      },
+      {
+        "run": "Run-4",
+        "scenario": "HIL-04",
+        "counts": {
+          "capture_start": 1,
+          "transport_open": 2,
+          "raw_report": 8,
+          "transport_lost": 1,
+          "transport_open_failed": 6,
+          "capture_stop": 1
+        },
+        "pose_order": "UNKNOWN_NOT_RECORDED",
+        "evidence_kind": "hardware-passive"
+      },
+      {
+        "run": "Run-5",
+        "scenario": "HIL-05",
+        "counts": {
+          "capture_start": 1,
+          "transport_open": 1,
+          "raw_report": 85,
+          "pair": 2,
+          "ack": 32,
+          "capture_stop": 1
+        },
+        "pose_order": "UNKNOWN_NOT_RECORDED",
+        "evidence_kind": "hardware-passive"
+      },
+      {
+        "run": "Run-6",
+        "scenario": "HIL-06-after",
+        "counts": {
+          "capture_start": 1,
+          "transport_open": 2,
+          "raw_report": 137,
+          "transport_lost": 1,
+          "transport_open_failed": 7,
+          "pair": 1,
+          "ack": 16,
+          "capture_stop": 1
+        },
+        "pose_order": "UNKNOWN_NOT_RECORDED",
+        "evidence_kind": "hardware-passive"
+      },
+      {
+        "run": "Run-7",
+        "scenario": "HIL-06-after",
+        "counts": {
+          "capture_start": 1,
+          "transport_open": 2,
+          "raw_report": 19,
+          "transport_lost": 1,
+          "transport_open_failed": 9,
+          "capture_stop": 1
+        },
+        "pose_order": "UNKNOWN_NOT_RECORDED",
+        "evidence_kind": "hardware-passive"
+      }
+    ],
+    "bursts": [
+      {
+        "run": "Run-1",
+        "scenario": "HIL-01",
+        "generation": 1,
+        "RF": "RF-1",
+        "slot": 0,
+        "physical_tracker": "Tracker A",
+        "events": [
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NANA",
+            "raw_report_index": 22,
+            "relative_ns": 0,
+            "interval_ns": 0
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NADS",
+            "raw_report_index": 25,
+            "candidate": "NADS-1",
+            "equality_token": "Bytes-1",
+            "relative_ns": 31997200,
+            "interval_ns": 31997200
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NASS",
+            "raw_report_index": 27,
+            "candidate": "NASS-1",
+            "equality_token": "Bytes-2",
+            "relative_ns": 64994600,
+            "interval_ns": 32997400
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NASI",
+            "raw_report_index": 29,
+            "relative_ns": 95999900,
+            "interval_ns": 31005300
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NAPI",
+            "raw_report_index": 32,
+            "relative_ns": 127994400,
+            "interval_ns": 31994500
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NAV1",
+            "raw_report_index": 34,
+            "relative_ns": 159996100,
+            "interval_ns": 32001700
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NARI",
+            "raw_report_index": 37,
+            "relative_ns": 199998100,
+            "interval_ns": 40002000
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NAGN",
+            "raw_report_index": 40,
+            "relative_ns": 231994100,
+            "interval_ns": 31996000
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NAZZ",
+            "raw_report_index": 44,
+            "relative_ns": 295994900,
+            "interval_ns": 64000800
+          }
+        ],
+        "duration_ns": 295994900,
+        "missing_identity_namespaces": [],
+        "completeness": "UNKNOWN_VENDOR_BOUNDARY"
+      },
+      {
+        "run": "Run-1",
+        "scenario": "HIL-01",
+        "generation": 1,
+        "RF": "RF-2",
+        "slot": 4,
+        "physical_tracker": "Tracker B",
+        "events": [
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NANA",
+            "raw_report_index": 4026,
+            "relative_ns": 0,
+            "interval_ns": 0
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NADS",
+            "raw_report_index": 4030,
+            "candidate": "NADS-2",
+            "equality_token": "Bytes-3",
+            "relative_ns": 32000400,
+            "interval_ns": 32000400
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NASS",
+            "raw_report_index": 4034,
+            "candidate": "NASS-2",
+            "equality_token": "Bytes-4",
+            "relative_ns": 63999200,
+            "interval_ns": 31998800
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NASI",
+            "raw_report_index": 4036,
+            "relative_ns": 96009600,
+            "interval_ns": 32010400
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NAPI",
+            "raw_report_index": 4039,
+            "relative_ns": 128013400,
+            "interval_ns": 32003800
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NAV1",
+            "raw_report_index": 4042,
+            "relative_ns": 160005000,
+            "interval_ns": 31991600
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NARI",
+            "raw_report_index": 4045,
+            "relative_ns": 193008300,
+            "interval_ns": 33003300
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NAGN",
+            "raw_report_index": 4048,
+            "relative_ns": 224002500,
+            "interval_ns": 30994200
+          },
+          {
+            "run": "Run-1",
+            "scenario": "HIL-01",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NAZZ",
+            "raw_report_index": 4053,
+            "relative_ns": 288005100,
+            "interval_ns": 64002600
+          }
+        ],
+        "duration_ns": 288005100,
+        "missing_identity_namespaces": [],
+        "completeness": "UNKNOWN_VENDOR_BOUNDARY"
+      },
+      {
+        "run": "Run-5",
+        "scenario": "HIL-05",
+        "generation": 1,
+        "RF": "RF-2",
+        "slot": 4,
+        "physical_tracker": "Tracker B",
+        "events": [
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NANA",
+            "raw_report_index": 23,
+            "relative_ns": 0,
+            "interval_ns": 0
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NADS",
+            "raw_report_index": 25,
+            "candidate": "NADS-2",
+            "equality_token": "Bytes-3",
+            "relative_ns": 32012400,
+            "interval_ns": 32012400
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NASS",
+            "raw_report_index": 28,
+            "candidate": "NASS-2",
+            "equality_token": "Bytes-4",
+            "relative_ns": 72013400,
+            "interval_ns": 40001000
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NASI",
+            "raw_report_index": 31,
+            "relative_ns": 104015800,
+            "interval_ns": 32002400
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NAPI",
+            "raw_report_index": 33,
+            "relative_ns": 136019300,
+            "interval_ns": 32003500
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NAV1",
+            "raw_report_index": 35,
+            "relative_ns": 168023400,
+            "interval_ns": 32004100
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NARI",
+            "raw_report_index": 38,
+            "relative_ns": 200007700,
+            "interval_ns": 31984300
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NAGN",
+            "raw_report_index": 40,
+            "relative_ns": 232018500,
+            "interval_ns": 32010800
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-2",
+            "slot": 4,
+            "physical_tracker": "Tracker B",
+            "event": "NAZZ",
+            "raw_report_index": 46,
+            "relative_ns": 304026600,
+            "interval_ns": 72008100
+          }
+        ],
+        "duration_ns": 304026600,
+        "missing_identity_namespaces": [],
+        "completeness": "UNKNOWN_VENDOR_BOUNDARY"
+      },
+      {
+        "run": "Run-5",
+        "scenario": "HIL-05",
+        "generation": 1,
+        "RF": "RF-1",
+        "slot": 0,
+        "physical_tracker": "Tracker A",
+        "events": [
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NANA",
+            "raw_report_index": 1253,
+            "relative_ns": 0,
+            "interval_ns": 0
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NADS",
+            "raw_report_index": 1255,
+            "candidate": "NADS-1",
+            "equality_token": "Bytes-1",
+            "relative_ns": 32011200,
+            "interval_ns": 32011200
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NASS",
+            "raw_report_index": 1259,
+            "candidate": "NASS-1",
+            "equality_token": "Bytes-2",
+            "relative_ns": 64009800,
+            "interval_ns": 31998600
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NASI",
+            "raw_report_index": 1263,
+            "relative_ns": 104015200,
+            "interval_ns": 40005400
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NAPI",
+            "raw_report_index": 1265,
+            "relative_ns": 136021100,
+            "interval_ns": 32005900
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NAV1",
+            "raw_report_index": 1269,
+            "relative_ns": 168004700,
+            "interval_ns": 31983600
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NARI",
+            "raw_report_index": 1272,
+            "relative_ns": 200001200,
+            "interval_ns": 31996500
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NAGN",
+            "raw_report_index": 1274,
+            "relative_ns": 232021800,
+            "interval_ns": 32020600
+          },
+          {
+            "run": "Run-5",
+            "scenario": "HIL-05",
+            "generation": 1,
+            "RF": "RF-1",
+            "slot": 0,
+            "physical_tracker": "Tracker A",
+            "event": "NAZZ",
+            "raw_report_index": 1281,
+            "relative_ns": 296016100,
+            "interval_ns": 63994300
+          }
+        ],
+        "duration_ns": 296016100,
+        "missing_identity_namespaces": [],
+        "completeness": "UNKNOWN_VENDOR_BOUNDARY"
+      },
+      {
+        "run": "Run-6",
+        "scenario": "HIL-06-after",
+        "generation": 9,
+        "RF": "RF-3",
+        "slot": 3,
+        "physical_tracker": "Tracker A",
+        "events": [
+          {
+            "run": "Run-6",
+            "scenario": "HIL-06-after",
+            "generation": 9,
+            "RF": "RF-3",
+            "slot": 3,
+            "physical_tracker": "Tracker A",
+            "event": "NANA",
+            "raw_report_index": 28,
+            "relative_ns": 0,
+            "interval_ns": 0
+          },
+          {
+            "run": "Run-6",
+            "scenario": "HIL-06-after",
+            "generation": 9,
+            "RF": "RF-3",
+            "slot": 3,
+            "physical_tracker": "Tracker A",
+            "event": "NADS",
+            "raw_report_index": 30,
+            "candidate": "NADS-1",
+            "equality_token": "Bytes-1",
+            "relative_ns": 31996300,
+            "interval_ns": 31996300
+          },
+          {
+            "run": "Run-6",
+            "scenario": "HIL-06-after",
+            "generation": 9,
+            "RF": "RF-3",
+            "slot": 3,
+            "physical_tracker": "Tracker A",
+            "event": "NASS",
+            "raw_report_index": 33,
+            "candidate": "NASS-1",
+            "equality_token": "Bytes-2",
+            "relative_ns": 63997700,
+            "interval_ns": 32001400
+          },
+          {
+            "run": "Run-6",
+            "scenario": "HIL-06-after",
+            "generation": 9,
+            "RF": "RF-3",
+            "slot": 3,
+            "physical_tracker": "Tracker A",
+            "event": "NASI",
+            "raw_report_index": 35,
+            "relative_ns": 96008400,
+            "interval_ns": 32010700
+          },
+          {
+            "run": "Run-6",
+            "scenario": "HIL-06-after",
+            "generation": 9,
+            "RF": "RF-3",
+            "slot": 3,
+            "physical_tracker": "Tracker A",
+            "event": "NAPI",
+            "raw_report_index": 38,
+            "relative_ns": 127997000,
+            "interval_ns": 31988600
+          },
+          {
+            "run": "Run-6",
+            "scenario": "HIL-06-after",
+            "generation": 9,
+            "RF": "RF-3",
+            "slot": 3,
+            "physical_tracker": "Tracker A",
+            "event": "NAV1",
+            "raw_report_index": 40,
+            "relative_ns": 160000900,
+            "interval_ns": 32003900
+          },
+          {
+            "run": "Run-6",
+            "scenario": "HIL-06-after",
+            "generation": 9,
+            "RF": "RF-3",
+            "slot": 3,
+            "physical_tracker": "Tracker A",
+            "event": "NARI",
+            "raw_report_index": 42,
+            "relative_ns": 192007900,
+            "interval_ns": 32007000
+          },
+          {
+            "run": "Run-6",
+            "scenario": "HIL-06-after",
+            "generation": 9,
+            "RF": "RF-3",
+            "slot": 3,
+            "physical_tracker": "Tracker A",
+            "event": "NAGN",
+            "raw_report_index": 45,
+            "relative_ns": 224004400,
+            "interval_ns": 31996500
+          },
+          {
+            "run": "Run-6",
+            "scenario": "HIL-06-after",
+            "generation": 9,
+            "RF": "RF-3",
+            "slot": 3,
+            "physical_tracker": "Tracker A",
+            "event": "NAZZ",
+            "raw_report_index": 49,
+            "relative_ns": 288008200,
+            "interval_ns": 64003800
+          }
+        ],
+        "duration_ns": 288008200,
+        "missing_identity_namespaces": [],
+        "completeness": "UNKNOWN_VENDOR_BOUNDARY"
+      }
+    ],
+    "candidates": {
+      "NADS": {
+        "class": "B_HIL_REQUIRED",
+        "trackers": {
+          "Tracker A": {
+            "observed_values": 1,
+            "stability": "OBSERVED_EQUAL",
+            "RF_count": 2,
+            "slot_count": 2,
+            "run_generation_count": 3
+          },
+          "Tracker B": {
+            "observed_values": 1,
+            "stability": "OBSERVED_EQUAL",
+            "RF_count": 1,
+            "slot_count": 1,
+            "run_generation_count": 2
+          }
+        },
+        "missing": [
+          "Tracker A/HIL-02",
+          "Tracker A/HIL-03",
+          "Tracker A/HIL-04",
+          "Tracker A/HIL-06-before",
+          "Tracker A/HIL-07",
+          "Tracker B/HIL-02",
+          "Tracker B/HIL-03",
+          "Tracker B/HIL-04",
+          "Tracker B/HIL-06-before",
+          "Tracker B/HIL-06-after",
+          "Tracker B/HIL-07"
+        ],
+        "acquisition": "UNRESOLVED",
+        "production": "NOT_AUTHORIZED"
+      },
+      "NASS": {
+        "class": "B_HIL_REQUIRED",
+        "trackers": {
+          "Tracker A": {
+            "observed_values": 1,
+            "stability": "OBSERVED_EQUAL",
+            "RF_count": 2,
+            "slot_count": 2,
+            "run_generation_count": 3
+          },
+          "Tracker B": {
+            "observed_values": 1,
+            "stability": "OBSERVED_EQUAL",
+            "RF_count": 1,
+            "slot_count": 1,
+            "run_generation_count": 2
+          }
+        },
+        "missing": [
+          "Tracker A/HIL-02",
+          "Tracker A/HIL-03",
+          "Tracker A/HIL-04",
+          "Tracker A/HIL-06-before",
+          "Tracker A/HIL-07",
+          "Tracker B/HIL-02",
+          "Tracker B/HIL-03",
+          "Tracker B/HIL-04",
+          "Tracker B/HIL-06-before",
+          "Tracker B/HIL-06-after",
+          "Tracker B/HIL-07"
+        ],
+        "acquisition": "UNRESOLVED",
+        "production": "NOT_AUTHORIZED"
+      }
+    },
+    "burst_gap_ns": 2000000000,
+    "hardware_checks_this_analysis": "NOT_RUN",
+    "production_integration_readiness": "NOT_AUTHORIZED_BY_THIS_TOOL"
+  },
+  "saved_rf_status": [
+    {
+      "run": "Run-1",
+      "scenario": "HIL-01",
+      "rf_status_reports": 35,
+      "malformed_rf_reports": 0,
+      "transitions": [
+        {
+          "generation": 1,
+          "raw_report_index": 1,
+          "slot_words": [
+            "0x0a000005",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x0a000005"
+          ]
+        },
+        {
+          "generation": 1,
+          "raw_report_index": 132,
+          "slot_words": [
+            "0x32000008",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x0a000005"
+          ]
+        },
+        {
+          "generation": 1,
+          "raw_report_index": 4355,
+          "slot_words": [
+            "0x32000008",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x32000008"
+          ]
+        }
+      ],
+      "interpretation": "Opaque historical diagnostic words; no SDK state mapping or physical tracker binding."
+    },
+    {
+      "run": "Run-2",
+      "scenario": "HIL-02",
+      "rf_status_reports": 9,
+      "malformed_rf_reports": 0,
+      "transitions": [
+        {
+          "generation": 1,
+          "raw_report_index": 143,
+          "slot_words": [
+            "0x32000008",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x32000008"
+          ]
+        }
+      ],
+      "interpretation": "Opaque historical diagnostic words; no SDK state mapping or physical tracker binding."
+    },
+    {
+      "run": "Run-3",
+      "scenario": "HIL-03",
+      "rf_status_reports": 53,
+      "malformed_rf_reports": 0,
+      "transitions": [
+        {
+          "generation": 1,
+          "raw_report_index": 45,
+          "slot_words": [
+            "0x32000008",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x32000008"
+          ]
+        },
+        {
+          "generation": 1,
+          "raw_report_index": 12821,
+          "slot_words": [
+            "0x320fa008",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x32000008"
+          ]
+        },
+        {
+          "generation": 1,
+          "raw_report_index": 15294,
+          "slot_words": [
+            "0x320fa008",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x320fa008"
+          ]
+        }
+      ],
+      "interpretation": "Opaque historical diagnostic words; no SDK state mapping or physical tracker binding."
+    },
+    {
+      "run": "Run-4",
+      "scenario": "HIL-04",
+      "rf_status_reports": 8,
+      "malformed_rf_reports": 0,
+      "transitions": [
+        {
+          "generation": 1,
+          "raw_report_index": 1,
+          "slot_words": [
+            "0x320fa008",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x320fa008"
+          ]
+        },
+        {
+          "generation": 8,
+          "raw_report_index": 3,
+          "slot_words": [
+            "0x0a000005",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x0a000005"
+          ]
+        }
+      ],
+      "interpretation": "Opaque historical diagnostic words; no SDK state mapping or physical tracker binding."
+    },
+    {
+      "run": "Run-5",
+      "scenario": "HIL-05",
+      "rf_status_reports": 21,
+      "malformed_rf_reports": 0,
+      "transitions": [
+        {
+          "generation": 1,
+          "raw_report_index": 1,
+          "slot_words": [
+            "0x0a000005",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x0a000005"
+          ]
+        },
+        {
+          "generation": 1,
+          "raw_report_index": 88,
+          "slot_words": [
+            "0x0a000005",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x32000008"
+          ]
+        },
+        {
+          "generation": 1,
+          "raw_report_index": 1399,
+          "slot_words": [
+            "0x32000008",
+            "0x0a000005",
+            "0x01000003",
+            "0x01000003",
+            "0x32000008"
+          ]
+        }
+      ],
+      "interpretation": "Opaque historical diagnostic words; no SDK state mapping or physical tracker binding."
+    },
+    {
+      "run": "Run-6",
+      "scenario": "HIL-06-after",
+      "rf_status_reports": 59,
+      "malformed_rf_reports": 0,
+      "transitions": [
+        {
+          "generation": 1,
+          "raw_report_index": 1,
+          "slot_words": [
+            "0x01000003",
+            "0x03000005",
+            "0x01000003",
+            "0x03000005",
+            "0x01000003"
+          ]
+        },
+        {
+          "generation": 9,
+          "raw_report_index": 9,
+          "slot_words": [
+            "0x01000003",
+            "0x0a000005",
+            "0x01000003",
+            "0x0a000005",
+            "0x01000003"
+          ]
+        },
+        {
+          "generation": 9,
+          "raw_report_index": 202,
+          "slot_words": [
+            "0x01000003",
+            "0x0a000005",
+            "0x01000003",
+            "0x32000008",
+            "0x01000003"
+          ]
+        }
+      ],
+      "interpretation": "Opaque historical diagnostic words; no SDK state mapping or physical tracker binding."
+    },
+    {
+      "run": "Run-7",
+      "scenario": "HIL-06-after",
+      "rf_status_reports": 19,
+      "malformed_rf_reports": 0,
+      "transitions": [
+        {
+          "generation": 1,
+          "raw_report_index": 1,
+          "slot_words": [
+            "0x01000003",
+            "0x0a000005",
+            "0x01000003",
+            "0x0a000005",
+            "0x01000003"
+          ]
+        },
+        {
+          "generation": 11,
+          "raw_report_index": 6,
+          "slot_words": [
+            "0x01000003",
+            "0x0a000005",
+            "0x01000003",
+            "0x0a000005",
+            "0x01000003"
+          ]
+        }
+      ],
+      "interpretation": "Opaque historical diagnostic words; no SDK state mapping or physical tracker binding."
+    }
+  ]
+}

@@ -1,0 +1,1275 @@
+{
+  "hardware_io": "NONE",
+  "source_execution": "NONE",
+  "git": {
+    "scope": "All locally available heads and fetched origin refs; reachable relevant history. Deleted/unavailable remote refs cannot be claimed audited.",
+    "refs": [
+      {
+        "ref": "refs/heads/design/altra-service-control-architecture",
+        "commit": "ab1eeb596e450480c48ba876be1f7ef153c6c725",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/heads/feature/altra-control-model",
+        "commit": "7ac12198a5c785f79f09b0d80139a41a844468f5",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/heads/feature/altra-pairing-assignment-ux",
+        "commit": "68af2d05ad8ef7cfceff624cff66c58569edd853",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "4f83361650f584e998a356bf12a8c004597316ad"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "1822aff25c240271d4beea6f6931a60a5f38bd93"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/heads/feature/altra-service-control-owner",
+        "commit": "56b9a269ea3f76068a7e69c54b108efa2c1556a8",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/heads/fix/altra-pairing-assignment-ux-rework",
+        "commit": "a594e4377ef2b5cca04e915187b0c12e59064839",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/heads/main",
+        "commit": "5fc42af3d1b71b7a0ccde207b7e322c6120fc50a",
+        "files": []
+      },
+      {
+        "ref": "refs/heads/refactor/monaka-layer-separation",
+        "commit": "a594e4377ef2b5cca04e915187b0c12e59064839",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/heads/research/altra-stable-identity-hil",
+        "commit": "8757758fb6583a745bd1b28886487eb4b516b9c3",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "a28f5674a41491ec68aea9be81e5e46350526ec2"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "d1cd6600dc95fd8570a043746bb3be097e8261ac"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          },
+          {
+            "path": "tools/vut_identity_capture.cpp",
+            "blob": "458de651751c00a26d8a76c4159cd0828f755c3b"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/design/altra-service-control-architecture",
+        "commit": "ab1eeb596e450480c48ba876be1f7ef153c6c725",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/dev/vivehub-bypass",
+        "commit": "db7c6795055fc00054b43a64e3bbd658a3575932",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "24689fb221a22766854ee203f337fa8e0fb3401b"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "fa89171cd8845a2b140f3650d40969d46c897e18"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "9a32ea5f628008335853d3f14c19df5c12d0eea2"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "c9e17025513b2382cead87481641e817662da895"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/diagnostic/runtime-restart-observability",
+        "commit": "36f4990f8e649f0f2d6c440343041988e5bc9684",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "8990c9baba7f99a6f79be5dc8c88f0f2216b610c"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "0bf6187870bf94949fbbac841e2d789bca98c04e"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/diagnostic/vive-slam-recovery-controls",
+        "commit": "c8a2030872edb3461a1e29a9915f277dad89a129",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "8990c9baba7f99a6f79be5dc8c88f0f2216b610c"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "0bf6187870bf94949fbbac841e2d789bca98c04e"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/experiment/vive-auto-reconnect",
+        "commit": "24228627f535c3fec253451a6598ef1540e26be5",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "aa47a9a0f0c6e1714e3e7521466d4a27ac7b0a07"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "9f2204b55dc63acb7225a9de9c26970524ae00a0"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "3f1b4edfe4144618ae599799cacede2f4a66d99d"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "2b122a5362c141ff5e5fa5927d4391e9af1d010f"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/experiment/vive-debug-console",
+        "commit": "1e92903673180fbf2d2964bf239dcf94dcbfcb53",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "ff6a52fed1905192c05326c189fa3fc349899b2e"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "9f2204b55dc63acb7225a9de9c26970524ae00a0"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "a2b8d7daadc43162e218f1338cd64ee6344efeb9"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "2b122a5362c141ff5e5fa5927d4391e9af1d010f"
+          },
+          {
+            "path": "tools/vut_debug_console.cpp",
+            "blob": "6624dfcdb2a5a5cdf66f222d94812977e5c8c3cb"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/experiment/vive-test-harness",
+        "commit": "7ee46d6ca3e725d6c2d8dff8c996dbf70546a85c",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "d07df7afe775b3f1d1fcb48fd916f1b9906f0c3e"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "9f2204b55dc63acb7225a9de9c26970524ae00a0"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "2dc7225a40fe382ed739af134207bd49c5586657"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "2b122a5362c141ff5e5fa5927d4391e9af1d010f"
+          },
+          {
+            "path": "tools/vut_debug_console.cpp",
+            "blob": "31795626badea4ad6421be5b70e8a6da4680157e"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/feature/altra-control-model",
+        "commit": "7ac12198a5c785f79f09b0d80139a41a844468f5",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/feature/altra-pairing-assignment-ux",
+        "commit": "e2d0c01fe7633acb3f7fc8e628b2acad624a602a",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "4f83361650f584e998a356bf12a8c004597316ad"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "1822aff25c240271d4beea6f6931a60a5f38bd93"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/feature/altra-service-control-owner",
+        "commit": "56b9a269ea3f76068a7e69c54b108efa2c1556a8",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/fix/altra-pairing-assignment-ux-rework",
+        "commit": "a594e4377ef2b5cca04e915187b0c12e59064839",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/main",
+        "commit": "5fc42af3d1b71b7a0ccde207b7e322c6120fc50a",
+        "files": []
+      },
+      {
+        "ref": "refs/remotes/origin/refactor/monaka-layer-separation",
+        "commit": "a594e4377ef2b5cca04e915187b0c12e59064839",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "37b674f9b7ffae5dc3d4cd11775759c210bb49fa"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          }
+        ]
+      },
+      {
+        "ref": "refs/remotes/origin/research/altra-stable-identity-hil",
+        "commit": "8757758fb6583a745bd1b28886487eb4b516b9c3",
+        "files": [
+          {
+            "path": "src/backend.cpp",
+            "blob": "a28f5674a41491ec68aea9be81e5e46350526ec2"
+          },
+          {
+            "path": "src/pairing.cpp",
+            "blob": "3c3b103de15728414876a2041be186f1f06d4156"
+          },
+          {
+            "path": "src/protocol.cpp",
+            "blob": "efa5c890f6b4aaa3711721af51c57972732eb4ce"
+          },
+          {
+            "path": "include/vut/backend.hpp",
+            "blob": "d1cd6600dc95fd8570a043746bb3be097e8261ac"
+          },
+          {
+            "path": "include/vut/protocol.hpp",
+            "blob": "9cf2b23933b4d93ec465e6f57dae1df1f513c972"
+          },
+          {
+            "path": "tools/vut_identity_capture.cpp",
+            "blob": "458de651751c00a26d8a76c4159cd0828f755c3b"
+          }
+        ]
+      }
+    ],
+    "source_blobs": {
+      "37b674f9b7ffae5dc3d4cd11775759c210bb49fa": {
+        "path": "src/backend.cpp",
+        "matches": {
+          "pair_control": [
+            313,
+            325,
+            341,
+            367,
+            372,
+            392,
+            393,
+            400,
+            408,
+            416,
+            417,
+            430,
+            433,
+            435,
+            458,
+            485
+          ],
+          "power_saving": [
+            251,
+            252,
+            320,
+            487
+          ],
+          "rf_restart": [
+            485
+          ],
+          "post_pair": [
+            264,
+            266,
+            267,
+            275,
+            280,
+            479
+          ],
+          "info_complete_reply": [
+            497
+          ],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "3c3b103de15728414876a2041be186f1f06d4156": {
+        "path": "src/pairing.cpp",
+        "matches": {
+          "pair_control": [
+            37,
+            78
+          ],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "efa5c890f6b4aaa3711721af51c57972732eb4ce": {
+        "path": "src/protocol.cpp",
+        "matches": {
+          "pair_control": [],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "dab1c9c1f0c4ae119f15ef3269ca49eaaa63dec1": {
+        "path": "include/vut/backend.hpp",
+        "matches": {
+          "pair_control": [
+            47,
+            48,
+            50
+          ],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "9cf2b23933b4d93ec465e6f57dae1df1f513c972": {
+        "path": "include/vut/protocol.hpp",
+        "matches": {
+          "pair_control": [
+            26
+          ],
+          "power_saving": [
+            27
+          ],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "4f83361650f584e998a356bf12a8c004597316ad": {
+        "path": "src/backend.cpp",
+        "matches": {
+          "pair_control": [
+            313,
+            332,
+            357,
+            362,
+            381,
+            382,
+            389,
+            397,
+            405,
+            406,
+            463
+          ],
+          "power_saving": [
+            251,
+            252,
+            320,
+            465
+          ],
+          "rf_restart": [
+            463
+          ],
+          "post_pair": [
+            264,
+            266,
+            267,
+            275,
+            280,
+            457
+          ],
+          "info_complete_reply": [
+            475
+          ],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "1822aff25c240271d4beea6f6931a60a5f38bd93": {
+        "path": "include/vut/backend.hpp",
+        "matches": {
+          "pair_control": [
+            47,
+            48
+          ],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "a28f5674a41491ec68aea9be81e5e46350526ec2": {
+        "path": "src/backend.cpp",
+        "matches": {
+          "pair_control": [
+            313,
+            325,
+            341,
+            367,
+            376,
+            396,
+            397,
+            404,
+            412,
+            420,
+            421,
+            434,
+            437,
+            439,
+            462,
+            492
+          ],
+          "power_saving": [
+            251,
+            252,
+            320,
+            494
+          ],
+          "rf_restart": [
+            492
+          ],
+          "post_pair": [
+            264,
+            266,
+            267,
+            275,
+            280,
+            486
+          ],
+          "info_complete_reply": [
+            504
+          ],
+          "info_request": [],
+          "passive_guard": [
+            229,
+            368,
+            469
+          ]
+        }
+      },
+      "d1cd6600dc95fd8570a043746bb3be097e8261ac": {
+        "path": "include/vut/backend.hpp",
+        "matches": {
+          "pair_control": [
+            53,
+            54,
+            56
+          ],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": [
+            28
+          ]
+        }
+      },
+      "458de651751c00a26d8a76c4159cd0828f755c3b": {
+        "path": "tools/vut_identity_capture.cpp",
+        "matches": {
+          "pair_control": [],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": [
+            74
+          ]
+        }
+      },
+      "24689fb221a22766854ee203f337fa8e0fb3401b": {
+        "path": "src/backend.cpp",
+        "matches": {
+          "pair_control": [
+            237
+          ],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [
+            203,
+            205,
+            206,
+            214,
+            219,
+            294
+          ],
+          "info_complete_reply": [
+            307
+          ],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "fa89171cd8845a2b140f3650d40969d46c897e18": {
+        "path": "src/protocol.cpp",
+        "matches": {
+          "pair_control": [],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "9a32ea5f628008335853d3f14c19df5c12d0eea2": {
+        "path": "include/vut/backend.hpp",
+        "matches": {
+          "pair_control": [],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "c9e17025513b2382cead87481641e817662da895": {
+        "path": "include/vut/protocol.hpp",
+        "matches": {
+          "pair_control": [
+            24
+          ],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "8990c9baba7f99a6f79be5dc8c88f0f2216b610c": {
+        "path": "src/backend.cpp",
+        "matches": {
+          "pair_control": [
+            312,
+            331,
+            356,
+            361,
+            380,
+            381,
+            388,
+            396,
+            404,
+            405,
+            511
+          ],
+          "power_saving": [
+            251,
+            252,
+            319,
+            513
+          ],
+          "rf_restart": [
+            511
+          ],
+          "post_pair": [
+            263,
+            265,
+            266,
+            274,
+            279,
+            445,
+            446,
+            505
+          ],
+          "info_complete_reply": [
+            523
+          ],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "0bf6187870bf94949fbbac841e2d789bca98c04e": {
+        "path": "include/vut/backend.hpp",
+        "matches": {
+          "pair_control": [
+            56,
+            57
+          ],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "aa47a9a0f0c6e1714e3e7521466d4a27ac7b0a07": {
+        "path": "src/backend.cpp",
+        "matches": {
+          "pair_control": [],
+          "power_saving": [],
+          "rf_restart": [
+            257,
+            259,
+            261,
+            263,
+            341,
+            347,
+            349
+          ],
+          "post_pair": [
+            219,
+            221,
+            222,
+            230,
+            235,
+            358
+          ],
+          "info_complete_reply": [
+            371
+          ],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "9f2204b55dc63acb7225a9de9c26970524ae00a0": {
+        "path": "src/protocol.cpp",
+        "matches": {
+          "pair_control": [],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "3f1b4edfe4144618ae599799cacede2f4a66d99d": {
+        "path": "include/vut/backend.hpp",
+        "matches": {
+          "pair_control": [],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "2b122a5362c141ff5e5fa5927d4391e9af1d010f": {
+        "path": "include/vut/protocol.hpp",
+        "matches": {
+          "pair_control": [
+            26
+          ],
+          "power_saving": [],
+          "rf_restart": [],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "ff6a52fed1905192c05326c189fa3fc349899b2e": {
+        "path": "src/backend.cpp",
+        "matches": {
+          "pair_control": [
+            330,
+            336
+          ],
+          "power_saving": [
+            316,
+            320,
+            324,
+            338
+          ],
+          "rf_restart": [
+            276,
+            297,
+            303,
+            305,
+            311,
+            312,
+            319,
+            323,
+            326,
+            329,
+            332,
+            335,
+            340,
+            352,
+            356,
+            407,
+            409,
+            411,
+            413
+          ],
+          "post_pair": [
+            369,
+            371,
+            372,
+            380,
+            385,
+            557
+          ],
+          "info_complete_reply": [
+            570
+          ],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "a2b8d7daadc43162e218f1338cd64ee6344efeb9": {
+        "path": "include/vut/backend.hpp",
+        "matches": {
+          "pair_control": [
+            27
+          ],
+          "power_saving": [
+            28
+          ],
+          "rf_restart": [
+            15,
+            17,
+            19,
+            20,
+            21,
+            23,
+            29,
+            49
+          ],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "6624dfcdb2a5a5cdf66f222d94812977e5c8c3cb": {
+        "path": "tools/vut_debug_console.cpp",
+        "matches": {
+          "pair_control": [
+            117,
+            118,
+            397,
+            399
+          ],
+          "power_saving": [
+            119,
+            120,
+            402,
+            404
+          ],
+          "rf_restart": [
+            70,
+            72,
+            74,
+            75,
+            76,
+            78,
+            87,
+            88,
+            90,
+            91,
+            92,
+            94,
+            116,
+            136,
+            394
+          ],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "d07df7afe775b3f1d1fcb48fd916f1b9906f0c3e": {
+        "path": "src/backend.cpp",
+        "matches": {
+          "pair_control": [
+            322,
+            328
+          ],
+          "power_saving": [
+            316,
+            330
+          ],
+          "rf_restart": [
+            276,
+            297,
+            303,
+            305,
+            311,
+            312,
+            315,
+            318,
+            321,
+            324,
+            327,
+            332,
+            344,
+            348,
+            399,
+            401,
+            403,
+            405
+          ],
+          "post_pair": [
+            361,
+            363,
+            364,
+            372,
+            377,
+            549
+          ],
+          "info_complete_reply": [
+            562
+          ],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "2dc7225a40fe382ed739af134207bd49c5586657": {
+        "path": "include/vut/backend.hpp",
+        "matches": {
+          "pair_control": [
+            26
+          ],
+          "power_saving": [
+            27
+          ],
+          "rf_restart": [
+            15,
+            17,
+            18,
+            19,
+            20,
+            22,
+            28,
+            48
+          ],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      },
+      "31795626badea4ad6421be5b70e8a6da4680157e": {
+        "path": "tools/vut_debug_console.cpp",
+        "matches": {
+          "pair_control": [
+            115,
+            116,
+            363,
+            365
+          ],
+          "power_saving": [
+            117,
+            118,
+            368,
+            370
+          ],
+          "rf_restart": [
+            70,
+            72,
+            73,
+            74,
+            75,
+            77,
+            86,
+            87,
+            88,
+            89,
+            90,
+            92,
+            114,
+            134,
+            360
+          ],
+          "post_pair": [],
+          "info_complete_reply": [],
+          "info_request": [],
+          "passive_guard": []
+        }
+      }
+    },
+    "reachable_change_commits": [
+      "eac1b56798247947bfae48c6e2631dd4d49f34e0",
+      "d0918087cd4f99bd38efad09fdf73431cc3f0287",
+      "0abf50a922a738e8424f4da9fc3f0850efb384ab",
+      "629abe44222d35c0b9bcf697f35d0a41a542afbe",
+      "ffcb8946f2f68c90a03ea25e0492e915f2c17790",
+      "1615ba3333bd4083e7c35bce30ccad65076107b3",
+      "bf6ba291b61ba9d20803f942cd3183aaeb0e6ba2",
+      "07fbef4dd1367bfe970bb58dc3bb86ae0e4178fd",
+      "937bd9be4e8266ba369a8d5795c6521784e50783",
+      "d9223ad9077aaafaa90e5e6aebe160c67c83be79",
+      "dd4205f1ac4af1fbbdd49328d55a0bd2ece286cc",
+      "b88889429b05ca3f3825600316a1f9719d049dfa",
+      "1c8f8a599dc92062bf44e3b79503f921d64636dd",
+      "08290bb67dfbc6eaf6559178c8bad89cb9a5640d",
+      "8df0f91bb82141b7ad97de3ad1c108e0fbe19080",
+      "96c4edb9cd3855b7a43e3797088f8ac69ac65373"
+    ]
+  },
+  "binaries": [
+    {
+      "file": "altra-forensic-sdk-86851127.so",
+      "bytes": 416632,
+      "sha256": "ac34cd0c5805b4ff55d8db805930e3f940f7f97285bd8155a0bd64f1a08950ce",
+      "token_presence": {
+        "Pairing": true,
+        "Unpair": true,
+        "RestartRf": false,
+        "RxPowerSaving": false,
+        "NADS": false,
+        "NASS": false,
+        "NAZZ": false,
+        "FW1": true,
+        "DeviceInfo": false,
+        "con_bit_pairing": true,
+        "con_bit_connecting": true,
+        "con_bit_rf_connected": true
+      },
+      "exact_NA_string_present": true,
+      "interpretation": "String presence/absence does not prove dispatch, causal ordering, wire bytes, or safety."
+    },
+    {
+      "file": "vive_tracker_driver.dll",
+      "bytes": 527336,
+      "sha256": "49ed00b392b5b915aa71f3845d8b1b2d73f3192a7610d4781e8fb2b3fb910a09",
+      "token_presence": {
+        "Pairing": true,
+        "Unpair": false,
+        "RestartRf": false,
+        "RxPowerSaving": false,
+        "NADS": true,
+        "NASS": true,
+        "NAZZ": true,
+        "FW1": true,
+        "DeviceInfo": true,
+        "con_bit_pairing": false,
+        "con_bit_connecting": false,
+        "con_bit_rf_connected": false
+      },
+      "exact_NA_string_present": false,
+      "interpretation": "String presence/absence does not prove dispatch, causal ordering, wire bytes, or safety."
+    },
+    {
+      "file": "ViveTrackerServer.exe",
+      "bytes": 1601512,
+      "sha256": "f459ecc348e7459ae6f3a4f3212e66433de7b1834c9d80b1776d3694d3fbe088",
+      "token_presence": {
+        "Pairing": true,
+        "Unpair": true,
+        "RestartRf": false,
+        "RxPowerSaving": false,
+        "NADS": false,
+        "NASS": false,
+        "NAZZ": false,
+        "FW1": false,
+        "DeviceInfo": true,
+        "con_bit_pairing": false,
+        "con_bit_connecting": false,
+        "con_bit_rf_connected": false
+      },
+      "exact_NA_string_present": true,
+      "interpretation": "String presence/absence does not prove dispatch, causal ordering, wire bytes, or safety."
+    },
+    {
+      "file": "VS_PC_SDK.dll",
+      "bytes": 35328,
+      "sha256": "9676846b577a33afa7afe3abee68bbe8df0825bcdfe16f19f8943509d24a35a9",
+      "token_presence": {
+        "Pairing": false,
+        "Unpair": false,
+        "RestartRf": false,
+        "RxPowerSaving": false,
+        "NADS": false,
+        "NASS": false,
+        "NAZZ": false,
+        "FW1": false,
+        "DeviceInfo": false,
+        "con_bit_pairing": false,
+        "con_bit_connecting": false,
+        "con_bit_rf_connected": false
+      },
+      "exact_NA_string_present": false,
+      "interpretation": "String presence/absence does not prove dispatch, causal ordering, wire bytes, or safety."
+    }
+  ]
+}

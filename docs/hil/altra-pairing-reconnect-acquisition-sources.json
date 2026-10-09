@@ -1,0 +1,289 @@
+{
+  "audit_date_jst": "2026-10-09",
+  "instruction_file": "MonakaVR_Altra_Pairing_Reconnect_Acquisition_Forensic_Codex指示書.md",
+  "instruction_sha256": "17024f42dcdf0dfdf5cfe87b38eecd82857c284c05ebe88659bbf035673c7347",
+  "research_checkpoint": "8757758fb6583a745bd1b28886487eb4b516b9c3",
+  "sources": [
+    {
+      "repo": "shinyquagsire23/vive_ultimate_tracker_re",
+      "branch": "main",
+      "commit": "11ae3cbfd9a331694c72890df7dced77248b4ba6",
+      "dongle_vid_pid": "0bb4:0350",
+      "language": "Python",
+      "runtime": "hid/hidapi; dongle interface 0; experimental SLAM host/client",
+      "pairing": "Startup PairDevice enable, first three selectors; no verified bounded disable lifecycle",
+      "reconnect": "Re-pair re-init TODO; PWS/RestartRf examples commented",
+      "device_info": "N-category receive; NAZZ->FW1; NA uncertain enum",
+      "risks": [
+        "Client map-reset path",
+        "Flash/write/restart/fuzz examples",
+        "Shared source lineage"
+      ],
+      "classification": "Historical reverse engineering",
+      "files": [
+        {
+          "path": "rf_hid_test.py",
+          "blob": "51b3c36e058a2f45570a1b1b2ba93b34030d5e59",
+          "url": "https://github.com/shinyquagsire23/vive_ultimate_tracker_re/blob/11ae3cbfd9a331694c72890df7dced77248b4ba6/rf_hid_test.py"
+        },
+        {
+          "path": "tracker_toybox/tracker_toybox.py",
+          "blob": "f58def975691879cd0688abb723059c87cb9a123",
+          "url": "https://github.com/shinyquagsire23/vive_ultimate_tracker_re/blob/11ae3cbfd9a331694c72890df7dced77248b4ba6/tracker_toybox/tracker_toybox.py"
+        },
+        {
+          "path": "tracker_toybox/enums_horusd_ack.py",
+          "blob": "f6c6b8d6e3ceec8ccd1290f20f724f95796d9ee9",
+          "url": "https://github.com/shinyquagsire23/vive_ultimate_tracker_re/blob/11ae3cbfd9a331694c72890df7dced77248b4ba6/tracker_toybox/enums_horusd_ack.py"
+        },
+        {
+          "path": "tracker_toybox/enums_horusd_dongle.py",
+          "blob": "be0e49ae33f5604baffbf8bbcf9af7dca32f78b8",
+          "url": "https://github.com/shinyquagsire23/vive_ultimate_tracker_re/blob/11ae3cbfd9a331694c72890df7dced77248b4ba6/tracker_toybox/enums_horusd_dongle.py"
+        },
+        {
+          "path": "README.md",
+          "blob": "f90031b2b1a2b9813928b7c77ac18e94638a5344",
+          "url": "https://github.com/shinyquagsire23/vive_ultimate_tracker_re/blob/11ae3cbfd9a331694c72890df7dced77248b4ba6/README.md"
+        }
+      ],
+      "hil_status": "NOT_RUN_THIS_AUDIT",
+      "confidence": "Code/API existence high; causal wire sequence and physical safety not verified"
+    },
+    {
+      "repo": "nijkah/pyvut",
+      "branch": "main",
+      "commit": "fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a",
+      "dongle_vid_pid": "0bb4:0350",
+      "language": "Python",
+      "runtime": "Ubuntu, hid; maps prepared in Windows VIVE runtime; host AP for multiple trackers",
+      "pairing": "Startup PairDevice enable; inherited host/client initialization",
+      "reconnect": "No independent verified recovery sequence",
+      "device_info": "Inherited N receive and NAZZ->FW1",
+      "risks": [
+        "Map reset in client NAZZ path",
+        "Dangerous opcode blacklist does not prove other opcodes safe",
+        "RE derivative"
+      ],
+      "classification": "Historical/experimental RE derivative",
+      "files": [
+        {
+          "path": "pyvut/tracker_core.py",
+          "blob": "461a81b25ecc3c6ca96c89ed403d8394c5726f76",
+          "url": "https://github.com/nijkah/pyvut/blob/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/pyvut/tracker_core.py"
+        },
+        {
+          "path": "pyvut/api.py",
+          "blob": "f5f2985e81cf0c39ab5a00eccd0452779a1a190f",
+          "url": "https://github.com/nijkah/pyvut/blob/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/pyvut/api.py"
+        },
+        {
+          "path": "pyvut/enums_horusd_ack.py",
+          "blob": "f6c6b8d6e3ceec8ccd1290f20f724f95796d9ee9",
+          "url": "https://github.com/nijkah/pyvut/blob/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/pyvut/enums_horusd_ack.py"
+        },
+        {
+          "path": "README.md",
+          "blob": "8ababb32a5c63e5f69d04cdd62ddd558c5584187",
+          "url": "https://github.com/nijkah/pyvut/blob/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/README.md"
+        },
+        {
+          "path": "how-to-use.md",
+          "blob": "eb8a15409383ea6bd6d5ea737254109ac895ab6f",
+          "url": "https://github.com/nijkah/pyvut/blob/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/how-to-use.md"
+        }
+      ],
+      "hil_status": "NOT_RUN_THIS_AUDIT",
+      "confidence": "Code/API existence high; causal wire sequence and physical safety not verified"
+    },
+    {
+      "repo": "mgschwan/ViveUltimateTrackerMobile",
+      "branch": "main",
+      "commit": "79e8d3fb71cb34187d369596aefe2aabc195c318",
+      "dongle_vid_pid": "0bb4:0350",
+      "language": "Java/Kotlin",
+      "runtime": "Android USB host; phone/Quest; stored map; master first",
+      "pairing": "InitDongle PairDevice enable; post-pair FW2/mode21 host; client mode11",
+      "reconnect": "README says no error recovery; disconnect handler clears local state",
+      "device_info": "N receive; NAZZ->FW1, client map reset; no NA sender in inspected paths",
+      "risks": [
+        "Post-pair settings differ from Bridge",
+        "Master/client maps may be overwritten",
+        "Shared RE constants/parser portions"
+      ],
+      "classification": "Experimental",
+      "files": [
+        {
+          "path": "README.md",
+          "blob": "8ea4a76e1dc1f435e311fbc50a785146d207c660",
+          "url": "https://github.com/mgschwan/ViveUltimateTrackerMobile/blob/79e8d3fb71cb34187d369596aefe2aabc195c318/README.md"
+        },
+        {
+          "path": "android/app/src/main/java/io/xrworkout/htctrackerdongle/HidBridge.java",
+          "blob": "2cfa43aefd70a0523f8bdde33e1a8ab46adb2e3a",
+          "url": "https://github.com/mgschwan/ViveUltimateTrackerMobile/blob/79e8d3fb71cb34187d369596aefe2aabc195c318/android/app/src/main/java/io/xrworkout/htctrackerdongle/HidBridge.java"
+        },
+        {
+          "path": "android/app/src/main/java/io/xrworkout/htctrackerdongle/HTCConnectionHandler.kt",
+          "blob": "42d72d4a592a7d91ecc51bdbb78b76824a62ff33",
+          "url": "https://github.com/mgschwan/ViveUltimateTrackerMobile/blob/79e8d3fb71cb34187d369596aefe2aabc195c318/android/app/src/main/java/io/xrworkout/htctrackerdongle/HTCConnectionHandler.kt"
+        },
+        {
+          "path": "android/app/src/main/java/io/xrworkout/htctrackerdongle/HorusdAck.java",
+          "blob": "e0f8e339bc73f41c6f1f6a5a4b57ff9ee1c20734",
+          "url": "https://github.com/mgschwan/ViveUltimateTrackerMobile/blob/79e8d3fb71cb34187d369596aefe2aabc195c318/android/app/src/main/java/io/xrworkout/htctrackerdongle/HorusdAck.java"
+        }
+      ],
+      "hil_status": "NOT_RUN_THIS_AUDIT",
+      "confidence": "Code/API existence high; causal wire sequence and physical safety not verified"
+    },
+    {
+      "repo": "ViveRoboticsSoftware/vive-ultimate-tracker-sdk",
+      "branch": "main",
+      "commit": "8685112780734c2513c66d53b9eb104db47afcf9",
+      "dongle_vid_pid": "Unknown from public SDK API",
+      "language": "C++/Python IPC reference",
+      "runtime": "Ubuntu/Linux server, proprietary library, Unix domain IPC",
+      "pairing": "Official Pairing required id-list; separate Paired/Connecting/Connected/Initialized",
+      "reconnect": "Official wake/state semantics; raw wire init not public",
+      "device_info": "Add(id,name); NADS/NASS correlation unknown",
+      "risks": [
+        "Pre-change CommandResponse",
+        "Remove timeout is not unpair proof",
+        "API/wire mapping unverified"
+      ],
+      "classification": "Verified / official API",
+      "files": [
+        {
+          "path": "README.md",
+          "blob": "512dc32b471115fb057801f01f0c6380c165b5c4",
+          "url": "https://github.com/ViveRoboticsSoftware/vive-ultimate-tracker-sdk/blob/8685112780734c2513c66d53b9eb104db47afcf9/README.md"
+        },
+        {
+          "path": "include/ultimate_tracker.h",
+          "blob": "007cdc44efc36b5d9461c9696c81d1469b4959dc",
+          "url": "https://github.com/ViveRoboticsSoftware/vive-ultimate-tracker-sdk/blob/8685112780734c2513c66d53b9eb104db47afcf9/include/ultimate_tracker.h"
+        },
+        {
+          "path": "VIVE-Ultimate-Tracker-SDK-Guide-EN.md",
+          "blob": "c3ef2fbd73efa7be9fe4d50a0b799223ab2029ac",
+          "url": "https://github.com/ViveRoboticsSoftware/vive-ultimate-tracker-sdk/blob/8685112780734c2513c66d53b9eb104db47afcf9/VIVE-Ultimate-Tracker-SDK-Guide-EN.md"
+        }
+      ],
+      "hil_status": "NOT_RUN_THIS_AUDIT",
+      "confidence": "Code/API existence high; causal wire sequence and physical safety not verified"
+    },
+    {
+      "repo": "h228zhou/pyvut",
+      "commit": "7b3a7ad16b0c1b0a62afe7bef743fdb8094a67d9",
+      "files": [
+        {
+          "path": "pyvut/tracker_core.py",
+          "blob": "021958383f042401238898f70eb4e1145e5ec2d7",
+          "url": "https://github.com/h228zhou/pyvut/blob/7b3a7ad16b0c1b0a62afe7bef743fdb8094a67d9/pyvut/tracker_core.py"
+        },
+        {
+          "path": "README.md",
+          "blob": "94e416917937d59c8a8434f90bf57f26a4c2a049",
+          "url": "https://github.com/h228zhou/pyvut/blob/7b3a7ad16b0c1b0a62afe7bef743fdb8094a67d9/README.md"
+        }
+      ],
+      "language": "Python",
+      "runtime": "Ubuntu/hid, nijkah derivative",
+      "pairing": "pair_on_startup=false default; status-driven slot initialization; host20/client11",
+      "reconnect": "paired-status and pair-event initialize_slot, local state reset",
+      "device_info": "Actual NA sender, post-init and missing SN from pose/map paths; NADS cache",
+      "risks": [
+        "No raw request/response safety receipt found in tree",
+        "NA not authorized",
+        "Client map reset inherited"
+      ],
+      "classification": "Experimental derivative",
+      "branch": "main",
+      "dongle_vid_pid": "0bb4:0350 (inherited enum)",
+      "hil_status": "NOT_RUN_THIS_AUDIT",
+      "confidence": "Code existence high; physical effects unverified"
+    },
+    {
+      "repo": "mscheibl/pyvut",
+      "commit": "fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a",
+      "files": [
+        {
+          "path": "pyvut/tracker_core.py",
+          "blob": "461a81b25ecc3c6ca96c89ed403d8394c5726f76",
+          "url": "https://github.com/mscheibl/pyvut/blob/fcfcd33f4c1f16b0d84f5f741dc1319abdc7942a/pyvut/tracker_core.py"
+        }
+      ],
+      "language": "Python",
+      "runtime": "nijkah derivative",
+      "pairing": "Inspected core exactly equal to nijkah",
+      "reconnect": "Inspected core exactly equal to nijkah",
+      "device_info": "Same receiver",
+      "risks": [
+        "Not independent corroboration"
+      ],
+      "classification": "Historical/derivative",
+      "branch": "main",
+      "dongle_vid_pid": "0bb4:0350 (inherited enum)",
+      "hil_status": "NOT_RUN_THIS_AUDIT",
+      "confidence": "Code existence high; physical effects unverified"
+    },
+    {
+      "repo": "HukoOo/pyvut",
+      "commit": "fe38eac54fdfe156f49de630c890fc7efbd509c7",
+      "files": [
+        {
+          "path": "pyvut/tracker_core.py",
+          "blob": "461a81b25ecc3c6ca96c89ed403d8394c5726f76",
+          "url": "https://github.com/HukoOo/pyvut/blob/fe38eac54fdfe156f49de630c890fc7efbd509c7/pyvut/tracker_core.py"
+        }
+      ],
+      "language": "Python",
+      "runtime": "nijkah derivative",
+      "pairing": "Inspected core exactly equal to nijkah",
+      "reconnect": "Inspected core exactly equal to nijkah",
+      "device_info": "Same receiver",
+      "risks": [
+        "Not independent corroboration"
+      ],
+      "classification": "Historical/derivative",
+      "branch": "main",
+      "dongle_vid_pid": "0bb4:0350 (inherited enum)",
+      "hil_status": "NOT_RUN_THIS_AUDIT",
+      "confidence": "Code existence high; physical effects unverified"
+    },
+    {
+      "repo": "orzkwsk/MonakaVR-HIL",
+      "branch": "main",
+      "commit": "fcc1f65791e4b7a81565e3acac2a5e8d9738c9c9",
+      "language": "PowerShell/Python",
+      "runtime": "HIL infrastructure, isolated pinned checkouts; no vendor handshake",
+      "dongle_vid_pid": "N/A",
+      "pairing": "No implementation in inspected tree/README/manifest",
+      "reconnect": "No implementation",
+      "device_info": "No implementation",
+      "risks": [
+        "Infrastructure docs are not device evidence"
+      ],
+      "classification": "Independent infrastructure",
+      "hil_status": "NOT_RUN_THIS_AUDIT",
+      "confidence": "Inspected scope only",
+      "files": [
+        {
+          "path": "README.md",
+          "blob": "c3d512b8d460f735503d1be6a67c5f539988f295",
+          "url": "https://github.com/orzkwsk/MonakaVR-HIL/blob/fcc1f65791e4b7a81565e3acac2a5e8d9738c9c9/README.md"
+        },
+        {
+          "path": "config/source-repos.json",
+          "blob": "8c7b7a73d26e0d1470ad7bd4f9b1eea5ce641940",
+          "url": "https://github.com/orzkwsk/MonakaVR-HIL/blob/fcc1f65791e4b7a81565e3acac2a5e8d9738c9c9/config/source-repos.json"
+        }
+      ]
+    }
+  ],
+  "na_sender_introduction_commit": "0170c51676b5429f83235dcbbf650af7e72f28f2",
+  "status_init_change_commit": "67dfff8dfddfa2971614da95c21964bd3e31e4a8",
+  "hardware_this_audit": "NOT_RUN",
+  "na_recommendation": "DO_NOT_SEND"
+}
