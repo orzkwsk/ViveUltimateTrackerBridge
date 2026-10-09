@@ -609,5 +609,96 @@
       "historical_collection_and_events_preserved": true,
       "new_capture_event_count": 0
     }
+  },
+  "launcher_contract_health_retry": {
+    "schema": "usbpcap-launcher-contract-health-retry-1",
+    "date_jst": "2026-10-09",
+    "base_commit": "3044796f86465beeb966fb2645a0432878d04d25",
+    "instruction_sha256": "957acbfdba9001bbfa224d0584a027afebec9b8906f31777349915a21e4f6c39",
+    "status": "STOP_RUN0_CONSOLE_CONTRACT_UNESTABLISHED",
+    "launcher_contract": "NOT_ESTABLISHED",
+    "run_0": {
+      "result": "FAIL",
+      "evidence_kind": "OFFLINE_NATIVE_GUI_CHILD",
+      "elevated": true,
+      "launcher_console_input_valid": true,
+      "child_process_tracked": true,
+      "initial_has_exited": false,
+      "fixture_attach_console": true,
+      "fixture_original_stdin": "NULL",
+      "fixture_input_after_restore_valid": false,
+      "graceful_q": false,
+      "process_exited": true,
+      "fixture_native_exit_code": 31,
+      "usbpcap_native_exit_code": null,
+      "forced_cleanup": false,
+      "failure_code": "DRY_ATTACH_FAILED",
+      "states": [
+        "Preflight",
+        "Starting",
+        "ProcessCreated",
+        "Exited",
+        "Failed"
+      ],
+      "module_sha256": "a6530346c267e099e175e2335fe91862f5b84e99bfcb0133764c5d20314c219e"
+    },
+    "health_run_1": {
+      "graceful_q": "NOT_RUN",
+      "file_created": "NOT_RUN",
+      "capture_sha256": null,
+      "tshark": "NOT_RUN",
+      "result": "NOT_RUN",
+      "native_exit_code": null,
+      "header": "NOT_RUN",
+      "reason": "Run 0 normal console q contract not established",
+      "target": "NOT_RUN",
+      "packet_count": null,
+      "process_tracked": "NOT_RUN"
+    },
+    "health_run_2": {
+      "graceful_q": "NOT_RUN",
+      "file_created": "NOT_RUN",
+      "capture_sha256": null,
+      "tshark": "NOT_RUN",
+      "result": "NOT_RUN",
+      "native_exit_code": null,
+      "header": "NOT_RUN",
+      "reason": "Health Run 1 not started",
+      "target": "NOT_RUN",
+      "packet_count": null,
+      "process_tracked": "NOT_RUN"
+    },
+    "extcap": {
+      "result": "NOT_RUN"
+    },
+    "official_baseline": {
+      "result": "NOT_RUN",
+      "attempted": false
+    },
+    "power_cycle_reconnect": {
+      "result": "NOT_RUN",
+      "attempted": false
+    },
+    "usbpcap_capture_attempts": 0,
+    "bridge_launches": 0,
+    "pair_unpair_operations": 0,
+    "bridge_vendor_transmissions": 0,
+    "altra_conclusions_changed": false,
+    "acquisition_blocker": "F_UNDISTINGUISHED",
+    "NADS": "Class B / acquisition unresolved",
+    "NASS": "Class B / acquisition unresolved",
+    "validation": {
+      "hid_hardware_validation": "NOT_RUN",
+      "launcher_offline_assertions": 71,
+      "existing_sanitizer_tests": 8,
+      "native_fixture_build": "PASS",
+      "launcher_offline_result": "PASS",
+      "production_cpp_build": "NOT_RUN",
+      "native_gui_console_contract": "FAIL",
+      "existing_sanitizer_result": "PASS"
+    },
+    "upstream_source_commit": "477b6edcbd7e99a47f77afc0c4168a9ebee603bb",
+    "privacy": "No PID, raw path, absolute timestamp, serial, RF, payload, USB topology or addresses",
+    "next_action": "Resolve native GUI same-console stdin and q contract; fresh two-run Health Gate before B baseline"
   }
 }

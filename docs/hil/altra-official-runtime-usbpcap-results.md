@@ -1,6 +1,122 @@
-# Altra official runtime USBPcap: capture transport stop
+# Altra USBPcap launcher contract: Run 0 STOP
 
-## Latest: direct-to-file Health Gate, 2026-10-09 JST
+## Launcher contract retry, 2026-10-09 JST
+
+**Run 0 native GUI console test FAIL; Health Run 1/2 NOT RUN.**
+USBPcapCMD captureを起動していない。console `q`正常停止契約は未成立。
+指示書§6/§25に従い、hardware capture、B ON、baseline、reconnectへ進まず停止した。
+USBPcap/driver障害との判定はしない。
+
+Source of Truth: `MonakaVR_Altra_USBPcap_Launcher_Contract_Health_Retry_Codex指示書.md`。
+SHA256 `957acbfdba9001bbfa224d0584a027afebec9b8906f31777349915a21e4f6c39`。
+Research branch `research/altra-stable-identity-hil`、checkpoint
+`3044796f86465beeb966fb2645a0432878d04d25`、prepared lineage ancestry確認済み。
+他checkoutのfeature branch / 未追跡attachmentを保持した。
+
+### Implementation and upstream basis
+
+Research-only `scripts/run_usbpcap_health_capture.ps1` と
+`scripts/usbpcap_health_contract.psm1` を追加。production Backend変更なし。
+
+Launcherは管理者権限、専用console input、単一control/address、bounded duration、
+新規private output、同時capture/Bridge actor不在を検査する。
+`Start-Process -NoNewWindow -PassThru` のprocess object/handle/PIDを保持し、
+fileを5秒以内に待つ。captureは5–10秒、console KEY_EVENT key-down/up `q` を投入し、
+exitを10秒以内に待つ。native exit codeとfile flush後の検証を要求する。
+期限超過はFAILにし、保持したprocess objectだけをcleanupする。
+通常stdin pipe/fileへの `q` redirectは使用しない。
+
+各stateをprivate JSONへ更新保存する:
+`Preflight -> Starting -> ProcessCreated -> WaitingForFile -> Capturing -> StopRequested -> Exited -> Validating -> Succeeded/Failed`。
+timeout時は`CleanupRequired`も記録。private outputの既存fileは拒否し、
+USBPcap側のCREATE_NEWに任せる。public receiptはfield/failure-code allowlistでredactする。
+
+検証はknown pcap/pcapng magic、size、SHA256、bounded offline tshark exit 0、packet > 0、
+指定tupleの `0bb4:0350` descriptorと同tupleの非empty interrupt trafficを要求する。
+descriptor injectionだけではPASSにしない。
+このfile validationの実captureでの動作は**NOT RUN**。
+
+安全guard: **同じmodule SHA256のnative GUI Run 0でelevation・console q・native exit 23を
+実測PASSしたprivate receiptがなければ、launcherはUSBPcapCMDを起動しない。**
+今回そのreceiptは存在しない。このlauncherを運用可能・contract成立済みとは報告しない。
+
+USBPcap upstreamをread-only確認し、commit
+`477b6edcbd7e99a47f77afc0c4168a9ebee603bb` をpinした。
+[cmd.c](https://github.com/desowin/usbpcap/blob/477b6edcbd7e99a47f77afc0c4168a9ebee603bb/USBPcapCMD/cmd.c)
+のGUI entry point、parent console attachと元のstdin復元、elevation分岐/runas worker、
+worker wait、CREATE_NEW、ReadConsoleInput key-down `q`停止を設計根拠とした。
+source audit hash/receiptはprivate。第三者sourceをpublic実装へコピーしていない。
+
+### Run 0 observations
+
+HumanがA/B OFF、両charging USB disconnected、official dongle connectedを再確認。
+launcher PowerShell全体を通常UACで昇格した。input GetConsoleModeは成功。
+hardwareを開かない自作GUI childでconsole attach/input/exitを検証した。
+managed GUIとnative GUI、process API/handle継承の候補をdry検証したが、
+q正常停止PASSは得られなかった。候補APIの証跡はprivateに保持した。
+
+最終native GUI fixtureは既存MSVC 14.51でbuild。既存USBPcap binaryと同一buildではない。
+final `Start-Process -NoNewWindow -PassThru` testでprocess object/handle保持、
+initial HasExited=false、終了後native exit **31**を取得した。
+fixture内のAttachConsoleは成功したが、元のstdinはNULLで、復元後GetConsoleMode=false。
+fixtureは入力不可として終了したため、qは送っていない。
+launcherのconsole membership検査時にはchild退出が進み、`DRY_ATTACH_FAILED`として停止。
+最終runのforced cleanupはなし。
+
+**exit 31は自作fixtureの入力拒否コードであり、USBPcapCMDのexit codeではない。**
+今回USBPcapCMDをcaptureで起動していないため、installed USBPcapCMDのstdin状態や
+worker/driver不具合へこのfixture結果を一般化しない。前回のno-file/exit未取得も維持する。
+
+### Required outcome matrix
+
+| Item | Result |
+|---|---|
+| Launcher elevation | PASS: elevated PowerShell、console input確認 |
+| Process tracking / native exit | PASS for dry child only; USBPcapCMD NOT RUN |
+| Normal console q stop | NOT ESTABLISHED: dry child input invalid; q not sent |
+| Graceful exit timeout | implemented 10 seconds; mock timeout test PASS; real USBPcapCMD NOT RUN |
+| New output / CREATE_NEW handling | pre-existing output rejection tests PASS; real capture NOT RUN |
+| Run 0 | **FAIL — STOP**, native GUI input contract unresolved |
+| Health Run 1: tracking/file/q/exit/header/tshark/packets/target | **all NOT RUN** |
+| Health Run 2: tracking/file/q/exit/header/tshark/packets/target | **all NOT RUN** |
+| Capture SHA256 / packet count / target confirmed | N/A / unknown / not observed |
+| Extcap pipe | NOT RUN |
+| Official B baseline attempted / result | false / NOT RUN |
+| B power-cycle reconnect attempted / result | false / NOT RUN |
+| Current Backend vs passive guard vs official trace | new measured comparison unavailable; historical static matrix retained |
+| Altra conclusions changed | No |
+| NADS / NASS | Class B / acquisition unresolved (both retained) |
+| Altra acquisition blocker | F / distinguish不能 (retained) |
+
+SteamVR/Virtual Desktop/official runtimeを終了・再起動していない。
+終了時VIVE official componentsとVirtual Desktopはinventory上存在。
+Bridge/direct-HID/capture actorsはinventory上不在。実際のHID handle ownershipは未実証。
+Pair/Unpair/vendor command、driver/install/registry変更、reboot、新規software導入なし。
+新規raw pcapなし。dry launcher/native child receipts、process inventory、source auditを
+gitignored private evidenceとして保持し、raw PID/path/serial/RF/topologyは公開しない。
+
+### Validation and next action
+
+- Launcher offline tests: **71 assertions PASS**; mocked child lifecycle/timeout/receipt,
+  actual OS child exit 23/timeout、elevation/inputs/output/console contract rejection、magic、
+  target-unconfirmed fail、private field/error redaction。mock PASSはhardware証明ではない。
+- Native GUI fixture build: **PASS** (existing MSVC; no installation)。real console contract test: **FAIL**。
+- Existing offline USB sanitizer: **8/8 PASS**。
+- Production C++ backend build/HID hardware validation: **NOT RUN** (production source unchanged)。
+
+Public成果はresearch launcher/tests、このsanitized reportとsequence metadataのみ。
+research branchへ通常commit/pushし、integrationへmerge/cherry-pickしない。
+
+Next action: 別のlauncher研究で、installed USBPcapCMDを変更せず、same-console stdinと
+ReadConsoleInput `q`停止を安全に実測できる方法を解決する。
+Run 0 PASS -> 新規Health Run 1 PASS -> 新規Health Run 2 PASSの後だけB baseline/reconnectへ進む。
+今回の停止後に実captureやTracker操作は追加しない。
+
+---
+
+# Historical: Altra official runtime USBPcap capture transport stop
+
+## Historical: direct-to-file Health Gate, 2026-10-09 JST
 
 **STOP: Direct capture 1 FAIL (output file not created).**
 Direct capture 2 / official B baseline / OFF→ON reconnect: **NOT RUN**。
