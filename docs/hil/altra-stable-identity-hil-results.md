@@ -236,3 +236,10 @@ the Python comparison test contains eight synthetic cases and is not hardware ev
 Passive fake-transport checks verified zero feature writes and zero feature reads,
 including pair configuration, NAZZ response, unpair recovery and restart paths.
 No production StableIdentity, MonakaProtocol or MonakaBridge change was made.
+
+## Subsequent offline research
+
+The [offline research checkpoint](altra-stable-identity-offline-research.md) analyzes
+these saved captures and public static sources, separates stability from acquisition,
+and proposes a provider policy and minimum remaining HIL. It adds no hardware trial
+and does not change this interrupted Class B assessment.
