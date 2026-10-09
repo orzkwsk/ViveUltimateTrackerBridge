@@ -28,6 +28,11 @@ observer close. `details.dropped_events`, `critical_dropped_events`,
 drains diagnostics after the tracking loop; a stalled filesystem can delay this
 drain, never HID polling. Abrupt process death can lose buffered events. The HIL
 adapter must use process exit/stream loss, never infer exit from silence alone.
+Producer UTC/monotonic event clocks are retained through the queue. The writer
+adds `details.diagnostic_delivery_age_ns` in the same steady-clock domain; queued
+arrival cannot establish freshness by ingestion time. Pose details include the
+authoritative absolute `observation_monotonic_ns` (existing session epoch plus
+admitted receive timestamp) as well as session-relative `sample_timestamp_ns`.
 
 Identity is `backend_device_id`, full lowercase six-byte RF MAC, scope
 `vive-rf-device-address`; it is neither a proven factory serial nor slot/index.

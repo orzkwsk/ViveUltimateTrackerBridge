@@ -38,7 +38,7 @@ void fixture(bool emit) {
     CHECK(count(lines,"position_valid_changed") == 3); CHECK(count(lines,"orientation_valid_changed") == 3);
     CHECK(count(lines,"session_connected") == 2); CHECK(count(lines,"session_reconnecting") == 1);
     CHECK(count(lines,"fatal_error") == 1); CHECK(d.counters().droppedCritical == 0);
-    for (const auto& line : lines) { CHECK(line.find("\"role\":null") != std::string::npos); CHECK(line.find("\"build\":{") != std::string::npos); }
+    for (const auto& line : lines) { CHECK(line.find("\"role\":null") != std::string::npos); CHECK(line.find("\"build\":{") != std::string::npos); CHECK(line.find("\"diagnostic_delivery_age_ns\":") != std::string::npos); }
     if (emit) for (const auto& line : lines) std::cout << line;
 }
 void pressure() {
@@ -56,6 +56,9 @@ void pressure() {
     CHECK(d.counters().droppedPose > 0); CHECK(d.counters().droppedCritical > 0);
     CHECK(count(lines, "fatal_error") == 1);
     CHECK(lines.back().find("\"observation_complete\":false") != std::string::npos);
+    const auto queued = lines.at(1);
+    const auto age = queued.find("\"diagnostic_delivery_age_ns\":") + std::string_view("\"diagnostic_delivery_age_ns\":").size();
+    CHECK(std::stoll(queued.substr(age)) > 0);
 }
 std::uint64_t memoryBytes() {
 #ifdef _WIN32

@@ -25,7 +25,7 @@ public:
     bool enabled() const noexcept { return enabled_; }
     void event(std::string_view type, std::string details = "{}", std::string identity = "null",
                std::string validity = "null", bool critical = true) noexcept;
-    void beginSession(std::string id, std::uint64_t generation);
+    void beginSession(std::string id, std::uint64_t generation, std::int64_t epochNs = 0);
     void sessionState(std::string_view state);
     void observeBackend(const BackendEvent& event) noexcept;
     void observe(const monaka::protocol::v2::Envelope& observation) noexcept;
@@ -49,6 +49,7 @@ private:
     std::thread thread_;
     std::atomic<std::uint64_t> accepted_{0}, written_{0}, droppedPose_{0}, droppedCritical_{0}, writeErrors_{0}, maxWriteNs_{0};
     std::uint64_t sequence_ = 0, generation_ = 0;
+    std::int64_t epochNs_ = 0;
     std::string sessionId_, sessionState_ = "unknown";
     std::map<std::string, Tracker> trackers_;
 };

@@ -291,7 +291,7 @@ int main(int argc,char** argv) try {
             [&] { return journal.advance(); }, uuid, nowNs);
         c.sessionId=session.sessionId; c.epochNs=session.epochNs;
         c.revision=session.revision; c.generation=session.transportGeneration;
-        runtimeDiagnostics->beginSession(c.sessionId, c.generation);
+        runtimeDiagnostics->beginSession(c.sessionId, c.generation, c.epochNs);
         runtimeDiagnostics->event("component_ready", "{\"inventory_complete\":false,\"readiness_scope\":\"HID backend started, not a tracker inventory snapshot\"}");
         vut::ViveObservationAdapter adapter(c);
         vut::ObservationPublisher publisher(c.sessionId,[&](auto bytes){return sender.send(bytes);},[&]{return nowNs()-c.epochNs;});

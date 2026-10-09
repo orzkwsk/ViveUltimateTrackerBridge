@@ -105,6 +105,14 @@ void RuntimeDiagnostics::worker() {
           else continue;
         }
         const auto start = monotonic();
+        // Preserve the producer clocks. Only append delivery age so HIL can
+        // distinguish delayed queue delivery from fresh source observation.
+        try {
+            const auto stamp = bytes.find("\"monotonic_ns\":") + std::string_view("\"monotonic_ns\":").size();
+            const auto captured = std::stoll(bytes.substr(stamp));
+            const auto details = bytes.rfind("\"details\":{") + std::string_view("\"details\":{").size();
+            bytes.insert(details, "\"diagnostic_delivery_age_ns\":" + std::to_string(std::max<std::int64_t>(0, start - captured)) + (bytes[details] == '}' ? "" : ","));
+        } catch (...) { ++writeErrors_; }
         try { if (sink_(bytes)) ++written_; else ++writeErrors_; } catch (...) { ++writeErrors_; }
         const auto elapsed = static_cast<std::uint64_t>(monotonic() - start);
         if (elapsed > maxWriteNs_) maxWriteNs_ = elapsed;
@@ -113,12 +121,12 @@ void RuntimeDiagnostics::worker() {
     // Flush counters through the independent writer, even after producer overflow.
     try { const bool wrote = sink_("{\"schema_version\":1,\"timestamp_utc\":" + diagnosticQuote(utc()) + ",\"monotonic_ns\":" + std::to_string(monotonic()) +
         ",\"component\":\"ViveUltimateTrackerBridge\",\"event_type\":\"diagnostic_warning\",\"source\":\"diagnostic_writer\",\"tracker_identity\":null,\"role\":null,\"session\":null,\"validity\":null,\"build\":" + diagnosticBuildJson() +
-        ",\"details\":{\"reason\":\"observer_closed\",\"dropped_events\":" + std::to_string(c.droppedPose + c.droppedCritical) + ",\"critical_dropped_events\":" + std::to_string(c.droppedCritical) +
+        ",\"details\":{\"diagnostic_delivery_age_ns\":0,\"reason\":\"observer_closed\",\"dropped_events\":" + std::to_string(c.droppedPose + c.droppedCritical) + ",\"critical_dropped_events\":" + std::to_string(c.droppedCritical) +
         ",\"write_errors\":" + std::to_string(c.writeErrors) + ",\"max_write_ns\":" + std::to_string(c.maxWriteNs) + ",\"observation_complete\":" + (c.droppedCritical || c.writeErrors ? "false" : "true") + "}}\n"); if (!wrote) ++writeErrors_; } catch (...) { ++writeErrors_; }
 }
-void RuntimeDiagnostics::beginSession(std::string id, std::uint64_t generation) {
+void RuntimeDiagnostics::beginSession(std::string id, std::uint64_t generation, std::int64_t epochNs) {
     if (!enabled_) return;
-    sessionId_ = std::move(id); generation_ = generation; trackers_.clear(); sessionState("connected");
+    sessionId_ = std::move(id); generation_ = generation; epochNs_ = epochNs; trackers_.clear(); sessionState("connected");
 }
 void RuntimeDiagnostics::sessionState(std::string_view state) {
     if (!enabled_) return;
@@ -156,7 +164,7 @@ void RuntimeDiagnostics::observe(const monaka::protocol::v2::Envelope& envelope)
                     if (!tracker.orientation || *tracker.orientation != r) event("orientation_valid_changed", "{}", id, valid);
                     if (!tracker.position || !tracker.orientation || (*tracker.position && *tracker.orientation) != (p && r)) event("fully_valid_changed", "{}", id, valid);
                     tracker.position = p; tracker.orientation = r;
-                    event("pose_observed", "{\"observation_sequence\":" + std::to_string(o.sequence) + ",\"sample_timestamp_ns\":" + std::to_string(o.timestamp_ns) + ",\"role_unavailable\":\"backend has no body-role assignment\"}", id, valid, false);
+                    event("pose_observed", "{\"observation_sequence\":" + std::to_string(o.sequence) + ",\"observation_monotonic_ns\":" + std::to_string(epochNs_ + o.timestamp_ns) + ",\"sample_timestamp_ns\":" + std::to_string(o.timestamp_ns) + ",\"role_unavailable\":\"backend has no body-role assignment\"}", id, valid, false);
                 }
             }
         }, envelope);
