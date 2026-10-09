@@ -1,3 +1,139 @@
+# Altra official extcap Health Gate PASS; official B baseline STOP
+
+## Current run, 2026-10-09 to 2026-10-10 JST
+
+**Health Gate: two consecutive PASS. Official B baseline: Connected/Ready not confirmed — STOP.**
+Power-cycle reconnect and the successful official baseline/reconnect 3-way comparison are **NOT RUN**.
+
+Source of Truth: `MonakaVR_Altra_Extcap_Health_and_Official_Runtime_HIL_Codex指示書.md`,
+SHA256 `e33df2ff8421f776eb5613bfe36d112286e9ec22e2bd8cfd234fa2cd25bd5833`.
+Research checkpoint `4209b2500b4d6b6bf3167627ce7a392994bd4225`, branch
+`research/altra-stable-identity-hil`; prepared-lineage ancestry verified.
+
+Legacy launcher path: **NOT USED**. No console `q` injection, custom FIFO,
+USBPcapCMD direct capture control, Bridge/direct-HID launch or manual vendor transmission.
+TShark managed its installed extcap child and capture lifecycle. USBPcapCMD native exit code
+was not a success requirement. GUI fallback was not needed.
+
+### Discovered inventory and capture method
+
+Installed Wireshark/TShark/dumpcap **4.6.6**, USBPcapCMD/extcap **1.5.4.0**.
+TShark `-D` and installed USBPcapCMD `--extcap-interfaces` both enumerated five USBPcap
+interfaces. `--extcap-config` was queried for every returned interface, yielding:
+`--snaplen`, `--bufferlen`, `--capture-from-all-devices`, `--capture-from-new-devices`,
+`--inject-descriptors`, and `--devices`. Actual interface names, device values, config,
+paths and tool hashes are private. Public target alias: **DONGLE-BUS / DONGLE**.
+
+Current `0bb4:0350` PnP parent matched exactly one current USBPcap root via zero-access,
+read-only hub-symlink metadata query. Its current extcap config contained one direct USB
+input device. No dongle HID open was used to establish this selection.
+
+`-i <actual interface> -G currentprefs` exposed the actual TShark preference keys.
+Those discovered keys were supplied with `-o` to select that device, disable all-device
+and new-device capture, and enable descriptor injection. No preference or driver setting
+was persisted. Each health capture used `-a duration:5 -w <new private pcapng>`.
+Exact command/exit/stdout/stderr receipts are private; topology-bearing keys are not published.
+
+Human confirmed A/B OFF, both charging USB disconnected, official dongle connected.
+VIVE Hub, ViveHubServer and ViveTrackerServer were running; prohibited direct-HID/capture
+actors were absent in the preflight inventory. This does not prove exclusive handle ownership.
+SteamVR/Virtual Desktop were not restarted. No install, driver/filter/registry change or reboot.
+
+### Fresh Health Gate receipts
+
+| Gate | Health Run 1 | Health Run 2 |
+|---|---|---|
+| Method / TShark lifecycle | official extcap / duration 5 s | official extcap / duration 5 s |
+| Fresh capture | HEALTH-1, 912 bytes | HEALTH-2, 892 bytes |
+| Header | valid pcapng, `0a0d0d0a` | valid pcapng, `0a0d0d0a` |
+| TShark capture / offline parse exit | 0 / 0 | 0 / 0 |
+| Packets | 8 | 8 |
+| Target correlation | `0bb4:0350` descriptor + same-tuple live interrupt | `0bb4:0350` descriptor + same-tuple live control |
+| Non-injected traffic | 64-byte interrupt report | GET_DESCRIPTOR setup/completion after initial injected records |
+| Result | **PASS** | **PASS** |
+
+Run 2 did not contain a nonempty interrupt report; live target control traffic satisfies
+this task's capture-health requirements. It is not RF/pose or connection evidence.
+The 5 seconds is the TShark autostop condition, not the first-to-last packet span.
+Historical captures were not reused as health proof.
+
+### Official runtime baseline attempt
+
+After both PASS results, a new TShark official-extcap capture used `-a duration:180`.
+File creation, the target descriptor and incoming packets were checked before asking for B ON.
+Official UI showed dongle connection mode and one existing disconnected tracker row.
+The human was asked to keep A OFF, power B ON normally, and avoid pairing.
+The human reported **B ON, blue/blue flashing**. Subsequent official UI checks still showed
+**not connected**, **tracking 0 / 1**, and **no tracker connected**. Connected/Ready and
+tracking/pose restoration were not confirmed. No Pair new/setup/identify/turn-off control was used.
+
+TShark ended normally by duration: fresh valid pcapng **4,368 bytes / 46 packets**,
+offline parse exit **0**, target descriptor and same-tuple traffic verified.
+Existing sanitizer classified **18 RF status** records and **28 not classified** records
+(USB control and empty interrupt records). No device-info burst, DevicePaired event, pose,
+PairDevice, PWS, RestartRf, NA, FW1/FW2 or classified host vendor sequence appeared in this capture.
+These absences concern this unsuccessful attempt only, not a successful official reconnect.
+
+Timing limitation: the physical ON timestamp was not measured. The operator receipt was
+written after capture ended, so B ON overlap with the capture is not precisely time-bound.
+Do not describe the whole 180-second capture as a B-ON observation or a reconnect deadline.
+No RF/slot was bound to physical B. UI/LED does not prove registration loss.
+
+**STOP per the current instruction's baseline gate.** Reconnect was not attempted and no
+Pair/Unpair/manual command was added. The capture infrastructure is established; the
+remaining official connection/identity acquisition issue is unresolved.
+
+### Comparison boundary
+
+A successful 3-way diff is **NOT RUN**, because the baseline connection gate failed.
+The table records failed-attempt observations separately from static facts at this checkpoint.
+Backend and passive guard were not executed against the dongle.
+
+| Stage | Official baseline attempt | Official reconnect | Current Backend (static) | Passive guard (static) | Interpretation |
+|---|---|---|---|---|---|
+| PairDevice | not observed in capture | NOT RUN | explicit pairing/cleanup; no ordinary startup enable | feature exchanges suppressed | pair-free successful reconnect unverified |
+| PWS-off | not observed in capture | NOT RUN | slot-local DeviceUnpaired recovery | suppressed | no causal recovery comparison |
+| RF/status | 18 RF status reports; B binding absent | NOT RUN | RF status does not trigger configureOnPair | receive only; queries suppressed | RF reports do not establish B Connected |
+| Slot initialization | no classified host init observed | NOT RUN | DevicePaired -> ARI1/ATM-1; host ATH1/AWH1/ANI0/ATM20, client ATH0/AWH0/ANI(slot)/ATM11 | configure flag and central guard suppress writes | necessity remains unknown |
+| NA / device info | NA and N-burst not observed | NOT RUN | no NA request path; incoming info accepted | receive only | refresh safety remains unknown |
+| FW1/FW2/RestartRf | not observed | NOT RUN | NAZZ -> FW1; no safe new recovery inferred | feature exchanges suppressed | no official successful sequence available |
+| First pose | not observed | NOT RUN | existing decoder preserved | receive only | tracking not confirmed |
+
+NA context / preceding event / response / N-burst / state: **N/A, NA not observed in this capture**.
+DO NOT SEND remains in force. PWS/PairDevice/FW1/FW2 observed: **not observed in this capture**.
+Acquisition blocker: **F / distinguish不能**. Safe reconnect and device-info refresh: **Unknown**.
+NADS and NASS: **Class B / acquisition unresolved**, unchanged.
+
+### Evidence, validation and publication
+
+Raw pcapng, raw CSV, serial/RF/topology, exact commands/config, process/PnP inventory and
+operator receipts remain private under gitignored `hil-private/official-runtime-usbpcap/`.
+Public sequence contains sanitized events with aliases and relative times only. Existing
+historical sequence/events and reports are preserved below and in the JSON's historical sections.
+
+| Alias | Capture SHA256 |
+|---|---|
+| HEALTH-1 | `809865cedff408f57268509054aaa4ed0b195744387e373ddbae4b30cecca319` |
+| HEALTH-2 | `a9b672ac1e4d3e8e55baa116cb9157e433332c45250937cad0beb206f31d9282` |
+| BASELINE-ATTEMPT | `8f6c974d5bd0855e4748eb24d3e2a7e3dff3cf0488c08d343189a57fbe494f72` |
+
+Validation: existing offline USB sanitizer **8/8 PASS**; existing fake-transport/offline
+CTest protocol/backend_pairing/setup_pairing/identity_capture/identity_compare/identity_offline
+**6/6 PASS**. Production build **NOT RUN**, production code unchanged. Real official
+connection/reconnect hardware success **NOT CONFIRMED / NOT RUN**.
+
+Privacy validation **PASS** for the new two-file content; raw captures/CSV are gitignored,
+and historical JSON/report content is preserved.
+
+Only this sanitized report and sequence are published to the research branch.
+No integration merge or production cherry-pick. Next action is a separately scoped investigation
+of official B normal connection and precise physical-operation timing; this run is stopped.
+The legacy launcher's historical next-action text below is superseded for this task.
+
+---
+
+# Historical launcher and capture attempts
+
 # Altra USBPcap launcher contract: Run 0 STOP
 
 ## Launcher contract retry, 2026-10-09 JST
