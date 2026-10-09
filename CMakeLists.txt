@@ -15,6 +15,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(vut_backend STATIC
     src/protocol.cpp
     src/backend.cpp
+    src/info_epoch.cpp
 )
 target_include_directories(vut_backend PUBLIC include)
 if(WIN32)
@@ -80,6 +81,9 @@ if(BUILD_TESTING)
     add_executable(vut_runtime_policy_tests tests/runtime_policy_tests.cpp)
     target_link_libraries(vut_runtime_policy_tests PRIVATE vut_backend)
     add_test(NAME runtime_policy COMMAND vut_runtime_policy_tests)
+    add_executable(vut_info_epoch_tests tests/info_epoch_tests.cpp)
+    target_link_libraries(vut_info_epoch_tests PRIVATE vut_backend)
+    add_test(NAME info_epoch COMMAND vut_info_epoch_tests)
     add_executable(vut_backend_pairing_tests tests/backend_pairing_tests.cpp)
     target_link_libraries(vut_backend_pairing_tests PRIVATE vut_backend)
     if(WIN32)
