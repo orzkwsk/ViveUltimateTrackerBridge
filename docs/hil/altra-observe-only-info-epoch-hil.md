@@ -292,3 +292,47 @@ Stage 1/integration merge: **NONE**. Next gate: a separately authorized fresh
 physical-preflight run for ObserveOnly B-OFF baseline, normal B ON and passive
 fresh-burst observation. This ownership task ends after evidence preservation
 and normal capture/probe cleanup; it does not automatically start that HIL.
+
+## Fresh-burst HIL: operator cancellation before capture
+
+Source of Truth:
+`MonakaVR_Altra_Stage1_ObserveOnly_FreshBurst_HIL_Codex指示書.md`.
+Date: 2026-10-10 JST.
+Branch: `hil/altra-observe-only-info-epoch`.
+Required/local/origin start HEAD:
+`cb30a29cf2b16bb3390479c64cf13dd1168c3342`.
+Clean worktree, prepared lineage and the unchanged runner executable hash were
+verified. The operator freshly confirmed A OFF, B OFF, both charging USB cables
+disconnected and the official dongle connected.
+
+Read-only process inventory found SteamVR and VRChat running, with Virtual
+Desktop also running. This differed from the reported SteamVR-OFF starting
+condition. VIVE runtime processes were absent, VIVE Streaming Service was
+stopped, and no existing capture/probe actor was present. The task stopped at
+the application-state gate before capture or HID access.
+
+The current permission rule requires explicit confirmation for every VRChat,
+SteamVR or Virtual Desktop exit/start/restart. Permission was requested for
+normal VRChat and SteamVR exit while keeping Virtual Desktop ON. The operator
+selected cancellation without changing applications. No alternative shutdown
+path, force kill, service control or application state change was performed.
+
+**Hardware result: NOT RUN — operator cancelled before capture.**
+Capture/SHA256/target traffic, exclusive open, B-OFF baseline, B-ON request and
+confirmation, DevicePaired, connection epoch, nine-token sequence, InfoComplete,
+initializationEligible, poseObserved and final epoch reason: NOT RUN.
+Automatic vendor actions: NOT MEASURED; no hardware run was started and no
+vendor sender was invoked. NADS/NASS comparisons: NOT RUN. No passive
+reacquisition or collector failure classification is inferred from cancellation.
+
+Code/configuration changes, pairing/recovery operations and app state changes:
+**0**. Only this sanitized cancellation receipt is published. Exact process and
+service inventories, physical confirmation, permission request and cancellation
+receipts remain Git-ignored/private. No raw capture or runner log was created.
+The existing build/regression checkpoint and prior ownership evidence remain
+unchanged; hardware regression was not run for this cancelled attempt.
+
+Stage 1/integration merge: **NONE**. No automatic retry or Stage 2 follows.
+Any future fresh-burst HIL requires a new authorized run, fresh physical preflight
+and either verified SteamVR-OFF starting state or explicit permission for any
+required application change.
