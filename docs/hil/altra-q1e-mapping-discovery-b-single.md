@@ -40,5 +40,74 @@ original raw preservation and `git diff --check` PASS.
 
 Frozen runner SHA256:
 `53210bb952921975d550e653bd4eee9b5b116d742a8053aa7f595fc2e02edd08`.
-Hardware access/send: NOT RUN. No gate approval, active trial or result is claimed.
-Raw evidence and operator receipts stay private. No production/integration merge.
+
+## Hardware run: stopped before HID open
+
+Run alias: `Q1E-CAPTURE-PREFLIGHT-01`, 2026-10-10 JST. Frozen source commit:
+`fd238e5df3bb212c1d6e7abcf75c757014d01519`, with the runner hash above.
+Fresh operator preflight confirmed A OFF, B OFF, both charging USB disconnected,
+dongle connected and VIVE Hub closed through the normal user-operated procedure.
+SteamVR/Virtual Desktop remained running. No app/process/service recovery was
+performed. The four SteamVR processes and original Virtual Desktop processes
+retained their IDs and creation times. The later inventory additionally contained
+`VirtualDesktop.Server.exe`; this is an observed inventory change, with no agent
+lifecycle operation or cause attribution. The complete inventories are private.
+
+Read-only current PnP found one healthy target. Existing USBPcap metadata identified
+one target root and one direct device for the target-only capture. TShark was
+started with all-device/new-device capture disabled and descriptor injection
+enabled. Its extcap input failed during startup:
+
+```text
+File type is neither a supported pcap nor pcapng format. (magic = 0x00000000)
+```
+
+TShark exited with a nonzero result; no raw pcapng file was created. This diagnostic
+does not identify the failure's root cause. Capture target VID/PID and integrity
+could not be verified from raw packets. The traffic check failed before the runner
+launch, so no real HID open, SetFeature or GetFeature occurred. Previous HIL's
+exclusive-open success was not reused as a current ownership receipt.
+
+The run stopped under Source of Truth sections 15/29: healthy capture is required
+before active HIL and unavailable/corrupt capture is a STOP condition. No capture
+retry, new tool installation, driver/registry/service change, dongle replug or
+application lifecycle operation was performed. Read-only final inventory confirmed
+zero capture/probe actors. No runner ownership or active-trial journal was created.
+
+| Required hardware gate | Actual result |
+| --- | --- |
+| Exclusive owner / transport generation | NOT RUN / not established |
+| B OFF passive baseline | NOT RUN |
+| B ON request and 30-second baseline | NOT RUN; B remained OFF per preflight |
+| Current mapping / natural reconnect | NOT EVALUATED |
+| Q1E-ONLY human approval | Not requested; none |
+| Q1E sends / active trials | 0 / 0, maximum 1 each |
+| Behavior2 sends | 0; inaccessible in this runner |
+| Transport result / response framing | NOT RUN |
+| Opaque record / RF transition | Not acquired / NOT EVALUATED |
+| DeviceUnpaired / DevicePaired / NANA..NAZZ | NOT EVALUATED |
+| Fresh NADS / NASS / pose / connection epoch | Not acquired / NOT EVALUATED |
+| Post-Q1E 30-second observation | NOT RUN; no Q1E send |
+| Automatic vendor action raw audit | NOT EVALUATED; capture unavailable |
+
+Research hardware feature API calls were zero. This is not a raw-capture proof of
+zero vendor actions by every system actor. No response-only, mapping-discovery,
+identity stability/acquisition or reconnect effect is claimed. Private NADS/NASS
+comparisons are NOT RUN because no fresh values were acquired.
+
+Classification: **Q1E-F — capture infrastructure failed before HID access**.
+Observed Q1E wire safety: **Unknown**. Mapping discovery utility: **Unknown**.
+Device-info acquisition utility: **Unknown**. Reconnect utility: **Unknown**.
+Vendor semantics remain **HIL_UNVERIFIED**. Hardware active send: **NOT RUN**.
+
+Private evidence includes launch/configuration metadata, current PnP, process and
+service inventories, frozen runner/source hashes, software qualification receipts,
+operator preflight and the original tool diagnostic. No raw pcap, raw response,
+opaque record or new identity value exists for this run. No private path, original
+run ID, topology, process ID, address or token is published.
+
+The run is closed. Capture infrastructure must be qualified in a separate follow-up
+before a fresh hardware run; no retry or second trial is scheduled. Production
+changes: none. Integration/production/previous-HIL merges: none. Only this branch
+contains the isolated runner/tests, required CMake/reachability wiring and sanitized
+report. Existing production/shared-contract/qualified primitive sources are unchanged.
