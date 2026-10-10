@@ -34,11 +34,13 @@ void printSetupHelp(std::ostream& out) {
 }
 void printPairingResult(std::ostream& out, const PairingResult& result) {
     out << "pair_state=" << pairingStateName(result.state)
-        << " disable=" << (result.cleanupConfirmed ? "confirmed_or_not_enabled" : "UNCONFIRMED")
+        << " disable=" << (result.cleanupConfirmed ? "exchange_matched_or_not_needed" : "UNCONFIRMED")
+        << " cleanup_exchange=" << cleanupExchangeStateName(result.cleanup.state)
+        << " cleanup_effect=unverified"
         << " reason=" << result.reason << '\n';
     if (result.paired) out << "Paired: rf_address=" << result.paired->toString()
         << " slot=" << result.paired->slot << " stable_id=UNAVAILABLE assignment=BLOCKED\n";
-    if (!result.cleanupError.empty()) out << "WARNING: PairDevice disable unconfirmed: " << result.cleanupError << '\n';
+    if (!result.cleanupError.empty()) out << "WARNING: PairDevice disable exchange unresolved: " << result.cleanupError << '\n';
 }
 namespace {
 void list(const Devices& devices, std::int64_t now, std::ostream& out) {

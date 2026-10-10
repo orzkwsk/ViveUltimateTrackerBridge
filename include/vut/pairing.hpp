@@ -12,7 +12,13 @@ struct PairingResult {
     PairingState state = PairingState::Idle;
     std::optional<DeviceId> paired;
     std::string reason, cleanupError;
+    // Compatibility projection: a same-generation disable exchange matched,
+    // or no accepted/possibly-written enable needed cleanup. Never vendor effect.
     bool cleanupConfirmed = true;
+    FeatureExchangeEvidence enableExchange;
+    PairingCleanupEvidence cleanup;
+    // Only a bounded DevicePaired event can confirm association. No Ready claim.
+    SemanticEffect associationEffect = SemanticEffect::Unverified;
 };
 
 // Single-threaded control boundary. observe() only records an event; tick()
@@ -35,6 +41,7 @@ public:
     [[nodiscard]] const PairingResult& result() const noexcept { return result_; }
 private:
     bool finish(PairingState state, const std::string& reason);
+    void updateCleanupEvidence();
     Backend& backend_;
     PairingResult result_;
     int slot_ = -1;

@@ -41,6 +41,9 @@ void integratedPairing() {
     CHECK(f.session.pollOnce(nowNs()));
     const auto& result=f.session.pairing().result();
     CHECK(result.state==PairingState::Paired && result.paired && result.cleanupConfirmed);
+    CHECK(result.enableExchange.matched() && result.enableExchange.effect==vut::SemanticEffect::Unverified);
+    CHECK(result.associationEffect==vut::SemanticEffect::ConfirmedByIndependentEvidence);
+    CHECK(result.cleanup.state==vut::CleanupExchangeState::Matched && result.cleanup.effect==vut::SemanticEffect::Unverified);
     commandPacket(f.fake->writes.back(),false,2);
     CHECK(f.backend.running() && f.backend.transportGeneration()==generation && !f.fake->closed);
     CHECK(f.session.devices().entries().at(device().toString()).connected);
@@ -123,11 +126,13 @@ void transportLoss() {
     f.fake->uncertainDisable=false;
     CHECK(f.backend.start(config)); f.session.connected();
     CHECK(f.fake->writes.size()==count+1); commandPacket(f.fake->writes.back(),false,-1);
-    CHECK(!f.backend.pairingActive()); // old confirmed enable cannot survive the new generation
+    CHECK(!f.backend.pairingActive()); // old enable exchange match cannot survive the new generation
     CHECK(f.session.pollOnce(nowNs()));
-    CHECK(f.session.pairing().result().state==PairingState::Failed);
-    CHECK(f.session.pairing().result().cleanupConfirmed);
-    CHECK(f.session.pairing().result().cleanupError.empty());
+    CHECK(f.session.pairing().result().state==PairingState::CleanupFailed);
+    CHECK(!f.session.pairing().result().cleanupConfirmed);
+    CHECK(f.session.pairing().result().cleanup.state==vut::CleanupExchangeState::Unknown);
+    CHECK(f.session.pairing().result().cleanup.effect==vut::SemanticEffect::Unverified);
+    CHECK(!f.session.pairing().result().cleanupError.empty());
     CHECK(f.command("pair 1").succeeded);
     CHECK(f.command("pair-cancel").succeeded);
 }
