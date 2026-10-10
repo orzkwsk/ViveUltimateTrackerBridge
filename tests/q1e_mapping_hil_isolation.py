@@ -19,6 +19,10 @@ check('Binding' not in session and 'candidateAt_' not in send and 'slot' not in 
 check('now-bOnAt_ >= 30000' in session and 'now-postAt_ < 30000' in session,'Thirty-second windows missing')
 check('directory.parent_path()/"q1e-active-trial.lock"' in runner and 'DurableJournal trial(trialPath)' in runner,'One-trial journal missing')
 check('arg == "--q1e-once"' not in runner,'Startup Q1E allowed')
+finalize=runner.split('session.stop("OperatorShutdown");',1)[1]
+check(finalize.index('final_receive_state') < finalize.index('ReceiveJournalFlushed') <
+      finalize.index('hid.close();') < finalize.index('ExclusiveHidReleased') <
+      finalize.index('NormalShutdown'), 'Receive journal/exclusive release shutdown order')
 for base in ('src','include','scripts','tools'):
     for path in (root/base).rglob('*'):
         if path.suffix not in ('.cpp','.hpp','.h','.py','.ps1') or research in path.parents: continue

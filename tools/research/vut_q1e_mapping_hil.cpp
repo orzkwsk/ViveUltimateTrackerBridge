@@ -38,7 +38,8 @@ int main(int argc, char** argv) {
             "Private requests carry individually approved --q1e-once Q1E-ONLY with current generation/run/nonce.\n"
             "Tokens do not replace human approval. Targetless qualified Q1E only; Behavior2 inaccessible.\n"
             "B OFF baseline >=10s; B ON baseline >=30s; post-query observation >=30s. No retry.\n"
-            "Finalize/audit capture before shutdown.txt; terminal result retains exclusive ownership.\n";
+            "After observation, use shutdown.txt to flush the receive journal and release exclusive HID.\n"
+            "Only after NormalShutdown: GUI Stop/save, then offline capture audit.\n";
         return 0;
     }
     std::filesystem::path directory; bool observe = false;
@@ -107,12 +108,13 @@ int main(int argc, char** argv) {
                     << ",\"info_complete\":" << e.infoComplete << ",\"initialization_eligible\":" << e.initializationEligible
                     << ",\"pose_observed\":" << e.poseObserved << ",\"reason\":" << static_cast<unsigned>(e.reason) << '}';
             }
-            out << "]}\n";
+            out << "]}";
             const auto temporary = directory/"status-private.tmp", target = directory/"status-private.json";
-            { std::ofstream file(temporary,std::ios::binary|std::ios::trunc); file << out.str(); file.flush();
+            { std::ofstream file(temporary,std::ios::binary|std::ios::trunc); file << out.str() << '\n'; file.flush();
               if (!file) throw std::runtime_error("StatusUnavailable"); }
             if (!MoveFileExW(temporary.c_str(),target.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))
                 throw std::runtime_error("StatusUnavailable");
+            return out.str();
         };
         try {
             for (;;) {
@@ -156,7 +158,12 @@ int main(int argc, char** argv) {
             const auto until = elapsed()+180000;
             while (elapsed()<until && !std::filesystem::exists(directory/"shutdown.txt")) std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
-        hid.close(); log.write("{\"kind\":\"runtime\",\"reason\":\"NormalShutdown\"}\n");
+        session.stop("OperatorShutdown");
+        log.write("{\"kind\":\"final_receive_state\",\"state\":"+status(elapsed())+"}\n");
+        log.write("{\"kind\":\"runtime\",\"reason\":\"ReceiveJournalFlushed\"}\n");
+        hid.close();
+        log.write("{\"kind\":\"runtime\",\"reason\":\"ExclusiveHidReleased\"}\n");
+        log.write("{\"kind\":\"runtime\",\"reason\":\"NormalShutdown\"}\n");
         std::cout << "NormalShutdown\n";
         return session.reason().starts_with("Q1E_") || session.reason() == "NaturalReconnectObserved" ? 0 : 2;
     } catch (...) { std::cerr << "InfrastructureFailureNoRecovery\n"; return 3; }

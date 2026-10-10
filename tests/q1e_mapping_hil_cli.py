@@ -9,6 +9,8 @@ def check(value, message):
 def run(args): return subprocess.run([sys.argv[1],*args],capture_output=True,text=True,timeout=10)
 p=run(['--help'])
 check(p.returncode==0 and 'Default: observe only' in p.stdout and 'Behavior2 inaccessible' in p.stdout,'Help/default guard')
+check('Only after NormalShutdown: GUI Stop/save, then offline capture audit.' in p.stdout,
+      'GUI capture shutdown ordering guidance')
 for args in ([],['--q1e-once'],['--behavior2'],['--send-behavior2-once'],['--retry'],['--auto'],['--all'],['--sequence'],['--observe','--observe']):
     p=run(args);check(p.returncode==3 and 'ExclusiveOpenSucceeded' not in p.stdout,'Startup sender exposed')
 with tempfile.TemporaryDirectory() as parent:
