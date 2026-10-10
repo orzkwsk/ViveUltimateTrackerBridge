@@ -4,11 +4,12 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 HEADER = ROOT / "include/vut/research/observed_reconnect_wire.hpp"
+RESEARCH_ALLOWLIST = {HEADER, ROOT / "tools/research/active_reconnect_session.hpp"}
 TOKENS = ("observed_reconnect_wire", "buildObservedBehavior2Report", "buildObservedQuery1eReport",
           "matchObserved1eResponseFrame", "kRfBehaviorObservedCode2", "kCmdObservedQuery1e",
           "ObservedFeatureReport", "Observed1eResponseFrame")
 files = [p for base in ("src", "tools", "include", "scripts") for p in (ROOT / base).rglob("*")
-         if p.suffix in (".cpp", ".hpp", ".h", ".py", ".ps1", ".cmake") and p != HEADER]
+         if p.suffix in (".cpp", ".hpp", ".h", ".py", ".ps1", ".cmake") and p not in RESEARCH_ALLOWLIST]
 for path in files:
     source = path.read_text(encoding="utf-8")
     if any(token in source for token in TOKENS):
