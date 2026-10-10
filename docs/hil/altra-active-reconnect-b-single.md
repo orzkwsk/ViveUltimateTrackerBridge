@@ -50,7 +50,7 @@ closes the runner. Operator/cleanup waits are bounded; no automatic second trial
 
 Windows x64 Release configure/build: PASS. Full CTest: 24/24 PASS.
 Research runner SHA256:
-`5a17407eaf3d56df1526b2db09489c0832fc6956ce4567b1b4822db95f5051d2`.
+`a5523f26e18a3fffd8f3d6c97de92122ba1abbc7dc609f8c7de7c353b2ead720`.
 Release tooling and optimized tooling:
 13/13 PASS each. Explicit checks cover ObserveOnly no-send, missing approval,
 wrong slot/RF/epoch/run, duplicate sends, independent tokens, minimum windows,
@@ -61,7 +61,20 @@ Production reachability and no-retry static audits PASS normally and with
 
 ## Hardware receipt
 
-Hardware access/send: NOT RUN. Gate approvals: none. Send counts: all zero.
+The preliminary observe-only invocation returned a generic open-failure label.
+Subsequent zero-open SetupAPI metadata inspection proved that its `mi_00`-only
+filter excluded the one target interface before CreateFile. This was a runner
+selection defect; ownership contention was not demonstrated. The filter now
+accepts both the qualified single-interface form and composite interface zero,
+still requires a unique candidate, and retains detailed failure categories.
+Synthetic single/composite/other-interface/product cases and full CTest PASS.
+The operator performed the requested VIVE Hub normal open/close once. Any later
+open success is confounded by this code correction and does not establish that
+the lifecycle operation resolved an ownership conflict. Agent app operations: 0.
+The preliminary passive capture was finalized/audited: zero vendor transmissions,
+zero SetFeature, zero truncated frames; payload-bearing RF traffic was absent.
+
+Hardware active send: NOT RUN. Gate approvals: none. Send counts: all zero.
 Fresh physical preflight, passive B OFF/B ON baselines, current binding and
 individual active approvals are pending. No HIL classification or reconnect
 effect is claimed before a new run is observed. Raw evidence remains private.

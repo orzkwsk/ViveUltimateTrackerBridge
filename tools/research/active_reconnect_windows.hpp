@@ -59,7 +59,7 @@ public:
         everOpened_ = true;
         GUID guid{}; HidD_GetHidGuid(&guid);
         auto info = SetupDiGetClassDevsW(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-        if (info == INVALID_HANDLE_VALUE) return false;
+        if (info == INVALID_HANDLE_VALUE) { error = "InterfaceEnumerationFailed"; return false; }
         std::vector<std::wstring> candidates;
         for (DWORD i = 0;; ++i) {
             SP_DEVICE_INTERFACE_DATA iface{}; iface.cbSize = sizeof(iface);
@@ -71,7 +71,7 @@ public:
             if (!SetupDiGetDeviceInterfaceDetailW(info, &iface, detail, size, nullptr, nullptr)) continue;
             std::wstring path = detail->DevicePath, lower = path;
             std::transform(lower.begin(), lower.end(), lower.begin(), ::towlower);
-            if (lower.find(L"vid_0bb4&pid_0350") != std::wstring::npos && lower.find(L"mi_00") != std::wstring::npos)
+            if (qualifiesDongleInterface(lower))
                 candidates.push_back(path);
         }
         SetupDiDestroyDeviceInfoList(info);

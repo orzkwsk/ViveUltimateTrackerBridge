@@ -46,6 +46,10 @@ struct Trial {
 };
 int main(int argc,char**) try {
     CHECK(argc==1); // Release checks are explicit, never NDEBUG assert.
+    CHECK(qualifiesDongleInterface(L"synthetic:VID_0BB4&PID_0350:single-interface"));
+    CHECK(qualifiesDongleInterface(L"synthetic:vid_0bb4&pid_0350&mi_00:composite"));
+    CHECK(!qualifiesDongleInterface(L"synthetic:vid_0bb4&pid_0350&mi_01:other-interface"));
+    CHECK(!qualifiesDongleInterface(L"synthetic:vid_0bb4&pid_0351:other-product"));
     {
         Trial t; t.session.observe(reconnect_fixture::kSequence[4].report,1000);
         CHECK(t.session.rfReports()==1 && !t.session.candidate());

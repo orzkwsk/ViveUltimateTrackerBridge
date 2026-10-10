@@ -98,8 +98,8 @@ int main(int argc, char** argv) {
         Session session(run, tokens, hid, audit);
         std::string error;
         if (!hid.open(vut::protocol::kVendorIdVive, vut::protocol::kProductIdUltimateTrackerDongle, true, error)) {
-            log.write("{\"kind\":\"runtime\",\"reason\":\"ExclusiveOpenFailed\"}\n");
-            std::cout << "ExclusiveOpenFailed\n"; return 2;
+            log.write("{\"kind\":\"runtime\",\"reason\":\"ExclusiveOpenFailed\",\"detail\":\"" + error + "\"}\n");
+            std::cout << "ExclusiveOpenFailed " << error << "\n"; return 2;
         }
         session.opened(1);
         log.write("{\"kind\":\"runtime\",\"reason\":\"ExclusiveOpenSucceeded\",\"generation\":1}\n");
