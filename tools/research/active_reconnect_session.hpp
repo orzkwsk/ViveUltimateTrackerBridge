@@ -3,6 +3,7 @@
 #include "vut/backend_transport.hpp"
 #include "vut/detail/info_epoch.hpp"
 #include "vut/research/observed_reconnect_wire.hpp"
+#include "research_hid_interface.hpp"
 
 #include <functional>
 #include <cwctype>
@@ -33,11 +34,6 @@ struct SendReceipt {
 };
 using Audit = std::function<void(const SendReceipt&)>;
 inline bool sameDevice(const DeviceId& a, const DeviceId& b) { return a.slot == b.slot && a.mac == b.mac; }
-inline bool qualifiesDongleInterface(std::wstring_view path) {
-    std::wstring lower(path); std::transform(lower.begin(),lower.end(),lower.begin(),::towlower);
-    return lower.find(L"vid_0bb4&pid_0350") != std::wstring::npos &&
-        (lower.find(L"&mi_") == std::wstring::npos || lower.find(L"&mi_00") != std::wstring::npos);
-}
 
 class Session {
 public:

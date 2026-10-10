@@ -4,7 +4,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 HEADER = ROOT / "include/vut/research/observed_reconnect_wire.hpp"
-RESEARCH_ALLOWLIST = {HEADER, ROOT / "tools/research/active_reconnect_session.hpp"}
+RESEARCH_ALLOWLIST = {HEADER, ROOT / "tools/research/active_reconnect_session.hpp", ROOT / "tools/research/q1e_mapping_session.hpp"}
 TOKENS = ("observed_reconnect_wire", "buildObservedBehavior2Report", "buildObservedQuery1eReport",
           "matchObserved1eResponseFrame", "kRfBehaviorObservedCode2", "kCmdObservedQuery1e",
           "ObservedFeatureReport", "Observed1eResponseFrame")

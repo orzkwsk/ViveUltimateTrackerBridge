@@ -1,6 +1,7 @@
 #pragma once
 #include "vut/backend_transport.hpp"
 #include "vut/protocol.hpp"
+#include "research_hid_interface.hpp"
 #include <windows.h>
 #include <hidsdi.h>
 #include <hidpi.h>
