@@ -1,6 +1,8 @@
 # Altra Stage 1 passive ObserveOnly info-epoch HIL
 
 Source of Truth: the user-supplied
+`MonakaVR_Altra_Stage1_ObserveOnly_Passive_HIL_Execution_Codex指示書.md`
+for the execution receipt below; the original runner/software checkpoint used
 `MonakaVR_Altra_Stage1_ObserveOnly_Passive_HIL_Codex指示書.md`.
 Base: `fix/altra-info-epoch-gate`, `c17b244de64cab728086dafb5bd8acf6d711d6f8`.
 HIL branch: `hil/altra-observe-only-info-epoch`. No Stage 1 or integration merge.
@@ -79,22 +81,88 @@ Runner executable SHA256:
 
 ## Hardware receipt
 
-Hardware gate: **NOT RUN — awaiting physical preconditions and ownership release**.
-No tracker operation or capture has been started at this checkpoint.
-Private process preflight found VIVE runtime still present and no competing
-Bridge/capture actor. Normal UI exit was attempted; input failed with
-`coordinate input geometry is unavailable`. No force kill or service operation.
+Execution date: 2026-10-10 JST.
+Branch: `hil/altra-observe-only-info-epoch`.
+Required, local and origin HEAD at the execution gate:
+`a52df6c916021dc16d081ff8a0409778ca8af939`.
+Prepared lineage and clean worktree: verified before hardware access.
+Existing Codex attachment files were preserved through a local Git exclusion;
+no tracked configuration, implementation or contract file changed.
 
-Capture method/SHA256/attribution: NOT RUN.
-A/B initial state and charging USB: awaiting operator confirmation.
-B normal ON: NOT REQUESTED. Bounded window: NOT RUN.
-Fresh DevicePaired / connection epoch / nine-token order: NOT RUN.
-InfoComplete / initializationEligible / poseObserved / epoch reason: NOT RUN.
-Automatic vendor actions on hardware: NOT MEASURED.
-NADS/NASS byte-exact equality: NOT RUN.
-Final hardware classification: pending; no hardware PASS/FAIL inferred.
+**Hardware result: `OWNERSHIP_OR_CAPTURE_AMBIGUOUS` — STOP at exclusive open.**
 
-All new raw evidence, exact extcap configuration, process inventory, operator
-receipts, absolute timestamps, identity bytes and captures remain gitignored/private.
-Existing historical private evidence is never modified. No extra pairing,
-Unpair, recovery command, dongle replug or Stage 2 follows this gate.
+The operator confirmed A OFF, B OFF, both charging USB cables disconnected,
+official VUT dongle connected, and VIVE Hub normally exited. Read-only inventory
+confirmed the target dongle/HID nodes, no VIVE runtime process, stopped VIVE
+Streaming Service, and no existing probe or capture actor. SteamVR and Virtual
+Desktop processes remained present. A normal close request to SteamVR was
+accepted, but subsequent unsandboxed inventory confirmed that it had not exited.
+The initial sandboxed process check did not establish shutdown. No force kill,
+VIVE service change or recovery restart was performed. The operator subsequently
+authorized continuation with the inventoried dongle; its presence did not prove
+sole HID ownership. The competing owner was not conclusively attributed.
+
+All five current USBPcap extcap configurations were inventoried. A zero-access
+root metadata query matched the current PnP parent to one interface, whose
+configuration contained one direct device. Exact interface, topology, device
+address and preference keys remain private. The capture selected that device
+only, disabled capture-all/new-device options, and enabled descriptor injection.
+TShark/Wireshark 4.6.6 USBPcap extcap created a fresh private pcapng. Before probe
+launch, the pcapng header and target VID/PID descriptor were verified, with three
+real interrupt transfers carrying data. Injected descriptors were not counted
+as target traffic.
+
+The unchanged, hash-verified runner emitted:
+
+```text
+runner_started
+exclusive_open_failed
+backend_stopped
+```
+
+Probe exit code: 2. Exclusive open: **FAIL**. No successful ownership window.
+B OFF baseline: NOT RUN. `b_on_requested`: NOT CREATED.
+`b_on_confirmed`: NOT CREATED. B normal ON: NOT REQUESTED.
+Maximum-90-second passive observation: NOT RUN.
+DevicePaired / epoch / nine-token sequence / InfoComplete /
+initializationEligible / poseObserved / final epoch reason: NOT RUN.
+NADS equality / NASS equality against HIL-05 B, official Pair B and official
+reconnect B: NOT RUN; no fresh burst was collected.
+
+The runner's existing failed-start path normally stopped the backend immediately;
+there was no probe ownership to retain for capture cleanup. TShark was then
+stopped with Ctrl-C. The capture launcher returned 1 on interruption. Final
+unsandboxed inventory found no probe, TShark, dumpcap or USBPcap capture process.
+The observation-result/capture-stop/audit/probe-stop sequence was not entered
+because exclusive open failed before observation.
+
+Capture file: private pcapng; exact path retained privately.
+SHA256: `6be9d6e421293f42a6462322015e08a165b590ca21c007d62cfe9e618027c1ca`.
+Final capinfos and offline TShark parse: **PASS**, 22 target frames,
+zero truncated frames. Full-capture host vendor transmissions, including
+HID SetFeature and data-bearing nonstandard host-to-device transfers: **0**.
+Prohibited action list observed on wire: empty (PairDevice, PWS/behavior1,
+behavior2/6, 0x18 TX, NA, FW1/FW2, ATM*, P63).
+The probe start/exit interval contained zero captured frames and zero observed
+host vendor transmissions. Automatic vendor action attribution under exclusive
+probe ownership: **NOT ESTABLISHED**. A zero wire count alone does not satisfy
+the hardware ownership gate or establish a passive reacquisition result.
+
+Software regression rerun on the required HEAD: Windows x64 Release build
+**PASS**; CTest **20/20 PASS**; release tooling **13/13 PASS** in normal and
+optimized Python; optimized hardware-free runner CLI checks **PASS**.
+The runner executable SHA256 remained unchanged from the software checkpoint.
+The only public change for this execution is this sanitized report.
+Execution leakage scan: **PASS**, checked against 17 private identity/topology/path
+representations. Raw evidence remained Git-ignored, historical reference hashes
+and the finalized capture hash were unchanged, and `git diff --check` passed.
+
+Raw pcapng/CSV, exact extcap configuration, root/PnP/process inventory, runner
+JSONL, operator receipts, capture hash/audit receipt and absolute timing remain
+gitignored/private. Historical raw evidence was not modified. No pairing,
+Unpair, vendor command, recovery action, dongle replug or Stage 2 was attempted.
+
+Integration merge: **NONE**. Stage 1 merge: **NONE**.
+Next gate: separately establish sole HID ownership, then obtain fresh physical
+preflight confirmation before any newly authorized passive HIL attempt.
+No acquisition or collector software failure is inferred from this startup stop.
