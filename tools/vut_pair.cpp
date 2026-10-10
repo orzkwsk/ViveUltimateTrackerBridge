@@ -97,8 +97,8 @@ int main(int argc, char** argv) try {
         std::cerr << "Failed to enable pairing: " << pairing.result().reason << '\n';
         const bool disabled = pairing.result().cleanupConfirmed;
         backend.stop();
-        if (disabled) std::cout << "Pairing disabled.\n";
-        else std::cerr << "WARNING: PairDevice disable could not be confirmed before HID close.\n";
+        if (disabled) std::cout << "PairDevice disable exchange matched or not needed; vendor effect unverified.\n";
+        else std::cerr << "WARNING: PairDevice disable exchange unresolved before HID close.\n";
         return 4;
     }
 
@@ -122,8 +122,8 @@ int main(int argc, char** argv) try {
 
     const bool disabled = result.cleanupConfirmed;
     backend.stop();
-    if (disabled) std::cout << "\nPairing disabled.\n";
-    else std::cerr << "WARNING: PairDevice disable could not be confirmed before HID close: "
+    if (disabled) std::cout << "\nPairDevice disable exchange matched or not needed; vendor effect unverified.\n";
+    else std::cerr << "WARNING: PairDevice disable exchange unresolved before HID close: "
                    << result.cleanupError << '\n';
 
     if (transportError) {
