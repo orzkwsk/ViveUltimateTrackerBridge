@@ -87,6 +87,7 @@ control::Outcome ServiceRuntime::start() {
             outcome_ = {control::ErrorCode::TransportUnavailable, control::Reason::TransportBoundary};
             return outcome_;
         }
+        epochs_.transportOpened(backend_.transportGeneration());
         sessionInfo_ = coordinator_.begin(
             {config_.observation.sourceId, config_.observation.spaces}, nextCause_,
             backend_.transportGeneration(), dependencies_.advanceRevision,
@@ -170,7 +171,15 @@ void ServiceRuntime::dispatch(const BackendEvent& e) noexcept {
             // receive timestamp, not the later post-feature-exchange/poll time.
             eventTime_ = e.observedMonotonicNs;
             lastEventNs_ = e.observedMonotonicNs;
+            epochs_.observe(e); // evidence FIRST, before registry/admission
             handle = receive(e); // registry FIRST, before actual adapter call
+            std::array<std::optional<DeviceId>, 5> bindings{};
+            // receive() already reconciles the five routing entries after bind;
+            // faults retain no evidence. Do not rescan registry history per ACK.
+            if (!deferredFault_)
+                for (std::size_t i = 0; i < current_.size(); ++i) if (current_[i])
+                    bindings[i] = DeviceId{current_[i]->rf, static_cast<int>(i)};
+            epochs_.retainBindings(e.transportGeneration, bindings);
         } else {
             ++statistics_.ignoredProvenance;
             // Retired generation/epoch inputs can reach the adapter's existing
@@ -218,6 +227,8 @@ void ServiceRuntime::rememberStatistics() {
 }
 void ServiceRuntime::retireTransport(ServiceRuntimeState state) {
     accepting_ = false;
+    epochs_.invalidateAll(state == ServiceRuntimeState::RestartRequired
+        ? ConnectionEpochReason::ObservationSessionRestarted : ConnectionEpochReason::TransportLost);
     checkModel(control_.loseTransport()); // invalidate BEFORE runtime-owned stop
     current_ = {};
     backend_.stop(); // Backend read-failure path has already stopped internally
@@ -266,6 +277,7 @@ void ServiceRuntime::shutdown() {
 void ServiceRuntime::shutdownImpl() {
     if (closed_) return;
     accepting_ = false; // no new work; public API cannot be called recursively
+    epochs_.invalidateAll(ConnectionEpochReason::RuntimeShutdown);
     checkModel(control_.loseTransport());
     current_ = {};
     if (callbackRegistered_) {
@@ -294,6 +306,7 @@ std::shared_ptr<const ServiceRuntimeSnapshot> ServiceRuntime::snapshot(control::
     out->state = state_; out->failure = failure_; out->outcome = outcome_; out->backendError = backend_.lastError();
     out->observationSession = sessionInfo_; out->control = control_.snapshot(policy);
     out->statistics = statistics();
+    out->connectionEpochs = epochs_.snapshot();
     return out;
 }
 std::vector<BackendEvent> ServiceRuntime::takeDiagnostics() {

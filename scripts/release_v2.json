@@ -147,6 +147,17 @@
         "runtime_policy",
         "backend_pairing",
         "launcher_process_guard",
+        "normal_path_reachability",
+        "device_registry",
+        "service_control_model",
+        "service_runtime",
+        "info_epoch",
+        "wire_exchange",
+        "setup_assignment",
+        "assignment_lab_cli",
+        "assignment_lock_process",
+        "setup_pairing",
+        "setup_cli",
         "model_validation",
         "model_validation_v2"
       ]

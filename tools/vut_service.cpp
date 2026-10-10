@@ -182,6 +182,7 @@ int main(int argc,char** argv) try {
                      "preserve means: Preserve coordinate map across tracker reconnect.\n"
                      "Default destination 127.0.0.1:29810. Stop/restart after map reset or ambiguous RF gap.\n"
                      "--diagnostics enables detailed stderr only; it never enables active SLAM queries.\n"
+                     "ObserveOnly: no automatic vendor commands; transport loss/session restart exits unavailable.\n"
                      "For diagnostics without publication use vut_probe.\n"; return 0;
     }
     if (argc==4 && std::string(argv[1])=="--check-session") {
@@ -220,11 +221,11 @@ int main(int argc,char** argv) try {
                   << " history_full=" << (snapshot->outcome.reason == vut::control::Reason::HistoryFull) << '\n';
         throw std::runtime_error("passive service runtime fault; no automatic control-model reset");
     };
-    while(run) {
+    {
         if(!runtime.start().ok()) {
             reportFault();
             std::cerr << runtime.snapshot()->backendError << '\n';
-            std::this_thread::sleep_for(std::chrono::seconds(1)); continue;
+            throw std::runtime_error("service transport unavailable; explicit restart required");
         }
         const auto session = *runtime.snapshot()->observationSession;
         std::cerr << "session=" << session.sessionId << " revision=" << session.revision
@@ -268,6 +269,7 @@ int main(int argc,char** argv) try {
                   << " dropped=" << counts.dropped << " admission_rejected=" << statistics.rejected << '\n';
         if (options.diagnostics) printAdmissionDiagnostics(statistics, "[admission-final]");
         reportFault();
+        if (run) throw std::runtime_error("service observation unavailable; explicit restart required");
     }
     runtime.shutdown();
     return 0;
