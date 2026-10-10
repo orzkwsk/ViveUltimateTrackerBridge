@@ -74,7 +74,83 @@ the lifecycle operation resolved an ownership conflict. Agent app operations: 0.
 The preliminary passive capture was finalized/audited: zero vendor transmissions,
 zero SetFeature, zero truncated frames; payload-bearing RF traffic was absent.
 
-Hardware active send: NOT RUN. Gate approvals: none. Send counts: all zero.
-Fresh physical preflight, passive B OFF/B ON baselines, current binding and
-individual active approvals are pending. No HIL classification or reconnect
-effect is claimed before a new run is observed. Raw evidence remains private.
+## Completed passive run
+
+Run alias: `B-SINGLE-OBSERVE-01`, 2026-10-10. Frozen runner source:
+`5cd171f7d30b61c602948158242fb78243375876`, with the SHA256 above.
+The earlier selection-defect invocation was an infrastructure check, with no
+active trial. Only the corrected runner proceeded to the physical B ON baseline.
+
+Fresh operator preflight confirmed A OFF, B OFF, both charging USB disconnected,
+dongle connected and VIVE Hub normally closed. The user performed VIVE Hub's
+normal open/close once; the agent performed no GUI/process/service recovery.
+SteamVR and Virtual Desktop remained running. Their protected process IDs and
+creation times matched the pre-run inventory after cleanup. Background runtime
+process presence does not identify a HID handle owner. The research runner's
+exclusive open succeeded without shared-open fallback, with transport generation
+1, and remained held through capture finalization and audit.
+
+B OFF baseline: at least 68.568 seconds, seven RF status reports, no current
+device candidate and zero vendor transmissions in the completed capture snapshot.
+`b_on_requested` was durably acknowledged at runner elapsed 69.129 seconds before
+the user was asked to turn on only B. The user's LED report was solid blue followed
+by breathing. `b_on_confirmed` was acknowledged at elapsed 262.017 seconds.
+
+The confirmed B ON passive window lasted 30.039 seconds. Three opaque RF status
+reports arrived in that window; no RF status record transition, DevicePaired,
+DeviceUnpaired, NANA..NAZZ, NADS, NASS or pose arrived. The runner observed 29 RF
+status reports across the OFF baseline, operator wait and confirmed ON window.
+Observation/connection epochs remained zero. No current device-address candidate
+was available, so neither current slot nor full RF/address binding was established.
+Opaque RF status and historical B identity were not used as a destination.
+
+At elapsed 292.056 seconds the runner latched `CurrentBMappingUnavailable` and
+stopped observation while retaining ownership. Natural reconnect was not
+established. It did not request or send any active gate:
+
+| Gate | Human active approval | Send count | Transport / result |
+| --- | --- | --- | --- |
+| B2-1 | None | 0 | NOT RUN; current binding unavailable |
+| B2-2 | None | 0 | NOT RUN |
+| Q1E | None | 0 | NOT RUN; response framing not evaluated |
+
+Active hardware trial count: 0, against maximum 1. There was no persistent trial
+intent, gate-attempt journal or send receipt. No retry, Pair/Unpair, NA, PWS,
+additional power cycle, dongle replug or automatic recovery command was performed.
+Observed event order was RF status only, with no association or information epoch.
+No registration-loss or slot/RF mutation evidence was observed; mapping was never
+established, so command side effects and mapping stability are not qualified.
+
+## Capture and result
+
+Capture was stopped normally first. Read-only inventory then confirmed zero
+capture actors and one still-running research owner. Finalized raw pcap audit
+completed before the normal shutdown request. The runner logged `NormalShutdown`;
+post-shutdown inventory confirmed zero probe/capture actors.
+
+The target VID/PID was confirmed from captured descriptors. The final capture
+contained 98 target frames, including 31 incoming interrupt payload frames, zero
+truncated frames, zero SetFeature frames, zero GetFeature frames and zero host
+vendor transmissions. Thus automatic vendor action count was zero. Capture
+includes traffic before the runner opened and during finalization, so its RF
+payload count is distinct from the runner's 29 observed reports.
+
+Raw capture SHA256:
+`5d662d3101430955cff7e617e7df29bd63f276e0b3ddb69b529a9fa7d43abd7a`.
+Raw pcap/CSV, identities, RF/slot, process inventories, original run ID, operator
+receipts and journals remain private and ignored by Git. No fresh NADS/NASS was
+acquired; byte-exact comparisons with HIL-05 B, official Pair B and official
+reconnect B are NOT RUN. Identity stability was not evaluated, and current-session
+identity acquisition was not established. Pose restoration was not established.
+
+Classification: **HIL-F — current mapping unavailable; active effects unqualified**.
+Software gate: **SOFTWARE_QUALIFICATION_PASS**. Safe reconnect sequence: **Unknown**.
+Safe device-info acquisition: **NOT ESTABLISHED**. Vendor semantics and hardware
+safety remain **HIL_UNVERIFIED**. No Behavior2/0x1e effect or ownership-cause
+attribution follows from this run.
+
+The run is closed. A future active gate first requires a separately designed,
+current-session B mapping source; a prior slot/RF cannot authorize it. No further
+trial or command is scheduled. Production changes: none. Integration/Stage 1/HIL
+branch merges: none. Only this HIL branch carries the isolated runner, tests,
+required CMake/test-boundary wiring and this sanitized report.
