@@ -166,3 +166,129 @@ Integration merge: **NONE**. Stage 1 merge: **NONE**.
 Next gate: separately establish sole HID ownership, then obtain fresh physical
 preflight confirmation before any newly authorized passive HIL attempt.
 No acquisition or collector software failure is inferred from this startup stop.
+
+## HID ownership forensic follow-up
+
+Additional Source of Truth:
+`MonakaVR_Altra_HID_Ownership_Forensic_Additional_Codex指示書.md`.
+Execution date: 2026-10-10 JST.
+Branch: `hil/altra-observe-only-info-epoch`.
+Start local/origin HEAD: `9074d9314163d38c39bc9428ac7555959aa277f1`.
+Clean worktree and the unchanged runner executable SHA256 were verified.
+The last human-confirmed physical state was maintained: A/B OFF, both charging
+USB cables disconnected, official dongle connected. B ON was never requested.
+Current dongle presence, identity and PnP parent were rechecked privately.
+
+**Final classification: `STEAMVR_OWNERSHIP_INVOLVEMENT_CONFIRMED`.**
+The existing SteamVR-ON exclusive failure was reused without another identical
+failure attempt. After verified normal SteamVR shutdown, the same binary opened
+the dongle exclusively while Virtual Desktop remained running. This confirms
+SteamVR involvement under the specified comparison conditions; it does not
+identify a particular process/module as the handle owner.
+
+### Phase A: SteamVR ON evidence
+
+Read-only inventory captured vrserver, vrmonitor, vrcompositor, vrdashboard,
+Steam and Virtual Desktop processes. No VIVE runtime process, probe or competing
+capture actor was present; VIVE Streaming Service was stopped. Private receipts
+retain process names, parent relationships, start times, session IDs, executable
+paths and command lines.
+
+Loaded modules were readable for vrserver (166 modules), vrmonitor (145), and
+vrcompositor (87). Relevant vrserver modules included
+`driver_vive_ultimate_tracker.dll`, `driver_htc_business_streaming.dll`,
+`driver_VirtualDesktop.dll`, `driver_lighthouse.dll`, and `openvr_api.dll`.
+vrmonitor also loaded `vivelinklib.dll` and `openvr_api.dll`; vrcompositor loaded
+`openvr_api.dll`. Module presence is supporting evidence, not handle attribution.
+
+The running Steam/SteamVR executable paths established the actual log location.
+Current vrserver, vrmonitor, vrcompositor and vrdashboard logs were snapshotted
+read-only and searched for VIVE/HTC/Ultimate/tracker/0bb4/0350/HID/driver/server.
+Raw log bytes and matching lines remain private. ASCII-term summaries use
+replacement decoding where the raw log encoding is mixed; originals are exact
+byte snapshots. Current-run timestamps were correlated with each process start.
+The server log contained 217 VUT-specific matches, including driver-load and
+device-related evidence, from +1.165 s through +37121.041 s relative to server
+start. The compositor log contained one current-run VUT-specific match. No
+literal target VID/PID match was found in these current-run logs. Neither log
+presence nor absence establishes the exact HID handle owner.
+
+No existing handle inspection executable was found in PATH or the searched
+installed-tool/download locations. Direct handle-owner inspection was therefore
+NOT RUN. This does not establish that no owner existed. No diagnostic tool was
+installed, no driver/registry/service configuration was changed, and no debugger
+was attached or OS privilege elevation performed. Inventory used the existing
+user's normal access outside the restricted execution sandbox.
+
+The current extcap settings and zero-access root/PnP mapping were re-inventoried
+before an eight-second, target-only SteamVR-ON passive USBPcap snapshot. Its
+duration limit ended TShark normally with exit 0. Valid pcapng and target VID/PID
+were confirmed: eight target frames, one real interrupt-data frame, zero
+truncated frames, zero HID SetFeature and zero host vendor transmissions.
+Known host vendor commands: none observed. Standard USB control/descriptor
+traffic was excluded from vendor-action accounting. This snapshot provides no
+process attribution or tracker reacquisition evidence.
+
+### Phase B: normal shutdown and exclusive retry
+
+The installed SteamVR `vrstartup.exe -shutdown` normal-shutdown function returned
+0. Unsandboxed read-only inventory verified disappearance of vrserver,
+vrmonitor, vrcompositor and vrdashboard. Steam could remain running. Virtual
+Desktop Service, Streamer and Server remained present. No force kill was used.
+The active VRChat process also exited during SteamVR shutdown; this affected
+the active VR session, not merely the monitor window.
+
+On the operator's subsequent steering, the first SteamVR-OFF capture was stopped
+before any probe launch and all evidence was retained. After explicit instruction
+to continue as planned, a new capture and new private probe paths were used.
+The interrupted capture contained six target descriptor/control frames and no
+vendor transmission. It was not an exclusive-open attempt.
+
+SteamVR OFF / VD ON / VIVE runtime OFF, the same connected dongle, clean worktree
+and runner hash were reverified. The fresh capture's pcapng header and target
+descriptor were checked before ownership-only retry #1. No B-ON control file
+was created. The runner emitted `runner_started` and
+`exclusive_open_succeeded`; successful-ownership inventory confirmed one probe,
+no relevant SteamVR process and Virtual Desktop still running.
+
+With the probe still holding exclusive ownership, capture was stopped, hashed
+and audited offline. The finalized retry capture parsed successfully: 52 target
+frames, six interrupt-data frames, zero truncated frames, zero HID SetFeature
+and zero host vendor transmissions. Known/prohibited host vendor action list:
+empty. The full-capture count covers the exclusive-open window.
+
+Only after the capture audit completed was the new stop file created. The runner
+then emitted `backend_stopped`; final inventory found no probe or capture actor
+and all four relevant SteamVR processes remained absent. The runner returned 2
+because stopping an ownership-only run without B confirmation uses its existing
+fail-closed abort classification (`OWNERSHIP_OR_CAPTURE_AMBIGUOUS`). This
+acquisition-run abort receipt does not negate `exclusive_open_succeeded` or
+the ownership comparison. No fresh-burst observation was armed or completed.
+
+### Ownership matrix and scope
+
+| State | SteamVR | VD | VIVE runtime | exclusive open |
+|---|---|---|---|---|
+| Initial, reused from the preceding HIL | ON | ON | OFF | FAIL |
+| After verified normal SteamVR stop | OFF | ON | OFF | PASS |
+| After VD stop | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
+
+VD shutdown and retry #2: NOT RUN; retry #1 succeeded. VD remained running at
+final inventory. B ON, pairing, recovery, dongle replug and fresh-burst HIL:
+NOT RUN. Specific process/module handle owner: NOT ESTABLISHED.
+
+Code, backend, protocol and configuration changes: **0**. Only this sanitized
+report is published. Raw captures/CSV, logs, modules, inventories, exact extcap
+settings, topology, hashes and operator/runner receipts remain Git-ignored and
+private. Report validation includes evidence/receipt reconciliation, unchanged
+runner/capture hashes, public leakage scanning and `git diff --check`.
+Evidence reconciliation and capture-before-probe shutdown order: **PASS**.
+Leakage scan: **PASS**, against 19 private representations. Optimized Python
+hardware-free runner CLI/receipt/sender-boundary checks were rerun: **PASS**.
+The prior Windows build/20-test regression checkpoint remains applicable to the
+unchanged binary; no new implementation or build was required for this report.
+
+Stage 1/integration merge: **NONE**. Next gate: a separately authorized fresh
+physical-preflight run for ObserveOnly B-OFF baseline, normal B ON and passive
+fresh-burst observation. This ownership task ends after evidence preservation
+and normal capture/probe cleanup; it does not automatically start that HIL.
