@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vut/backend.hpp"
+#include "vut/detail/info_epoch.hpp"
 #include "vut/observation_adapter.hpp"
 #include "vut/observation_publisher.hpp"
 #include "vut/service_control.hpp"
@@ -32,7 +33,11 @@ struct ServiceRuntimeDependencies {
 struct ServiceRuntimeConfig {
     ObservationContext observation;
     ReconnectRevisionPolicy reconnectRevision = ReconnectRevisionPolicy::Strict;
-    BackendConfig backend; // preserve shared-open and all existing command defaults
+    BackendConfig backend = [] {
+        BackendConfig config;
+        config.automaticVendorActionPolicy = AutomaticVendorActionPolicy::ObserveOnly;
+        return config;
+    }(); // shared-open retained; Legacy is an explicit compatibility selection
     control::RegistryLimits registryLimits;
     std::size_t publisherCapacity = 512;
     bool diagnostics = false;
@@ -54,6 +59,8 @@ struct ServiceRuntimeSnapshot {
     std::optional<ServiceSession> observationSession;
     std::shared_ptr<const control::ControlSnapshot> control;
     ServiceRuntimeStatistics statistics;
+    // Authoritative production evidence, reconciled with registry ownership.
+    std::vector<ConnectionEpochSnapshot> connectionEpochs;
     // No setters and no control mutation entry points exist in ServiceRuntime.
     static constexpr bool pairingMutation = false;
     static constexpr bool identifyMutation = false;
@@ -94,6 +101,7 @@ private:
     std::optional<std::int64_t> eventTime_;
     control::ServiceControlModel control_;
     SessionRevisionCoordinator coordinator_;
+    detail::ConnectionEpochTracker epochs_;
     std::thread::id owner_;
     std::unique_ptr<Session> session_;
     std::optional<ServiceSession> sessionInfo_;

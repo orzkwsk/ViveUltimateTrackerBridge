@@ -119,10 +119,12 @@ struct Fixture {
     std::vector<std::string> bytes;
     std::unique_ptr<ServiceRuntime> runtime;
     Fixture(RegistryLimits limits = {}, ReconnectRevisionPolicy policy = ReconnectRevisionPolicy::Strict,
-            std::size_t capacity = 512, bool real = false) : realClock(real) {
+            std::size_t capacity = 512, bool real = false,
+            AutomaticVendorActionPolicy vendor = AutomaticVendorActionPolicy::ObserveOnly) : realClock(real) {
         auto transport = std::make_unique<FakeTransport>(evidence); fake = transport.get();
         probe.evidence = &evidence;
         ServiceRuntimeConfig config;
+        config.backend.automaticVendorActionPolicy = vendor;
         config.observation.sourceId = "vive-installation-a";
         config.observation.spaces = {{a.toString(), "map-a"}};
         config.registryLimits = limits; config.reconnectRevision = policy; config.publisherCapacity = capacity;
@@ -333,7 +335,7 @@ void shutdownAndFailures() {
         const auto stop = std::find(f.evidence.lifecycle.begin(), f.evidence.lifecycle.end(), "stop");
         const auto dependent = std::find(f.evidence.lifecycle.begin(), f.evidence.lifecycle.end(), "dependent");
         if (dependent != f.evidence.lifecycle.end()) CHECK(stop < dependent);
-        CHECK(f.evidence.writes.empty() || failure == 1); // only preserved configure-on-pair writes
+        CHECK(f.evidence.writes.empty()); // ObserveOnly includes exceptional teardown
     }
     Fixture unavailable;
     unavailable.fake->openSucceeds = false;
@@ -462,7 +464,7 @@ void commandSequenceEquivalent() {
     CHECK(legacy.start());
     while (!raw->reads.empty()) CHECK(legacy.pollOnce());
     legacy.stop();
-    Fixture after({}, ReconnectRevisionPolicy::Strict, 512, true);
+    Fixture after({}, ReconnectRevisionPolicy::Strict, 512, true, AutomaticVendorActionPolicy::Legacy);
     after.fake->reads = reports;
     CHECK(after.runtime->start().ok());
     while (!after.fake->reads.empty()) CHECK(after.runtime->pollOnce());
@@ -482,12 +484,131 @@ void commandSequenceEquivalent() {
     }
     CHECK(fw1 == 1 && pws == 1);
 }
+const std::array<std::string_view, 9> infoBurst{
+    "NANAABC", "NADSABCDEFGHIJKL", "NASSABCDEFGHIJKLM", "NASI12345678",
+    "NAPIABCDEFGH", "NAV1ABCDEFGHIJK", "NARI1", "NAGNABCDE", "NAZZ"
+};
+ConnectionEpochSnapshot epoch(const ServiceRuntimeSnapshot& snapshot, int slot = a.slot) {
+    const auto found = std::find_if(snapshot.connectionEpochs.rbegin(), snapshot.connectionEpochs.rend(),
+        [slot](const auto& e) { return e.slot == slot; });
+    CHECK(found != snapshot.connectionEpochs.rend()); return *found;
+}
+void collect(Fixture& f, DeviceId device = a) {
+    for (auto text : infoBurst) {
+        auto e = f.event(BackendEvent::Kind::Ack, device); e.text = text; CHECK(f.deliver(e));
+    }
+}
+void assertInvalid(const ServiceRuntimeSnapshot& s, ConnectionEpochReason reason, int slot = a.slot) {
+    const auto e = epoch(s, slot);
+    CHECK(!e.active && !e.infoComplete && !e.nadsFresh && !e.nassFresh && !e.deviceCandidate);
+    CHECK(e.reason == reason);
+}
+void epochOrderingAndInvalidation() {
+    Fixture f;
+    CHECK(f.runtime->start().ok());
+    CHECK(f.deliver(f.event(BackendEvent::Kind::DevicePaired)));
+    auto before = f.probe.beforeAdapter;
+    CHECK(epoch(*before).active && !epoch(*before).nadsPresent);
+    CHECK(before->control->registry.devices.back().runtimeHandle);
+    const auto handle = f.current();
+    collect(f);
+    before = f.probe.beforeAdapter;
+    auto e = epoch(*before);
+    CHECK(e.infoComplete && e.nadsPresent && e.nassPresent && e.nadsFresh && e.nassFresh);
+    CHECK(e.deviceCandidate && e.deviceCandidate->mac == a.mac && e.deviceCandidate->slot == a.slot);
+    CHECK(e.transportGeneration == before->control->registry.scope.transportGeneration);
+    CHECK(before->control->registry.devices.back().identity == IdentityState::Unavailable);
+    CHECK(before->control->registry.devices.back().identityReason == Reason::ProviderNotInstalled);
+    const auto detached = before;
+    CHECK(f.deliver(f.event(BackendEvent::Kind::DeviceUnpaired)));
+    assertInvalid(*f.probe.beforeAdapter, ConnectionEpochReason::DeviceUnpaired);
+    CHECK(!f.probe.beforeAdapter->control->registry.devices.back().runtimeHandle);
+    CHECK(f.validate(handle).code == ErrorCode::StaleHandle);
+    CHECK(epoch(*detached).infoComplete && detached->control->registry.devices.back().runtimeHandle);
+
+    Fixture reopened;
+    CHECK(reopened.runtime->start().ok());
+    CHECK(reopened.deliver(reopened.event(BackendEvent::Kind::DevicePaired))); collect(reopened);
+    auto stale = reopened.event(BackendEvent::Kind::Ack); stale.text = "NANAABC";
+    const auto oldEpoch = epoch(*reopened.runtime->snapshot());
+    reopened.fake->failRead = true; CHECK(!reopened.runtime->pollOnce());
+    assertInvalid(*reopened.runtime->snapshot(), ConnectionEpochReason::TransportLost);
+    const auto opens = reopened.fake->opens;
+    CHECK(!reopened.runtime->pollOnce() && reopened.fake->opens == opens); // no automatic reopen
+    reopened.fake->failRead = false; CHECK(reopened.runtime->start().ok());
+    CHECK(reopened.deliver(reopened.event(BackendEvent::Kind::DevicePaired)));
+    reopened.inject(stale); CHECK(reopened.runtime->pollOnce());
+    e = epoch(*reopened.runtime->snapshot());
+    CHECK(e.transportGeneration > oldEpoch.transportGeneration && e.connectionEpochId > oldEpoch.connectionEpochId);
+    CHECK(e.active && !e.nadsFresh && e.seenMask == 0); collect(reopened);
+    reopened.probe.forceRestart = true; CHECK(!reopened.runtime->pollOnce());
+    assertInvalid(*reopened.runtime->snapshot(), ConnectionEpochReason::ObservationSessionRestarted);
+    reopened.probe.forceRestart = false; CHECK(reopened.runtime->start().ok());
+    auto tail = reopened.event(BackendEvent::Kind::Ack); tail.text = "NAZZ";
+    CHECK(reopened.deliver(tail)); CHECK(!epoch(*reopened.runtime->snapshot()).infoComplete);
+    CHECK(reopened.deliver(reopened.event(BackendEvent::Kind::DevicePaired)));
+    CHECK(epoch(*reopened.runtime->snapshot()).seenMask == 0); collect(reopened);
+    reopened.runtime->shutdown(); assertInvalid(*reopened.runtime->snapshot(), ConnectionEpochReason::RuntimeShutdown);
+    CHECK(reopened.evidence.writes.empty() && f.evidence.writes.empty());
+}
+void epochOwnershipAndMutation() {
+    Fixture f; CHECK(f.runtime->start().ok());
+    CHECK(f.deliver(f.event(BackendEvent::Kind::DevicePaired))); collect(f);
+    auto replacement = b; replacement.slot = a.slot;
+    CHECK(f.deliver(f.event(BackendEvent::Kind::DevicePaired, replacement)));
+    CHECK(!epoch(*f.runtime->snapshot()).nadsFresh); collect(f, replacement);
+    CHECK(f.deliver(f.event(BackendEvent::Kind::DeviceUnpaired, a)));
+    CHECK(epoch(*f.runtime->snapshot()).infoComplete); // late old unpair cannot retire replacement
+    auto moved = replacement; moved.slot = 3;
+    CHECK(f.deliver(f.event(BackendEvent::Kind::DevicePaired, moved)));
+    assertInvalid(*f.probe.beforeAdapter, ConnectionEpochReason::AddressMoved);
+    CHECK(!epoch(*f.probe.beforeAdapter, 3).nadsFresh); collect(f, moved);
+    auto uncertain = moved; uncertain.slot = 4;
+    CHECK(f.deliver(f.event(BackendEvent::Kind::Pose, uncertain, 1)));
+    assertInvalid(*f.probe.beforeAdapter, ConnectionEpochReason::AddressMoved, 3);
+    CHECK(!f.probe.beforeAdapter->control->registry.devices.back().runtimeHandle);
+
+    Fixture ambiguity; CHECK(ambiguity.runtime->start().ok());
+    CHECK(ambiguity.deliver(ambiguity.event(BackendEvent::Kind::DevicePaired))); collect(ambiguity);
+    CHECK(ambiguity.deliver(ambiguity.event(BackendEvent::Kind::DevicePaired, b))); collect(ambiguity, b);
+    auto conflict = a; conflict.slot = b.slot; // RF owns a different current slot
+    CHECK(ambiguity.deliver(ambiguity.event(BackendEvent::Kind::DevicePaired, conflict)));
+    assertInvalid(*ambiguity.probe.beforeAdapter, ConnectionEpochReason::RegistryOwnershipAmbiguous, b.slot);
+    for (const auto& record : ambiguity.probe.beforeAdapter->control->registry.devices) CHECK(!record.runtimeHandle);
+
+    for (const auto token : {"NADSABCDEFGHIJKL", "NADSABCDEFGHIJKX"}) {
+        Fixture duplicate; CHECK(duplicate.runtime->start().ok());
+        CHECK(duplicate.deliver(duplicate.event(BackendEvent::Kind::DevicePaired))); collect(duplicate);
+        auto repeated = duplicate.event(BackendEvent::Kind::Ack); repeated.text = token;
+        CHECK(duplicate.deliver(repeated)); assertInvalid(*duplicate.probe.beforeAdapter, ConnectionEpochReason::DuplicateToken);
+        collect(duplicate); CHECK(!epoch(*duplicate.runtime->snapshot()).nadsFresh);
+    }
+}
+std::vector<std::uint8_t> infoReport(std::string_view text) {
+    auto p = ackReport(); p.resize(12 + text.size()); p[11] = static_cast<std::uint8_t>(text.size());
+    std::copy(text.begin(), text.end(), p.begin()+12); return p;
+}
+void observeOnlyRealBackendNoSend() {
+    CHECK(ServiceRuntimeConfig{}.backend.automaticVendorActionPolicy == AutomaticVendorActionPolicy::ObserveOnly);
+    Fixture f({}, ReconnectRevisionPolicy::Strict, 512, true);
+    CHECK(f.runtime->start().ok() && f.evidence.writes.empty());
+    f.fake->reads.push_back(pairReport());
+    for (auto token : infoBurst) f.fake->reads.push_back(infoReport(token));
+    while (!f.fake->reads.empty()) CHECK(f.runtime->pollOnce());
+    CHECK(epoch(*f.probe.beforeAdapter).infoComplete && f.evidence.writes.empty());
+    f.fake->reads.push_back(pairReport(true)); CHECK(f.runtime->pollOnce());
+    assertInvalid(*f.probe.beforeAdapter, ConnectionEpochReason::DeviceUnpaired);
+    f.fake->failRead = true; CHECK(!f.runtime->pollOnce());
+    CHECK(f.evidence.writes.empty()); f.fake->failRead = false; CHECK(f.runtime->start().ok());
+    f.runtime->shutdown(); CHECK(f.evidence.writes.empty());
+}
 }
 int main() try {
     static_assert(!std::is_copy_constructible_v<ServiceRuntime> && !std::is_move_constructible_v<ServiceRuntime>);
     static_assert(std::is_same_v<decltype(std::declval<ServiceRuntime>().snapshot()), std::shared_ptr<const ServiceRuntimeSnapshot>>);
     orderingAndAges(); bindingBoundaries(); transportAndSession(); shutdownAndFailures();
     exhaustionAndFlood(); observationBytesEquivalent(); commandSequenceEquivalent();
+    epochOrderingAndInvalidation(); epochOwnershipAndMutation(); observeOnlyRealBackendNoSend();
     std::cout << "PASS passive runtime ordering, admission ages, ABA, sessions, shutdown, exceptions, exhaustion, flood, exact bytes and command equivalence\n";
     return 0;
 } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
