@@ -1,5 +1,7 @@
 # ViveUltimateTrackerBridge
 
+Windows control frontend: run `Start_GUI.cmd`. See [normal GUI setup and control boundaries](docs/control-ui.md) for explicit Pair/Cancel, tracking start/stop, RF/map configuration and diagnostics. Software and offscreen mock validation do not establish hardware pairing or stable identity.
+
 Current integration lineage: `refactor/monaka-layer-separation`.
 
 For current wire-v2 behavior, production defaults and diagnostic/HIL limits, see
