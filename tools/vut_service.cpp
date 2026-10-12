@@ -1,3 +1,4 @@
+#include "vut/frontend_status.hpp"
 #include "vut/service_runtime.hpp"
 #include "vut/service_options.hpp"
 #include "vut/service_session.hpp"
@@ -177,7 +178,7 @@ public:
 }
 int main(int argc,char** argv) try {
     if (argc==2 && std::string(argv[1])=="--help") {
-        std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT] [--diagnostics]\nConfiguration: source <persistent-installation-id> and map <full-rf-address> <map-id> lines.\n"
+        std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT] [--diagnostics] [--frontend-control]\nConfiguration: source <persistent-installation-id> and map <full-rf-address> <map-id> lines.\n"
                      "Optional: reconnect_revision strict|preserve (default strict).\n"
                      "preserve means: Preserve coordinate map across tracker reconnect.\n"
                      "Default destination 127.0.0.1:29810. Stop/restart after map reset or ambiguous RF gap.\n"
@@ -194,7 +195,11 @@ int main(int argc,char** argv) try {
     }
     if (argc<3) throw std::runtime_error("use --help");
     std::vector<std::string_view> arguments;
-    for (int i = 3; i < argc; ++i) arguments.emplace_back(argv[i]);
+    bool frontendControl = false;
+    for (int i = 3; i < argc; ++i) {
+        if (std::string_view(argv[i]) == "--frontend-control") frontendControl = true;
+        else arguments.emplace_back(argv[i]);
+    }
     const auto options = vut::parseServiceOptions(arguments);
     auto configured=config(argv[1]);
     auto c=std::move(configured.observation);
@@ -211,6 +216,9 @@ int main(int argc,char** argv) try {
     dependencies.advanceRevision = [&] { return journal.advance(); };
     dependencies.makeSessionId = uuid;
     dependencies.send = [&](auto bytes) { return sender.send(bytes); };
+    const auto stopName=L"Local\\MonakaVR.Vive.ServiceStop.v1."+std::to_wstring(GetCurrentProcessId());
+    auto stopHandle=std::unique_ptr<void,decltype(&CloseHandle)>(CreateEventW(nullptr,FALSE,FALSE,stopName.c_str()),CloseHandle);
+    if(!stopHandle)throw std::runtime_error("graceful frontend stop event unavailable");
     vut::ServiceRuntime runtime(vut::Backend{}, std::move(runtimeConfig), std::move(dependencies));
     const auto reportFault = [&] {
         const auto snapshot = runtime.snapshot();
@@ -238,7 +246,16 @@ int main(int argc,char** argv) try {
         }
         std::uint64_t lastReportedRejections = 0;
         auto nextAdmissionReport = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+        std::unique_ptr<vut::frontend::Stream> frontend;
+        if (frontendControl) frontend = std::make_unique<vut::frontend::Stream>();
         while(run) {
+            if(WaitForSingleObject(stopHandle.get(),0)==WAIT_OBJECT_0){run=false;break;}
+            if (frontend) frontend->pump([&](const auto& request) -> vut::frontend::Json {
+                const auto operation = request.at("operation").template get<std::string>();
+                if (operation == "stop_service") { run = false; return {{"ok",true},{"message","Service shutdown requested."}}; }
+                if (operation == "get_status") return vut::frontend::status(*runtime.snapshot({500000000,1}));
+                return vut::frontend::error("Unsupported","Normal tracking service supports status and explicit stop only. Stop tracking before opening setup.");
+            });
             const bool polled = runtime.pollOnce();
             for (const auto& event : runtime.takeDiagnostics()) {
                 unknownStatusEvidence.observe(event);
@@ -262,6 +279,7 @@ int main(int argc,char** argv) try {
                 nextAdmissionReport = now + std::chrono::seconds(5);
             }
         }
+        if (frontend && !run) frontend->drain();
         if (!run) runtime.shutdown();
         const auto statistics = runtime.statistics();
         const auto& counts=statistics.publication;

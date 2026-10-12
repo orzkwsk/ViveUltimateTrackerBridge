@@ -159,7 +159,9 @@
         "setup_pairing",
         "setup_cli",
         "model_validation",
-        "model_validation_v2"
+        "model_validation_v2",
+        "frontend_control_stream",
+        "setup_configuration"
       ]
     }
   ],
@@ -179,6 +181,10 @@
     {
       "name": "config/vut-service.example.conf",
       "path": "{ROOT}/config/vut-service.example.conf"
+    },
+    {
+      "name": "runtime/vut_control_host.exe",
+      "path": "{BUILD}/Release/vut_control_host.exe"
     }
   ],
   "evidence": [

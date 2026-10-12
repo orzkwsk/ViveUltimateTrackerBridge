@@ -5,3 +5,7 @@ __pycache__/
 
 /config/vut-service.conf
 /assignments.json
+
+# .NET control frontend builds
+ui/**/bin/
+ui/**/obj/
