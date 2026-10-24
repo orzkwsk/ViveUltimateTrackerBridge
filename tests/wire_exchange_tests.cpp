@@ -307,6 +307,27 @@ void lossGenerationAndStop() {
         f.fake->throwClose = false;
     }
 }
+void passivePendingCleanupNoReplay() {
+    Fixture f;
+    CHECK(f.backend.beginPairing(2)); f.fake->reply = Reply::Empty;
+    CHECK(!f.backend.endPairing());
+    const auto count = f.fake->trace->writes.size();
+    BackendConfig passive; passive.automaticVendorActionPolicy = AutomaticVendorActionPolicy::ObserveOnly;
+    CHECK(!f.backend.start(passive));
+    CHECK(!f.backend.running() && f.backend.pairingActive());
+    CHECK(f.fake->trace->writes.size() == count);
+    f.backend.stop(); CHECK(f.fake->trace->writes.size() == count);
+    // Explicit Legacy compatibility can resolve a new exchange, never the old effect.
+    f.fake->reply = Reply::Match; CHECK(f.backend.start());
+    CHECK(f.fake->trace->writes.size() == count+1 && !f.backend.pairingActive());
+
+    CHECK(f.backend.start(passive)); CHECK(f.backend.beginPairing(1));
+    const auto explicitCount = f.fake->trace->writes.size();
+    f.fake->lost = true; CHECK(!f.backend.pollOnce());
+    CHECK(f.fake->trace->writes.size() == explicitCount); // ObserveOnly loss/stop no-send
+    CHECK(!f.backend.start(passive) && f.fake->trace->writes.size() == explicitCount);
+    CHECK(f.backend.start()); // explicit Legacy transition for cleanup
+}
 std::vector<std::uint8_t> ackPacket(int slot, const std::string& text) {
     // Literal baseline wire framing; intentionally independent of production builders.
     std::vector<std::uint8_t> p(65, 0); p[1]=0x18; p[2]=static_cast<std::uint8_t>(12+text.size()); p[3]=corruptWireFixture ? 3 : 4;
@@ -349,6 +370,7 @@ void unchangedWireAndAckFailure() {
 int main(int argc, char** argv) try {
     corruptWireFixture = argc == 2 && std::string(argv[1]) == "--corrupt-wire-fixture";
     writeAndResponses(); disableMatrixAndExceptions(); operations(); lossGenerationAndStop(); unchangedWireAndAckFailure();
+    passivePendingCleanupNoReplay();
     std::cout << "PASS typed feature exchange, independent association, cleanup uncertainty, generation, exceptions/destructors and unchanged baseline wire; hardware NOT RUN\n";
     return 0;
 } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }

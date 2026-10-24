@@ -2,6 +2,7 @@
 
 #include "vut/types.hpp"
 #include "vut/command_exchange.hpp"
+#include "vut/connection_epoch.hpp"
 
 #include <functional>
 #include <memory>
@@ -15,6 +16,8 @@ namespace detail {
 class BackendTransport;
 }
 
+enum class AutomaticVendorActionPolicy { Legacy, ObserveOnly };
+
 struct BackendConfig {
     std::string wifiCountry = "JP";
     int readTimeoutMs = 50;
@@ -24,6 +27,10 @@ struct BackendConfig {
     // Setup tools use exclusive ownership so an active service/Hub fails closed.
     // Normal service/probe behavior remains shared for compatibility.
     bool exclusiveHidAccess = false;
+    // ObserveOnly overrides both legacy configure and diagnostic-query flags.
+    // Explicit begin/endPairing remain usable. Pending cleanup blocks passive
+    // reopen; ObserveOnly start/stop/read loss never replay a vendor write.
+    AutomaticVendorActionPolicy automaticVendorActionPolicy = AutomaticVendorActionPolicy::Legacy;
 };
 
 class Backend {
@@ -65,6 +72,10 @@ public:
     [[nodiscard]] std::uint64_t transportGeneration() const noexcept;
     void setEventCallback(EventCallback callback);
     [[nodiscard]] std::vector<TrackerState> snapshot() const;
+    // Mutex-protected runtime evidence: at most current + previous per slot.
+    // Active vendor-local candidate addressing only; no serial/token contents,
+    // stable identity or Ready field. Service uses its registry-gated collector.
+    [[nodiscard]] std::vector<ConnectionEpochSnapshot> connectionEpochSnapshot() const;
 
 private:
     struct Impl;
