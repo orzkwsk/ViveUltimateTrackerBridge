@@ -1,5 +1,6 @@
 #include "vut/backend.hpp"
 #include "vut/backend_transport.hpp"
+#include "vut/detail/info_epoch.hpp"
 #include "vut/loss_diagnostics.hpp"
 #include "vut/protocol.hpp"
 
@@ -208,6 +209,7 @@ struct Backend::Impl {
     std::map<int, DeviceId> devices;
     std::map<int, std::uint16_t> buttons;
     detail::LossDiagnostics lossDiagnostics;
+    detail::ConnectionEpochTracker epochs;
     int hostSlot = -1;
     bool isRunning = false;
     std::uint64_t generation = 0;
@@ -220,6 +222,10 @@ struct Backend::Impl {
     FeatureExchangeEvidence lastExchange, enableExchange;
     std::optional<FeatureExchangeEvidence> lastFailedExchange;
     PairingCleanupEvidence cleanup;
+
+    bool allowAutomaticVendorActions() const noexcept {
+        return config.automaticVendorActionPolicy == AutomaticVendorActionPolicy::Legacy;
+    }
 
     void emit(BackendEvent event) {
         event.observedMonotonicNs = receivedNs;
@@ -390,13 +396,21 @@ Backend& Backend::operator=(Backend&& other) noexcept {
 
 bool Backend::start(const BackendConfig& config) {
     if (!impl_) return false;
-    stop();
     impl_->config = config;
+    stop();
     impl_->error.clear();
+    if (!impl_->allowAutomaticVendorActions() && impl_->pairingMayBeEnabled) {
+        impl_->error = "ObserveOnly cannot reopen with unresolved explicit pairing cleanup";
+        return false;
+    }
     if (impl_->generation == std::numeric_limits<std::uint64_t>::max()) {
         impl_->error = "transport generation exhausted"; return false;
     }
     ++impl_->generation;
+    {
+        std::scoped_lock lock(impl_->mutex);
+        impl_->epochs.transportOpened(impl_->generation);
+    }
 #ifdef _WIN32
     if (!impl_->hid || !impl_->hid->open(protocol::kVendorIdVive,
                                          protocol::kProductIdUltimateTrackerDongle,
@@ -430,8 +444,12 @@ bool Backend::start(const BackendConfig& config) {
 
 void Backend::stop() noexcept {
     if (!impl_) return;
+    try {
+        std::scoped_lock lock(impl_->mutex);
+        impl_->epochs.invalidateAll(ConnectionEpochReason::BackendStopped);
+    } catch (...) { /* best-effort noexcept stop/destructor boundary */ }
 #ifdef _WIN32
-    if (impl_->pairingMayBeEnabled) (void)endPairingWithRetry(1);
+    if (impl_->allowAutomaticVendorActions() && impl_->pairingMayBeEnabled) (void)endPairingWithRetry(1);
     try { if (impl_->hid) impl_->hid->close(); }
     catch (...) {
         // A successful close cannot confirm cleanup; a close exception must
@@ -587,13 +605,31 @@ std::vector<TrackerState> Backend::snapshot() const {
     return result;
 }
 
+std::vector<ConnectionEpochSnapshot> Backend::connectionEpochSnapshot() const {
+    if (!impl_) return {};
+    std::scoped_lock lock(impl_->mutex);
+    return impl_->epochs.snapshot();
+}
+
 bool Backend::pollOnce() {
     if (!impl_ || !impl_->isRunning) return false;
 #ifdef _WIN32
-    auto report = impl_->hid->read(impl_->config.readTimeoutMs);
+    std::vector<std::uint8_t> report;
+    try { report = impl_->hid->read(impl_->config.readTimeoutMs); }
+    catch (...) {
+        // Preserve the existing caller-owned exception/cleanup path. A read
+        // exception cannot leave transient connection evidence active.
+        std::scoped_lock lock(impl_->mutex);
+        impl_->epochs.invalidateAll(ConnectionEpochReason::TransportLost);
+        throw;
+    }
     impl_->receivedNs = monotonicNs();
     if (impl_->hid->readFailed()) {
-        (void)endPairingWithRetry();
+        {
+            std::scoped_lock lock(impl_->mutex);
+            impl_->epochs.invalidateAll(ConnectionEpochReason::TransportLost);
+        }
+        if (impl_->allowAutomaticVendorActions()) (void)endPairingWithRetry();
         stop();
         const auto cleanupError = impl_->pairingMayBeEnabled ? impl_->error : std::string{};
         impl_->error = "HID read failed: transport session lost";
@@ -606,22 +642,30 @@ bool Backend::pollOnce() {
         if (pair->device.slot >= 0) {
             if (pair->unpair) {
                 std::scoped_lock lock(impl_->mutex);
-                impl_->devices.erase(pair->device.slot);
-                impl_->states.erase(pair->device.slot);
-                impl_->buttons.erase(pair->device.slot);
-                impl_->lossDiagnostics.forget(pair->device.slot);
-                if (impl_->hostSlot == pair->device.slot) impl_->hostSlot = -1;
+                impl_->epochs.unpaired(impl_->generation, pair->device);
+                const auto current = impl_->devices.find(pair->device.slot);
+                if (current != impl_->devices.end() && current->second.mac == pair->device.mac) {
+                    impl_->devices.erase(current);
+                    impl_->states.erase(pair->device.slot);
+                    impl_->buttons.erase(pair->device.slot);
+                    impl_->lossDiagnostics.forget(pair->device.slot);
+                    if (impl_->hostSlot == pair->device.slot) impl_->hostSlot = -1;
+                }
             } else {
                 {
                     std::scoped_lock lock(impl_->mutex);
+                    if (!impl_->epochs.paired(impl_->generation, pair->device) && impl_->epochs.exhausted())
+                        impl_->error = "connection epoch counter exhausted";
                     impl_->devices[pair->device.slot] = pair->device;
                 }
-                impl_->configureOnPair(pair->device);
+                // Epoch first, unchanged Legacy writes second, callback last.
+                // The collector is evidence only; it never triggers a send.
+                if (impl_->allowAutomaticVendorActions()) impl_->configureOnPair(pair->device);
             }
         }
         impl_->emit({pair->unpair ? BackendEvent::Kind::DeviceUnpaired : BackendEvent::Kind::DevicePaired,
                      pair->device, std::nullopt, {}});
-        if (pair->unpair && pair->device.slot >= 0) {
+        if (pair->unpair && pair->device.slot >= 0 && impl_->allowAutomaticVendorActions()) {
             // Keep recovery single-action: no RestartRf, no PairDevice replay,
             // and no reboot. Normal tracker power-on should reconnect afterward.
             impl_->setRxPowerSaving(false, pair->device.slot);
@@ -634,7 +678,13 @@ bool Backend::pollOnce() {
 
     if (incoming->type == protocol::kIncomingAck) {
         const std::string text(incoming->payload.begin(), incoming->payload.end());
-        if (text.rfind("NAZZ", 0) == 0) impl_->sendAck(incoming->device, "FW1");
+        {
+            std::scoped_lock lock(impl_->mutex);
+            impl_->epochs.ack(impl_->generation, incoming->device, text);
+        }
+        // Preserve Legacy prefix/wire behavior even when the evidence gate
+        // rejects a malformed/out-of-epoch token. ObserveOnly sends nothing.
+        if (impl_->allowAutomaticVendorActions() && text.rfind("NAZZ", 0) == 0) impl_->sendAck(incoming->device, "FW1");
         impl_->emit({BackendEvent::Kind::Ack, incoming->device, std::nullopt, text});
         return true;
     }
@@ -644,6 +694,7 @@ bool Backend::pollOnce() {
         if (!state) return true;
         {
             std::scoped_lock lock(impl_->mutex);
+            impl_->epochs.pose(impl_->generation, state->device);
             auto& combined = impl_->buttons[state->device.slot];
             const auto raw = static_cast<std::uint8_t>(state->buttons & 0xff);
             if (raw & 0x80u) combined = static_cast<std::uint16_t>(((raw & 0x7fu) << 8) | (combined & 0x00ffu));
@@ -655,7 +706,8 @@ bool Backend::pollOnce() {
 
         // Active HID requests, NOT passive logging. Only the explicit probe/HIL
         // option enables this; the production service always leaves it disabled.
-        if (impl_->lossDiagnostics.queryDue(*state, impl_->config.diagnosticSlamQueries)) {
+        if (impl_->lossDiagnostics.queryDue(*state,
+                impl_->allowAutomaticVendorActions() && impl_->config.diagnosticSlamQueries)) {
             impl_->emit({BackendEvent::Kind::Diagnostic, state->device, std::nullopt,
                          "diagnostic-only: tracking lost >=5s; querying SLAM keys 0,4,5,6"});
             impl_->sendAck(state->device, "P63:0");
