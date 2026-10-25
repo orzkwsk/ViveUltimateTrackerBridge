@@ -159,7 +159,9 @@
         "setup_pairing",
         "setup_cli",
         "model_validation",
-        "model_validation_v2"
+        "model_validation_v2",
+        "agent_lifecycle",
+        "agent_process_ownership"
       ]
     }
   ],
