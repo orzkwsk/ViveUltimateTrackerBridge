@@ -203,7 +203,8 @@ bool AgentLifecycle::pollOnce() {
     return false;
 }
 void AgentLifecycle::finish(bool fault) noexcept {
-    if (state_ == AgentState::Stopped || state_ == AgentState::Faulted) return;
+    if (state_ == AgentState::Stopped || (state_ == AgentState::Faulted && !native_->ownsMutex)) return;
+    fault = fault || state_ == AgentState::Faulted;
     stop_.store(true); // Reject all future child/control work first.
     state_ = AgentState::Stopping;
     if (runtime_) {
@@ -263,15 +264,22 @@ std::uint32_t AgentLifecycle::spawnOwnedChild(const std::filesystem::path& execu
         EXTENDED_STARTUPINFO_PRESENT | CREATE_SUSPENDED | CREATE_NO_WINDOW,
         nullptr, nullptr, &startup.StartupInfo, &process))
         throw std::runtime_error("owned child creation/job assignment failed");
-    Handle child(process.hProcess), thread(process.hThread);
+    // Retain OUR exact process handle before any fallible admission/cleanup.
+    // A failed termination/wait must not hide this child from shutdown.
+    native_->child.reset(process.hProcess);
+    Handle thread(process.hThread);
     BOOL inJob = FALSE;
-    if (!IsProcessInJob(child.value, native_->job.value, &inJob) || !inJob || stop_.load() || ResumeThread(thread.value) == DWORD(-1)) {
-        TerminateProcess(child.value, 1); // Exact handle returned by OUR CreateProcess.
-        WaitForSingleObject(child.value, 5000);
+    if (!IsProcessInJob(native_->child.value, native_->job.value, &inJob) || !inJob || stop_.load() || ResumeThread(thread.value) == DWORD(-1)) {
+        const bool terminated = TerminateProcess(native_->child.value, 1) != FALSE;
+        if (WaitForSingleObject(native_->child.value, 5000) == WAIT_OBJECT_0) {
+            native_->child.reset(); // Exit, not the termination request, is authoritative.
+        } else {
+            error_ = terminated ? "owned child termination requested; exit unconfirmed"
+                                : "owned child termination failed; exit unconfirmed";
+            finish(true); // Reject work; exact child and mutex survive an unconfirmed wait.
+        }
         throw std::runtime_error("owned child admission failed");
     }
-    native_->child.reset(child.value);
-    child.value = nullptr;
     return process.dwProcessId;
 }
 #ifdef VUT_AGENT_TESTING

@@ -74,7 +74,15 @@ child would require a separately reviewed scope change.
 `PROC_THREAD_ATTRIBUTE_JOB_LIST` assigns the child during creation; the initial
 thread remains suspended until membership is confirmed. Assignment failure
 fails creation before execution. Resume/membership failure terminates only the
-exact newly created process handle. Windows killing the owner closes its last
+exact newly created process handle. The Agent retains that handle immediately
+after creation, before any admission check. Only a signaled exact handle confirms
+exit; a successful termination request alone does not. If termination or the wait
+cannot confirm exit, the Agent faults, rejects further work, shuts down tracking
+once and closes the Job while retaining the child handle and instance mutex until
+an exact exit wait succeeds. Repeated shutdown can retry confirmation without
+restarting Runtime or turning Faulted into Stopped. If the initial cleanup wait
+already confirms exit, the rejected child is cleared and tracking may continue.
+Windows killing the owner closes its last
 Job handle and removes the child. A child exit/crash is observed as Exited and
 does not stop tracking; a later explicit launch can replace that exited child.
 No WPF executable is launched in A-B1. Graceful GUI close/IPC is deferred; current
@@ -89,6 +97,12 @@ and [CreateMutexW](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/
 
 Windows CTest adds `agent_lifecycle` and `agent_process_ownership`; both are
 required in the release manifest without removing the previous 24 groups.
+The additional `agent_admission_confirmation` gate injects resume/membership,
+termination and wait failures at the Win32 boundary around production source.
+It checks retained child/mutex ownership, denied re-spawn, retry confirmation,
+exact-child cleanup, one Runtime shutdown and lock reacquisition after confirmation.
+The test launches only its own suspended executable and includes an independent
+exact handle for cleanup even when the regression is deliberately reintroduced.
 The fixture links only lifecycle + bcrypt, never Backend/HID. Its runtime counts
 factory/start/shutdown/destruction and journal mutation. Compile-time
 `VUT_AGENT_TESTING` enables an assignment-failure injection only in this test
