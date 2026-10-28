@@ -218,7 +218,7 @@ void orderingAndAges() {
     ++f.now;
     CHECK(f.runtime->snapshot()->control->registry.revision == revision);
     CHECK(f.runtime->snapshot()->statistics.callbackRegistrations == 1);
-    CHECK(!ServiceRuntimeSnapshot::pairingMutation && !ServiceRuntimeSnapshot::identifyMutation && !ServiceRuntimeSnapshot::identityAcquisition);
+    CHECK(!f.runtime->snapshot()->pairingAvailable && !f.runtime->snapshot()->identifying && !ServiceRuntimeSnapshot::identityAcquisition);
 }
 void bindingBoundaries() {
     Fixture f;

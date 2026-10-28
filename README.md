@@ -5,6 +5,10 @@ Current integration lineage: `refactor/monaka-layer-separation`.
 For current wire-v2 behavior, production defaults and diagnostic/HIL limits, see
 [production integration](docs/production-integration.md) and [software release evidence](docs/release-v2.md).
 
+The optional Native Agent tray and its owned WPF management window are described in
+[Agent GUI software candidate](docs/agent-gui-offline-r2.md). This offline candidate
+does not change existing launchers or enable physical pairing during tracking.
+
 For the optional direct-HID bring-up console, run `Setup_Altra_Trackers.cmd`.
 It supports Pairing, device listing and provisional motion Identify in one dongle
 session; see [Altra setup boundaries](docs/altra-setup.md). Stop the service and

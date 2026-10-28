@@ -12,6 +12,7 @@
 namespace vut {
 enum class AgentState { Starting, Running, Stopping, Stopped, Faulted };
 enum class AgentChildState { None, Running, Exited };
+enum class AgentChildVisibility { Hidden, Normal };
 struct AgentIdentity {
     std::filesystem::path config;
     std::filesystem::path journal;
@@ -48,7 +49,9 @@ public:
     AgentState state() const;
     const std::string& error() const;
     bool canSpawnOwnedChild() const;
-    std::uint32_t spawnOwnedChild(const std::filesystem::path&, const std::vector<std::wstring>&);
+    std::uint32_t spawnOwnedChild(const std::filesystem::path&, const std::vector<std::wstring>&,
+                                 AgentChildVisibility = AgentChildVisibility::Hidden);
+    bool showOwnedChild();
     AgentChildState childState() const;
     bool hasOwnedChild() const;
 private:

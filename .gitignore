@@ -2,6 +2,8 @@
 *.user
 __pycache__/
 /dist/
+/ui/**/bin/
+/ui/**/obj/
 
 /config/vut-service.conf
 /assignments.json

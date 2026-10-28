@@ -238,7 +238,22 @@ bool AgentLifecycle::canSpawnOwnedChild() const {
     checkOwner();
     return state_ == AgentState::Running && !stop_.load() && !hasOwnedChild();
 }
-std::uint32_t AgentLifecycle::spawnOwnedChild(const std::filesystem::path& executable, const std::vector<std::wstring>& arguments) {
+bool AgentLifecycle::showOwnedChild() {
+    checkOwner();
+    if (state_ != AgentState::Running || stop_.load() || !hasOwnedChild()) return false;
+    struct Search { DWORD pid; bool shown = false; } search{GetProcessId(native_->child.value)};
+    if (!search.pid) throw std::runtime_error("owned child identity unavailable");
+    EnumWindows([](HWND hwnd, LPARAM data) -> BOOL {
+        auto& item = *reinterpret_cast<Search*>(data);
+        DWORD pid = 0; GetWindowThreadProcessId(hwnd, &pid);
+        if (pid != item.pid || GetWindow(hwnd, GW_OWNER) || !IsWindowVisible(hwnd)) return TRUE;
+        item.shown = ShowWindowAsync(hwnd, SW_RESTORE) != FALSE;
+        if (item.shown) SetForegroundWindow(hwnd);
+        return FALSE;
+    }, reinterpret_cast<LPARAM>(&search));
+    return search.shown;
+}
+std::uint32_t AgentLifecycle::spawnOwnedChild(const std::filesystem::path& executable, const std::vector<std::wstring>& arguments, AgentChildVisibility visibility) {
     checkOwner();
     WorkGuard work(working_);
     if (!canSpawnOwnedChild()) throw std::logic_error("agent cannot launch an owned child now");
@@ -256,7 +271,7 @@ std::uint32_t AgentLifecycle::spawnOwnedChild(const std::filesystem::path& execu
     STARTUPINFOEXW startup{};
     startup.StartupInfo.cb = sizeof(startup);
     startup.StartupInfo.dwFlags = STARTF_USESHOWWINDOW;
-    startup.StartupInfo.wShowWindow = SW_HIDE;
+    startup.StartupInfo.wShowWindow = visibility == AgentChildVisibility::Normal ? SW_SHOWNORMAL : SW_HIDE;
     startup.lpAttributeList = attributes.list;
     PROCESS_INFORMATION process{};
     // Atomic job membership: there is no create-then-assign orphan window.

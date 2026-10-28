@@ -1,5 +1,8 @@
 #include "vut/agent_service.hpp"
 #include "vut/agent_lifecycle.hpp"
+#include "vut/agent_tray.hpp"
+#include "vut/agent_ipc.hpp"
+#include "vut/agent_control.hpp"
 #include "vut/service_runtime.hpp"
 #include "vut/service_options.hpp"
 #include "vut/service_session.hpp"
@@ -235,6 +238,7 @@ public:
     TrackingOwner(const char* configPath, const char* journalPath, std::uint16_t port, bool diagnostics)
         : configured_(config(configPath)), journal_(journalPath), sender_(port), diagnostics_(diagnostics),
           runtime_(vut::Backend{}, runtimeConfig(), dependencies()) {}
+    std::string controlRequest(const std::string& bytes) { return vut::agentControlRequest(runtime_, bytes); }
     bool start() override {
         auto& runtime = runtime_;
         if (!runtime.start().ok()) {
@@ -298,7 +302,7 @@ public:
 }
 int vut::runAgentService(int argc,char** argv) try {
     if (argc==2 && std::string(argv[1])=="--help") {
-        std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT] [--diagnostics]\nConfiguration: source <persistent-installation-id> and map <full-rf-address> <map-id> lines.\n"
+        std::cout << "vut_service CONFIG REVISION_JOURNAL [PORT] [--diagnostics] [--tray] [--gui=PATH]\nConfiguration: source <persistent-installation-id> and map <full-rf-address> <map-id> lines.\n"
                      "Optional: reconnect_revision strict|preserve (default strict).\n"
                      "preserve means: Preserve coordinate map across tracker reconnect.\n"
                      "Default destination 127.0.0.1:29810. Stop/restart after map reset or ambiguous RF gap.\n"
@@ -318,11 +322,37 @@ int vut::runAgentService(int argc,char** argv) try {
     for (int i = 3; i < argc; ++i) arguments.emplace_back(argv[i]);
     const auto options = vut::parseServiceOptions(arguments);
     ConsoleStop console;
+    // Reverse destruction: tracking/owned GUI, IPC worker, then tray worker.
+    std::unique_ptr<AgentTray> tray;
+    std::unique_ptr<AgentIpc> ipc;
+    TrackingOwner* tracking = nullptr;
     AgentLifecycle agent;
     if (!agent.start({argv[1], argv[2], options.port}, [&] {
-            return std::make_unique<TrackingOwner>(argv[1], argv[2], options.port, options.diagnostics);
+            auto owned = std::make_unique<TrackingOwner>(argv[1], argv[2], options.port, options.diagnostics);
+            tracking = owned.get();
+            return owned;
         })) throw std::runtime_error(agent.error());
+    if (options.tray) { ipc = std::make_unique<AgentIpc>(); tray = std::make_unique<AgentTray>(); }
     while(run) {
+        if (tray) {
+            if (!tray->responsive() || !ipc->healthy()) throw std::runtime_error("Agent tray/IPC unavailable; stopping owned runtime");
+            const auto action = tray->takeAction();
+            if (action == AgentTrayAction::Exit) { agent.requestStop(); break; }
+            if (action == AgentTrayAction::Open) {
+                try {
+                    if (agent.hasOwnedChild()) {
+                        if (!agent.showOwnedChild()) std::cerr << "owned GUI is starting; retry Open\n";
+                    } else if (!options.guiExecutable.empty()) {
+                        ipc->allowOwnedChild(0);
+                        const auto pid = agent.spawnOwnedChild(options.guiExecutable,
+                            {L"--agent-pipe", ipc->name(), L"--agent-pid", std::to_wstring(GetCurrentProcessId())}, AgentChildVisibility::Normal);
+                        ipc->allowOwnedChild(pid);
+                    } else std::cerr << "GUI not configured; use --gui=PATH with --tray\n";
+                } catch (const std::exception& error) { std::cerr << "GUI open failed: " << error.what() << '\n'; }
+            }
+            if (agent.state() != AgentState::Running) break;
+            ipc->pump([&](const std::string& bytes) { return tracking->controlRequest(bytes); });
+        }
         if (!agent.pollOnce()) break;
     }
     if (!run) agent.requestStop();
