@@ -56,6 +56,7 @@ int main() try {
         CHECK(result["devices"][0]["tracking"]=="Unknown" && result["devices"][0]["orientationValid"]==false);
         f.pose(0x12);f.offset+=600000000;result=f.request("refresh");
         CHECK(result["devices"][0]["modality"]=="STALE" && result["devices"][0]["positionValid"].is_null());
+        CHECK(result["devices"][0]["tracking"]=="Unknown");
         CHECK(f.transport->writes.empty());
     }
     {

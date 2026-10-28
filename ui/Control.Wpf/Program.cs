@@ -34,41 +34,52 @@ internal static class Program {
 public sealed class ControlWindow : Window {
     readonly ControlViewModel model;
     bool canClose;
+    bool japanese = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja";
     public ControlWindow(ControlViewModel model) {
         this.model = model; DataContext = model;
         Title = "Ultimate Tracker Receiver"; Width = 1050; Height = 700; MinWidth = 800; MinHeight = 560;
+        BuildContent();
+        Loaded += (_, _) => model.StartPolling();
+        Closing += async (_, e) => { if (canClose) return; e.Cancel = true; IsEnabled = false; await model.DisposeAsync(); canClose = true; _ = Dispatcher.BeginInvoke(new Action(Close)); };
+    }
+    string T(string text) => UiText.Translate(text, japanese);
+    Binding B(string path) => new(path) { Converter = new UiText(japanese) };
+    void BuildContent(bool focusLanguage = false) {
         var root = new DockPanel { Margin = new Thickness(20), Background = SystemColors.WindowBrush };
         var header = new StackPanel(); DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
         header.Children.Add(new TextBlock { Text = Title, FontSize = 24, Margin = new Thickness(0,0,0,12) });
-        var health = new TextBlock { TextWrapping = TextWrapping.Wrap }; health.SetBinding(TextBlock.TextProperty, "Health"); header.Children.Add(health);
+        var language = new ComboBox { ItemsSource = new[] { "English", "日本語" }, SelectedIndex = japanese ? 1 : 0, Width = 140, HorizontalAlignment = HorizontalAlignment.Right };
+        System.Windows.Automation.AutomationProperties.SetName(language, "Language / 言語");
+        language.SelectionChanged += (_, _) => { japanese = language.SelectedIndex == 1; BuildContent(true); };
+        header.Children.Add(language);
+        var health = new TextBlock { TextWrapping = TextWrapping.Wrap }; health.SetBinding(TextBlock.TextProperty, B("Health")); header.Children.Add(health);
         var actions = new WrapPanel { Margin = new Thickness(0,12,0,0) }; header.Children.Add(actions);
-        Add(actions, "_Pair", model.Pair); Add(actions, "_Cancel pairing", model.Cancel); Add(actions, "_Identify", model.Identify); Add(actions, "_Refresh", model.Refresh);
+        Add(actions, T("_Pair"), model.Pair); Add(actions, T("_Cancel pairing"), model.Cancel); Add(actions, T("_Identify"), model.Identify); Add(actions, T("_Refresh"), model.Refresh);
         var tabs = new TabControl { Margin = new Thickness(0,12,0,12) }; root.Children.Add(tabs);
-        var normal = new StackPanel(); tabs.Items.Add(new TabItem { Header = "_Status", Content = new ScrollViewer { Content = normal, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } });
+        var normal = new StackPanel(); tabs.Items.Add(new TabItem { Header = T("_Status"), Content = new ScrollViewer { Content = normal, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } });
         var table = new DataGrid { IsReadOnly = true, AutoGenerateColumns = false, CanUserAddRows = false, MinHeight = 220 };
         foreach (var column in new[] { ("Device","DisplayName"), ("Connection","Connection"), ("Tracking","Tracking"), ("Modality","Modality"), ("Position","Position"), ("Orientation","Orientation"), ("Age","LastUpdate"), ("Identity","StableIdentity") })
-            table.Columns.Add(new DataGridTextColumn { Header = column.Item1, Binding = new Binding(column.Item2) });
+            table.Columns.Add(new DataGridTextColumn { Header = T(column.Item1), Binding = column.Item2 is "DisplayName" or "LastUpdate" ? new Binding(column.Item2) : B(column.Item2) });
         table.SetBinding(ItemsControl.ItemsSourceProperty, "Devices"); normal.Children.Add(table);
         foreach (var binding in new[] { "Status.Pairing", "IdentifyResult", "Message", "Status.CleanupError", "Status.PhysicalGate" }) {
             var label = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0,8,0,0) };
-            label.SetBinding(TextBlock.TextProperty, binding); normal.Children.Add(label);
+            label.SetBinding(TextBlock.TextProperty, B(binding)); normal.Children.Add(label);
         }
-        normal.Children.Add(new TextBlock { Text = "Observed, paired event and valid tracking are separate evidence. RF address and slot are not stable identity.\nClosing this window leaves the Agent running. Exit the Native tray to stop tracking and its owned GUI.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0,12,0,0) });
-        var advanced = new StackPanel { Margin = new Thickness(12) }; tabs.Items.Add(new TabItem { Header = "_Advanced", Content = advanced });
-        advanced.Children.Add(new TextBlock { Text = "Pair selector is a vendor selector, not a tracker number or body part. Pairing during tracking remains disabled until separately qualified. No automatic pairing or reconnect is performed.", TextWrapping = TextWrapping.Wrap });
+        normal.Children.Add(new TextBlock { Text = T("Observed, paired event and valid tracking are separate evidence. RF address and slot are not stable identity.\nClosing this window leaves the Agent running. Exit the Native tray to stop tracking and its owned GUI."), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0,12,0,0) });
+        var advanced = new StackPanel { Margin = new Thickness(12) }; tabs.Items.Add(new TabItem { Header = T("_Advanced"), Content = advanced });
+        advanced.Children.Add(new TextBlock { Text = T("Pair selector is a vendor selector, not a tracker number or body part. Pairing during tracking remains disabled until separately qualified. No automatic pairing or reconnect is performed."), TextWrapping = TextWrapping.Wrap });
         var selector = new ComboBox { ItemsSource = new[] { -1,0,1,2,3,4 }, Width = 160, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0,12,0,12) };
         selector.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedItemProperty, new Binding("Selector") { Mode = BindingMode.TwoWay }); advanced.Children.Add(selector);
-        advanced.Children.Add(new TextBlock { Text = "Native Agent owns config, revision journal and HID. Mapping, World/Mount and output approval belong to MonakaBridge; body assignment and IK belong to MonakaVR.", TextWrapping = TextWrapping.Wrap });
-        var diagnostics = new StackPanel { Margin = new Thickness(12) }; tabs.Items.Add(new TabItem { Header = "_Diagnostics", Content = diagnostics });
-        var copy = new Button { Content = "_Copy diagnostics", HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(10,6,10,6) };
+        advanced.Children.Add(new TextBlock { Text = T("Native Agent owns config, revision journal and HID. Mapping, World/Mount and output approval belong to MonakaBridge; body assignment and IK belong to MonakaVR."), TextWrapping = TextWrapping.Wrap });
+        var diagnostics = new StackPanel { Margin = new Thickness(12) }; tabs.Items.Add(new TabItem { Header = T("_Diagnostics"), Content = diagnostics });
+        var copy = new Button { Content = T("_Copy diagnostics"), HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(10,6,10,6) };
         copy.Click += (_, _) => { try { Clipboard.SetText(model.Diagnostics()); } catch (System.Runtime.InteropServices.ExternalException) { } }; diagnostics.Children.Add(copy);
         var rf = new DataGrid { IsReadOnly = true, AutoGenerateColumns = false, CanUserAddRows = false, Margin = new Thickness(0,12,0,12) };
-        rf.Columns.Add(new DataGridTextColumn { Header = "Observed RF address", Binding = new Binding("ObservedId") });
-        rf.Columns.Add(new DataGridTextColumn { Header = "Stable identity", Binding = new Binding("StableIdentity") });
+        rf.Columns.Add(new DataGridTextColumn { Header = T("Observed RF address"), Binding = new Binding("ObservedId") });
+        rf.Columns.Add(new DataGridTextColumn { Header = T("Stable identity"), Binding = B("StableIdentity") });
         rf.SetBinding(ItemsControl.ItemsSourceProperty, "Devices"); diagnostics.Children.Add(rf);
         Content = root;
-        Loaded += (_, _) => model.StartPolling();
-        Closing += async (_, e) => { if (canClose) return; e.Cancel = true; IsEnabled = false; await model.DisposeAsync(); canClose = true; _ = Dispatcher.BeginInvoke(new Action(Close)); };
+        if (focusLanguage) _ = Dispatcher.BeginInvoke(new Action(() => language.Focus()));
     }
     static void Add(Panel panel, string label, AsyncCommand command) => panel.Children.Add(new Button { Content = label, Command = command, Padding = new Thickness(10,6,10,6), Margin = new Thickness(0,0,8,8) });
 }

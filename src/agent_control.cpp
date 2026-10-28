@@ -31,7 +31,7 @@ Json status(ServiceRuntime& runtime) {
             }
         }
         devices.push_back({{"displayName", "Observed tracker"}, {"observedId", rf}, {"stableId", nullptr},
-            {"connection", connection(d.connection)}, {"tracking",d.tracking == control::TrackingState::Tracking ? "Tracked" : d.tracking == control::TrackingState::Lost ? "Lost/degraded" : d.tracking == control::TrackingState::Initializing ? "Initializing" : "Unknown"},
+            {"connection", connection(d.connection)}, {"tracking",orientation.is_null() ? "Unknown" : d.tracking == control::TrackingState::Tracking ? "Tracked" : d.tracking == control::TrackingState::Lost ? "Lost/degraded" : d.tracking == control::TrackingState::Initializing ? "Initializing" : "Unknown"},
             {"modality", modality}, {"positionValid", position}, {"orientationValid", orientation},
             {"ageMs", age ? Json(*age / 1000000.0) : Json(nullptr)}, {"battery", nullptr}});
     }

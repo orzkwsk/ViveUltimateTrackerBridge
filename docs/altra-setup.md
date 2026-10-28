@@ -122,3 +122,23 @@ Persistent assignment and full config-free setup are **blocked by missing verifi
 per-tracker identity and authoritative upper assignment/apply APIs**. Pairing/Identify
 software readiness is assessed independently in the [validation receipt](altra-setup-validation.md).
 Hardware tests remain separate from unit/fake-HID/CLI results.
+
+## Receiver presentation and offline GUI evidence
+
+The optional WPF Receiver follows the current Windows UI culture (`ja` selects
+Japanese; other cultures select English). Its Language / 言語 control switches
+the presentation during the current window lifetime, without writing settings,
+restarting the Agent, or issuing control requests. Unrecognized backend messages
+and copied diagnostics stay verbatim. Native tray labels remain English.
+Stale/unavailable admitted poses show Unknown tracking as well as unknown validity;
+historical Tracked state is not presented as current usable tracking.
+
+The test-only `vut_agent_gui_host NEW_DIRECTORY GUI_EXE [--tray]
+[--seconds=30..900]` accepts a bounded observation duration (default120s). It uses
+real Agent/Job/IPC/tray/WPF with Fake HID, an in-memory revision counter and a
+no-op sender; it does not validate physical HID, production journal persistence,
+or downstream UDP delivery. `pose-mode.txt` selects full/q/none/unknown/stale.
+`control-requests.jsonl` records actual requests/responses, owner polling and fake
+HID write count. `stop.flag` performs orderly shutdown; `open.flag` requests a
+fixture reopen and is not evidence of a user clicking the real tray. A successful
+build or lifecycle harness is not proof of visible GUI/keyboard/DPI acceptance.

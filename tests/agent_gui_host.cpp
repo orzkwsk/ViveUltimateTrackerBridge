@@ -42,7 +42,7 @@ public:
         if (GetTickCount64() >= nextPose_) {
             std::string state = "full"; std::ifstream(root_ / "pose-mode.txt") >> state;
             if (state != "stale") {
-                auto bytes = pose_; bytes[12] = ++packet_; bytes[48] = state == "q" ? 0x14 : state == "none" ? 0x13 : 0x12;
+                auto bytes = pose_; bytes[12] = ++packet_; bytes[48] = state == "q" ? 0x14 : state == "none" ? 0x13 : state == "unknown" ? 0x22 : 0x12;
                 transport_->reads.push_back(std::move(bytes));
             }
             nextPose_ = GetTickCount64() + 100;
@@ -58,11 +58,30 @@ public:
     std::string request(const std::string& bytes) {
         auto response=agentControlRequest(*runtime_, bytes);
         std::ofstream(root_/"status.json")<<response;
+        std::ofstream(root_/"control-requests.jsonl", std::ios::app)
+            << "{\"tick_ms\":" << GetTickCount64() << ",\"polls\":" << polls
+            << ",\"fake_hid_writes\":" << transport_->writes.size()
+            << ",\"request\":" << bytes << ",\"response\":" << response << "}\n";
         return response;
     }
 };
 int main(int argc, char** argv) try {
-    if (argc < 3 || argc > 4) throw std::runtime_error("agent_gui_host NEW_WORK_DIRECTORY GUI_EXE [--tray]");
+    if (argc < 3 || argc > 5) throw std::runtime_error("agent_gui_host NEW_WORK_DIRECTORY GUI_EXE [--tray] [--seconds=30..900]");
+    bool withTray = false;
+    unsigned seconds = 120;
+    bool hasSeconds = false;
+    for (int i = 3; i < argc; ++i) {
+        const std::string option = argv[i];
+        if (option == "--tray" && !withTray) withTray = true;
+        else if (option.starts_with("--seconds=") && !hasSeconds) {
+            const auto value = option.substr(10);
+            if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
+                throw std::runtime_error("invalid fixture duration");
+            seconds = static_cast<unsigned>(std::stoul(value));
+            if (seconds < 30 || seconds > 900) throw std::runtime_error("fixture duration must be 30..900 seconds");
+            hasSeconds = true;
+        } else throw std::runtime_error("unknown or duplicate fixture option");
+    }
     const fs::path root = fs::absolute(argv[1]), gui = fs::canonical(argv[2]);
     if (!fs::create_directories(root)) throw std::runtime_error("fixture directory must be new");
     std::ofstream(root / "agent.conf") << "offline-only fixture\n";
@@ -82,14 +101,13 @@ int main(int argc, char** argv) try {
         ipc.allowOwnedChild(pid);
         std::ofstream(root / "child.pid") << pid;
     };
-    if (argc == 4) {
-        if (std::string(argv[3]) != "--tray") throw std::runtime_error("unknown fixture option");
+    if (withTray) {
         tray = std::make_unique<AgentTray>();
     }
     open();
     std::ofstream(root / "host.pid") << GetCurrentProcessId();
     std::ofstream(root / "ready.txt") << "TEST_ONLY_NEVER_DEPLOY; fake HID, no UDP, own IPC\n";
-    const auto deadline = GetTickCount64() + 120000;
+    const auto deadline = GetTickCount64() + seconds * 1000ULL;
     ULONGLONG nextHeartbeat=0;
     while (GetTickCount64() < deadline && !fs::exists(root / "stop.flag")) {
         if (!ipc.healthy()) throw std::runtime_error("fixture IPC failed");
