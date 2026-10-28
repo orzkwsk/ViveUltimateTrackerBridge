@@ -23,6 +23,8 @@ internal sealed class UiText(bool japanese) : IValueConverter {
         ["HIL_PENDING; stable identity unavailable; Identify thresholds provisional"] = "実機検証待ち／永続的な識別情報なし／動作識別のしきい値は暫定",
         ["Idle"] = "待機中", ["Enabling"] = "開始中", ["Pairing"] = "ペアリング中",
         ["Disabling"] = "終了処理中", ["Completed"] = "完了", ["Cancelled"] = "中止済み",
+        ["Cancelling"] = "中止処理中", ["user cancelled"] = "ユーザーが中止しました",
+        ["Failed"] = "失敗", ["CleanupFailed"] = "終了処理の確認に失敗",
         ["TimedOut"] = "時間切れ", ["Faulted"] = "エラー", ["HIL_PENDING"] = "実機検証待ち (HIL_PENDING)",
         ["No confirmed identity"] = "識別情報は未確定",
         ["Observing motion (provisional thresholds)"] = "動作を観測中（暫定しきい値）",

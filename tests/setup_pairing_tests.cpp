@@ -62,7 +62,7 @@ void timeoutCancelQuit() {
     CHECK(f.session.pairing().result().state==PairingState::TimedOut);
     CHECK(!f.backend.pairingActive() && f.backend.running());
     CHECK(f.command("pair all").succeeded && f.command("pair-cancel").succeeded);
-    CHECK(f.session.pairing().result().state==PairingState::Cancelling);
+    CHECK(f.session.pairing().result().state==PairingState::Cancelled);
     CHECK(f.command("pair 0").succeeded);
     const auto quit=f.command("quit"); CHECK(!quit.keepRunning && quit.succeeded);
     CHECK(!f.backend.pairingActive());
@@ -98,6 +98,7 @@ void failedCleanup() {
     CHECK(!f.command("pair").succeeded); // fail closed while cleanup unresolved
     f.fake->uncertainDisable=false;
     CHECK(f.command("pair-cancel").succeeded); // explicit recovery
+    CHECK(f.session.pairing().result().state==PairingState::Cancelled);
     CHECK(!f.backend.pairingActive());
     CHECK(f.command("pair").succeeded);
     f.fake->uncertainDisable=true;

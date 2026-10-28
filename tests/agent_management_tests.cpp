@@ -80,6 +80,13 @@ int main() try {
         CHECK(f.transport->writes.size() == writes);
         result = f.request("cancel_pairing");
         CHECK(result["ok"].get<bool>() && !result["pairingActive"].get<bool>() && result["cleanupConfirmed"].get<bool>());
+        CHECK(result["pairing"] == "Cancelled");
+        const auto afterCancelWrites = f.transport->writes.size();
+        f.offset += 45000000000;
+        CHECK(f.runtime->pollOnce());
+        CHECK(f.request("refresh")["pairing"] == "Cancelled");
+        CHECK(f.request("cancel_pairing")["pairing"] == "Cancelled");
+        CHECK(f.transport->writes.size() == afterCancelWrites);
         CHECK(f.request("begin_pairing", {{"selector",2},{"timeoutSeconds",1}})["ok"].get<bool>());
         f.offset += 2000000000;
         CHECK(f.runtime->pollOnce());
@@ -106,6 +113,7 @@ int main() try {
         f.transport->uncertainDisable = true;
         auto result = f.request("cancel_pairing");
         CHECK(!result["ok"].get<bool>() && !result["cleanupConfirmed"].get<bool>());
+        CHECK(result["pairing"] == "CleanupFailed");
         const auto count = f.transport->writes.size();
         CHECK(!f.request("begin_pairing", {{"selector",2},{"timeoutSeconds",60}})["ok"].get<bool>());
         CHECK(f.transport->writes.size() == count);

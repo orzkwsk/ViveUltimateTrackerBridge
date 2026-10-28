@@ -132,6 +132,11 @@ restarting the Agent, or issuing control requests. Unrecognized backend messages
 and copied diagnostics stay verbatim. Native tray labels remain English.
 Stale/unavailable admitted poses show Unknown tracking as well as unknown validity;
 historical Tracked state is not presented as current usable tracking.
+Cancel enters the terminal Cancelled state only when the cleanup exchange is
+confirmed (or unnecessary). An unresolved cleanup remains CleanupFailed and
+does not become a successful cancellation. Cancelled describes software cleanup,
+not confirmed vendor physical effect. Repeated Cancel does not send another
+disable after cleanup is already confirmed.
 
 The test-only `vut_agent_gui_host NEW_DIRECTORY GUI_EXE [--tray]
 [--seconds=30..900]` accepts a bounded observation duration (default120s). It uses
