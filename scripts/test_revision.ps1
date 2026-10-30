@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('Quick', 'Full')]
+    [ValidateSet('Quick', 'Full', 'Audit')]
     [string]$Mode = 'Quick',
     [string]$ResultsDir = ''
 )
@@ -63,10 +63,21 @@ $Steps = @(
 )
 
 if ($Mode -eq 'Quick') {
-    $Steps += @{ Name='ctest-quick'; File='ctest'; Args=@('--test-dir',$BuildDir,'-C','Release','--output-on-failure','-R','protocol_v2_integrity|protocol$|observation|protocol_kit_integrity|runtime_policy|service_session_policy|backend_pairing|launcher_process_guard') }
+    $Steps += @{ Name='ctest-quick'; File='ctest'; Args=@('--test-dir',$BuildDir,'-C','Release','--output-on-failure','-R','^(normal_path_reachability|device_registry|runtime_policy|backend_pairing|observation|service_runtime|loopback_udp|wire_exchange|launcher_process_guard)$') }
 }
 else {
     $Steps += @{ Name='ctest-full'; File='ctest'; Args=@('--test-dir',$BuildDir,'-C','Release','--output-on-failure') }
+}
+
+# Quick/Full are functional software verification, never a source-release audit.
+# Audit retains the historic full CTest and release-tooling suite for explicit runs.
+if ($Mode -ne 'Audit') {
+    $AuditOnly = @('release-tooling', 'release-tooling-optimized', 'protocol-v2-kit', 'protocol-v1-historical-kit')
+    $Steps = @($Steps | Where-Object { $_.Name -notin $AuditOnly })
+    $CTest = @($Steps | Where-Object { $_.Name -eq 'ctest-full' })[0]
+    if ($null -ne $CTest) {
+        $CTest['Args'] = @($CTest['Args']) + @('-E', '^(protocol_v2_integrity|protocol_kit_integrity|service_session_policy)$')
+    }
 }
 
 foreach ($step in $Steps) {
@@ -83,6 +94,9 @@ $summary = [ordered]@{
     repo = 'orzkwsk/ViveUltimateTrackerBridge'
     head = $head
     mode = $Mode
+    validation_lane = $(if ($Mode -eq 'Audit') { 'HISTORICAL_SOURCE_POLICY_AUDIT' } else { 'PRODUCT_SOFTWARE' })
+    source_scope_checks = $(if ($Mode -eq 'Audit') { 'INCLUDED' } else { 'NOT_RUN_SEPARATE_AUDIT' })
+    reconnect_policy_migration = 'NOT_VERIFIED - see MonakaVR/MonakaBridge issue #17'
     result = $result
     failed_step = $FailedStep
     started_utc = $StartedUtc.ToString('o')
