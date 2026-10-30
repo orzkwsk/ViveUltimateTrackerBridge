@@ -3,6 +3,7 @@
 #include "vut/observation_adapter.hpp"
 #include "vut/protocol.hpp"
 #include <fstream>
+#include <filesystem>
 #include <iostream>
 #include <iterator>
 #include <stdexcept>
@@ -14,6 +15,7 @@ int main(int argc,char**argv)try{
  std::ifstream input(std::string(FIXTURE_DIR)+"/pose37.bin",std::ios::binary);std::vector<uint8_t> raw{std::istreambuf_iterator<char>(input),{}};require(raw.size()>=49,"vendor fixture missing");
  const auto initial=vut::protocol::parseIncomingEnvelope(raw);require(bool(initial),"vendor envelope");const auto decoded=vut::protocol::parsePose(*initial,1000);require(bool(decoded),"vendor Pose");
  vut::ObservationContext context{"p0-synthetic-altra",session,1,revision,1000,{{decoded->device.toString(),"p0-altra-map"}}};
+ require(!std::filesystem::exists(std::filesystem::u8path(argv[1])),"refusing to replace existing replay evidence");
  vut::ViveObservationAdapter adapter(context);std::ofstream out(argv[1]);require(bool(out),"fixture output");
  for(int i=0;i<100;++i){
   raw[48]=static_cast<uint8_t>(i<40||i>=60?0x02:i<50?0x04:0x03);
