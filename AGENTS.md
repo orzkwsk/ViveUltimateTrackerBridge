@@ -22,6 +22,12 @@ For the current coordinated revision, continue from the prepared `refactor/monak
 
 If ancestry does not derive from the prepared lineage, stop and report the mismatch instead of implementing against `main` or an unrelated branch.
 
+## Product-software verification and historical audit (2026-10-30)
+
+MonakaVR is a producer-independent SlimeVR 6DoF constraint extension, not a physical-tracker quality certification tool. Normal software PASS must demonstrate actual public-input handling, transforms, IK/fallback/output or the relevant backend function; version/source hashes and historic approvals do not substitute for that behavior.
+
+`scripts/test_revision.ps1` uses `-Mode Quick` and `-Mode Full` for product-software checks and `-Mode Audit` for historical source/release-policy checks. Audit may be used for a relevant release, dependency or policy migration, but must not be imposed as a default per-edit requirement. See `docs/verification-lanes.md`. Software PASS is not hardware HIL PASS. The existing mandatory calibration approval/revision model is a migration target under MonakaVR/MonakaBridge#17, not the intended long-term product acceptance criterion.
+
 ## Repository-wide constraints
 
 - Work only in this repository unless the active coordinated task explicitly states otherwise.
