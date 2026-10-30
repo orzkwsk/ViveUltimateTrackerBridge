@@ -51,7 +51,7 @@ enum class ServiceRuntimeFailure { None, Start, Registry, Dispatcher, Poll, Publ
 struct ServiceRuntimeStatistics {
     ObservationAdmissionDiagnostics admission;
     ObservationPublisher::Counters publication;
-    std::uint64_t rejected = 0, ignoredProvenance = 0;
+    std::uint64_t rejected = 0, ignoredProvenance = 0, rejectedUnboundPose = 0;
     std::uint64_t callbackRegistrations = 0, callbackClears = 0;
     std::size_t pendingPublication = 0;
 };

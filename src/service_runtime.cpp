@@ -193,7 +193,13 @@ void ServiceRuntime::dispatch(const BackendEvent& e) noexcept {
             if (sessionProvenance && !orderedTime) return;
         }
         const auto before = session_->adapter->diagnostics().rejectUnknownDevice;
-        auto observation = session_->adapter->admit(e); // unchanged real admission
+        // A current-session pose without authoritative registry ownership must
+        // not mutate RF recovery or publish. Retired provenance still reaches
+        // the adapter's generation/epoch diagnostics. Keep eventTime_ cleanup.
+        const bool unboundPose = provenance && e.kind == BackendEvent::Kind::Pose && (!handle || deferredFault_);
+        if (unboundPose) ++statistics_.rejectedUnboundPose;
+        auto observation = unboundPose ? std::optional<monaka::protocol::v2::Envelope>{}
+                                      : session_->adapter->admit(e);
         if (observation && provenance && handle && e.device.slot >= 0 && e.device.slot < 5)
             if (const auto* pose = std::get_if<monaka::protocol::v2::TrackerObservation>(&*observation))
                 admittedPoses_[e.device.slot] = *pose;

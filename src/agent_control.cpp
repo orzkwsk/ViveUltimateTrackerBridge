@@ -44,7 +44,8 @@ Json status(ServiceRuntime& runtime) {
         {"cleanupConfirmed",pair.cleanupConfirmed},{"cleanupError",pair.cleanupError},
         {"identifying",s->identifying},{"identifyCandidates",s->identifyCandidates},
         {"lastError",s->backendError},{"devices",devices},
-        {"output","Observation sent: " + std::to_string(s->statistics.publication.sent) + "; downstream visibility unknown"},
+        {"output","Observation sent: " + std::to_string(s->statistics.publication.sent) + "; RF resync pending: " + std::to_string(s->statistics.admission.resyncPending) +
+            "; completed: " + std::to_string(s->statistics.admission.resyncCompleted) + "; downstream visibility unknown"},
         {"physicalGate","HIL_PENDING; stable identity unavailable; Identify thresholds provisional"}};
 }
 }
