@@ -39,3 +39,7 @@ If ancestry does not derive from the prepared lineage, stop and report the misma
 - Never claim Hub-bypass hardware operation, multi-tracker behavior, loss/recovery, map behavior, or Wi-Fi/count-limit behavior unless it was actually validated.
 
 If repository state, the active v2 kit, or observed hardware behavior conflicts with the current Architecture Revision, inspect and report the difference rather than silently adapting the shared contract.
+
+## Portable product entry
+
+- Normal startup uses script-relative fixed `Build/runtime` products and never builds, installs or registers them. Run the explicit repository build command to update that output. Do not use task worktrees, dated packages, fixed drive/user paths or external tool installation literals as runtime dependencies. Discover external tools through environment or PATH; preserve required pinned kits and frozen evidence.

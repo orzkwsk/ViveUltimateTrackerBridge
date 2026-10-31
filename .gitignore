@@ -5,3 +5,6 @@ __pycache__/
 
 /config/vut-service.conf
 /assignments.json
+
+# Canonical local runtime, dependencies, tests and distribution outputs
+/Build/

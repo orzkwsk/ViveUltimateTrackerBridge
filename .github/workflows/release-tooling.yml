@@ -32,15 +32,15 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Configure Release (including setup, provisional store and fixed codecs)
-        run: cmake -S . -B build/ci -DBUILD_TESTING=ON -DVUT_BUILD_OBSERVATION=ON -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B Build/ci -DBUILD_TESTING=ON -DVUT_BUILD_OBSERVATION=ON -DCMAKE_BUILD_TYPE=Release
       - name: Build
-        run: cmake --build build/ci --config Release --parallel
+        run: cmake --build Build/ci --config Release --parallel
       - name: Native, CLI and process-lock regressions (fake HID on Windows only)
-        run: ctest --test-dir build/ci -C Release --output-on-failure --no-tests=error --output-junit results.xml
+        run: ctest --test-dir Build/ci -C Release --output-on-failure --no-tests=error --output-junit results.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: native-results-${{ matrix.os }}
           path: |
-            build/ci/results.xml
-            build/ci/Testing/Temporary/LastTest.log
+            Build/ci/results.xml
+            Build/ci/Testing/Temporary/LastTest.log

@@ -7,7 +7,7 @@ def require(ok, message):
 root=Path(__file__).resolve().parents[1]
 cpp,producer,java,javac=sys.argv[1:5]
 kit=root/'third_party/monaka-protocol-v2'
-build=root/'build/cross';build.mkdir(parents=True,exist_ok=True)
+build=root/'Build/cross';build.mkdir(parents=True,exist_ok=True)
 cp=os.pathsep.join(str(p) for p in [build,*sorted((kit/'jvm/libs').glob('*.jar'))])
 subprocess.run([javac,'-cp',cp,'-d',str(build),str(root/'tests/CodecConsumer.java')],check=True)
 jvm=[java,'-Dfile.encoding=UTF-8','-cp',cp,'CodecConsumer']

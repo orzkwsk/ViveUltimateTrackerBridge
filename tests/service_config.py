@@ -1,7 +1,9 @@
 import subprocess,sys,tempfile
 from pathlib import Path
 exe=sys.argv[1]
-with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1]/'build') as d:
+test_root=Path(__file__).resolve().parents[1]/'Build'
+test_root.mkdir(exist_ok=True)
+with tempfile.TemporaryDirectory(dir=test_root) as d:
     d=Path(d); config=d/'service.conf'; journal=d/'revision.log'
     config.write_text('source installation-test\nmap 23:32:42:b7:82:d3 room-a\n')
     def reserve(): return subprocess.run([exe,'--check-session',str(config),str(journal)],capture_output=True,text=True)

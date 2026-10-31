@@ -54,9 +54,9 @@ See `docs/INITIAL_RESEARCH.md` for protocol evidence, assumptions, and current l
 Windows, Visual Studio 2022 / CMake:
 
 ```powershell
-cmake -S . -B build -A x64
-cmake --build build --config Release
-ctest --test-dir build -C Release --output-on-failure
+cmake -S . -B Build/runtime -A x64
+cmake --build Build/runtime --config Release
+ctest --test-dir Build/runtime -C Release --output-on-failure
 ```
 
 No external HID library is required; the backend uses Windows HID/SetupAPI directly.
@@ -69,7 +69,7 @@ For normal bridge validation on Windows, use the repository-root launcher:
 Start_VIVE_Backend.cmd
 ```
 
-The launcher configures/builds `vut_service` in `build/runtime` and starts it in the foreground.
+Run `Build_Runtime.cmd` explicitly to build the fixed `Build/runtime/Release` products. The launcher starts the prebuilt `vut_service` in the foreground and never builds on startup. `Start_VIVE_Backend.cmd --check` reads file prerequisites without process inspection or hardware access.
 An existing process is accepted only after executable/config/journal/options match;
 this check does not establish stream or hardware health. Use `-Diagnostics` on
 `scripts/start_vive_backend.ps1` for detailed logging. Default operation does not
@@ -124,7 +124,7 @@ quit, exceptions and transport loss; unconfirmed disable is reported explicitly.
 Standalone `vut_pair` remains an auxiliary one-shot frontend:
 
 ```powershell
-.\build\Release\vut_pair.exe --slot all --timeout-seconds 60
+.\Build\runtime\Release\vut_pair.exe --slot all --timeout-seconds 60
 ```
 
 `vut_pair` opens the dongle exclusively, enables PairDevice only after that explicit invocation,
@@ -150,7 +150,7 @@ not a validated production claim.
 Do not run VIVE Hub at the same time because it may already own/use the same dongle interface.
 
 ```powershell
-.\build\Release\vut_probe.exe
+.\Build\runtime\Release\vut_probe.exe
 ```
 
 Expected output after a tracker connects:

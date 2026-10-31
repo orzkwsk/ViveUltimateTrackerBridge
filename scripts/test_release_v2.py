@@ -11,7 +11,7 @@ import release_v2 as gate
 
 class ReleaseValidationTests(unittest.TestCase):
     def setUp(self):
-        self.root = gate.ROOT / 'build/release-tool-tests' / uuid.uuid4().hex
+        self.root = gate.ROOT / 'Build/release-tool-tests' / uuid.uuid4().hex
         self.root.mkdir(parents=True)
 
     def report(self):

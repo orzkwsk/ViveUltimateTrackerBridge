@@ -4,7 +4,7 @@ param([string]$CMake = 'cmake')
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$BuildDir = Join-Path $RepoRoot 'build/setup'
+$BuildDir = Join-Path $RepoRoot 'Build/setup'
 Write-Host 'Setup Altra Trackers: same-session Pairing, discovery and provisional motion Identify.'
 Write-Host 'Stable identity acquisition and upper consumer role application are not integrated.'
 Write-Host 'Stop vut_service and VIVE Hub before using this exclusive dongle setup tool.'
