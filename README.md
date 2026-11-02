@@ -63,16 +63,21 @@ No external HID library is required; the backend uses Windows HID/SetupAPI direc
 
 ## Quick start
 
-For normal bridge validation on Windows, use the repository-root launcher:
+For normal bridge validation on Windows, use the single external workspace entry:
 
 ```cmd
-Start_VIVE_Backend.cmd
+..\launchers\Start_ViveUltimateTrackerBridge.cmd
 ```
 
-Run `Build_Runtime.cmd` explicitly to build the fixed `Build/runtime/Release` products. The launcher starts the prebuilt `vut_service` in the foreground and never builds on startup. `Start_VIVE_Backend.cmd --check` reads file prerequisites without process inspection or hardware access.
+Run `Build_Runtime.cmd` explicitly to build the fixed `Build/runtime/Release` products.
+The external entry starts the prebuilt `vut_service` console in the foreground
+and never builds on startup. This source tree has no GUI target; no external UX
+checkout or historical GUI binary is used. The entry accepts only optional
+`--check`, which reads file prerequisites without process inspection or hardware access.
 An existing process is accepted only after executable/config/journal/options match;
-this check does not establish stream or hardware health. Use `-Diagnostics` on
-`scripts/start_vive_backend.ps1` for detailed logging. Default operation does not
+this check does not establish stream or hardware health. Explicit diagnostics
+remain available through the native service CLI described in the production
+integration guide. Default operation does not
 issue persistent-loss SLAM queries; active queries require an explicit probe option.
 It uses `config/vut-service.conf` and stores the persistent revision journal under
 `%LOCALAPPDATA%\\MonakaVR\\ViveUltimateTrackerBridge\\vut-service.revision.log`.

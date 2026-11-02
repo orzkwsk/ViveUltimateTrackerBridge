@@ -7,18 +7,25 @@ Python 3 and the tracked fixed protocol dependencies must be available.
 `-WithTests` compiles the software test targets; this build command never runs
 the products, tests, installer, driver or device controls.
 
-`Start_VIVE_Backend.cmd` starts the prebuilt service. It does not build on
-startup. `--check` reads the executable/config prerequisites and reports file
+The workspace's `launchers/Start_ViveUltimateTrackerBridge.cmd` is the single
+normal entry. Its private helpers live outside this repository and resolve this
+checkout relative to their own location. It starts the prebuilt console service;
+this source tree has no GUI target. No UX checkout or historical GUI is used.
+Startup never builds. Optional `--check` reads the executable/config prerequisites and reports file
 presence; it does not inspect processes, create a journal directory, open HID,
 or claim configuration validation or runtime/physical readiness. Prepare the
 installation-specific configuration explicitly from the documented example;
-the launcher never copies or rewrites it. Direct PowerShell callers retain the
-existing explicit configuration, journal, port, diagnostics and build-config
-parameters; `-NoBuild` remains accepted for compatibility.
-Relative configuration and journal arguments are resolved from the repository
-root, regardless of the caller's working directory. Unknown arguments fail
+the launcher never copies or rewrites it. The normal entry uses the repository
+configuration and the existing per-user revision journal, with Release products
+and the default port. Advanced diagnostic invocation remains an explicit native
+CLI operation. Unknown or extra entry arguments fail
 before process inspection or launch. Missing configuration and executable
 prerequisites are reported together.
+
+`Setup_Altra_Trackers.cmd` and its helper remain explicit HIL/bring-up maintenance
+tools. They are outside normal startup and must not be launched during an offline
+launcher check. The read-only `scripts/vive_launcher_process.ps1` library remains
+for process-identity regression tests; it is not an application entry.
 
 `Build/` is the canonical local output root. Revision tests and CI have separate
 subdirectories there; `Build/Distributions` contains release archives/receipts

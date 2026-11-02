@@ -8,3 +8,8 @@ __pycache__/
 
 # Canonical local runtime, dependencies, tests and distribution outputs
 /Build/
+
+# Normal operational launchers live in the sibling launchers directory.
+/Start_*.cmd
+/scripts/start_vive_backend.ps1
+/scripts/start_gui.ps1

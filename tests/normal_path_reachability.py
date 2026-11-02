@@ -34,7 +34,7 @@ def audit(root):
     for path in sources + headers:
         visit(path)
     for name in ['CMakeLists.txt', 'scripts/release_v2.py', 'scripts/release_v2.json',
-                 'scripts/start_vive_backend.ps1', 'scripts/setup_altra_trackers.ps1']:
+                 'scripts/build_runtime.ps1', 'scripts/setup_altra_trackers.ps1']:
         text = (root / name).read_text(encoding='utf-8-sig')
         text = re.sub(r'(?m)^\s*#[^\n]*', '', text)
         for artifact in artifacts:

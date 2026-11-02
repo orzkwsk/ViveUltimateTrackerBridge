@@ -65,8 +65,7 @@ states therefore publish orientation-only observations with
 Passive service logging (does not enable SLAM queries):
 
 ```powershell
-.\scripts\start_vive_backend.ps1 -Diagnostics
-# Or: vut_service.exe CONFIG REVISION_JOURNAL [PORT] --diagnostics
+.\Build\runtime\Release\vut_service.exe CONFIG REVISION_JOURNAL 29810 --diagnostics
 ```
 
 The existing standalone `vut_probe` is a diagnostic tool: it prints pose, ACK and
