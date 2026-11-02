@@ -10,6 +10,7 @@ const char* pairingStateName(PairingState state) noexcept {
     case PairingState::Pairing: return "Pairing";
     case PairingState::Paired: return "Paired";
     case PairingState::Cancelling: return "Cancelling";
+    case PairingState::Cancelled: return "Cancelled";
     case PairingState::TimedOut: return "TimedOut";
     case PairingState::Failed: return "Failed";
     case PairingState::CleanupFailed: return "CleanupFailed";
@@ -113,7 +114,7 @@ bool PairingController::cancel(const std::string& reason) {
     if (!active() && result_.cleanupConfirmed) return true;
     if (!active() && !backend_.pairingActive()) return result_.cleanupConfirmed;
     result_.state = PairingState::Cancelling;
-    return finish(PairingState::Cancelling, reason);
+    return finish(PairingState::Cancelled, reason);
 }
 void PairingController::transportLost(const std::string& reason) {
     if (active() || !result_.cleanupConfirmed) (void)finish(PairingState::Failed, reason);

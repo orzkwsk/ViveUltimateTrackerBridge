@@ -6,6 +6,8 @@
 #include "vut/observation_publisher.hpp"
 #include "vut/service_control.hpp"
 #include "vut/service_session.hpp"
+#include "vut/pairing.hpp"
+#include "vut/setup.hpp"
 #include <array>
 #include <thread>
 
@@ -41,13 +43,15 @@ struct ServiceRuntimeConfig {
     control::RegistryLimits registryLimits;
     std::size_t publisherCapacity = 512;
     bool diagnostics = false;
+    // Production leaves this false until concurrent RF pairing is qualified.
+    bool allowExplicitPairing = false;
 };
 enum class ServiceRuntimeState { Stopped, Running, TransportLost, RestartRequired, Faulted };
 enum class ServiceRuntimeFailure { None, Start, Registry, Dispatcher, Poll, Publisher };
 struct ServiceRuntimeStatistics {
     ObservationAdmissionDiagnostics admission;
     ObservationPublisher::Counters publication;
-    std::uint64_t rejected = 0, ignoredProvenance = 0;
+    std::uint64_t rejected = 0, ignoredProvenance = 0, rejectedUnboundPose = 0;
     std::uint64_t callbackRegistrations = 0, callbackClears = 0;
     std::size_t pendingPublication = 0;
 };
@@ -61,9 +65,10 @@ struct ServiceRuntimeSnapshot {
     ServiceRuntimeStatistics statistics;
     // Authoritative production evidence, reconciled with registry ownership.
     std::vector<ConnectionEpochSnapshot> connectionEpochs;
-    // No setters and no control mutation entry points exist in ServiceRuntime.
-    static constexpr bool pairingMutation = false;
-    static constexpr bool identifyMutation = false;
+    bool pairingAvailable = false, identifying = false;
+    setup::PairingResult pairing;
+    std::vector<std::string> identifyCandidates;
+    std::array<std::optional<monaka::protocol::v2::TrackerObservation>, 5> admittedPoses;
     static constexpr bool identityAcquisition = false;
 };
 struct ServiceRuntimeTestAccess;
@@ -85,6 +90,9 @@ public:
     // Drain bounded diagnostics after poll, never log or invoke clients in dispatch.
     std::vector<BackendEvent> takeDiagnostics();
     control::Outcome validateHandle(const control::ServiceInstance&, const control::RuntimeHandle&);
+    control::Outcome beginPairing(int selector, std::chrono::seconds timeout);
+    control::Outcome cancelPairing();
+    control::Outcome beginIdentify();
 private:
     struct Current {
         control::RfAddress rf;
@@ -96,6 +104,9 @@ private:
         std::unique_ptr<ObservationPublisher> publisher;
     };
     Backend backend_; // destroyed last, only after callback has been cleared
+    setup::PairingController pairing_;
+    setup::Devices managementDevices_;
+    std::array<std::optional<monaka::protocol::v2::TrackerObservation>, 5> admittedPoses_;
     ServiceRuntimeConfig config_;
     ServiceRuntimeDependencies dependencies_;
     std::optional<std::int64_t> eventTime_;

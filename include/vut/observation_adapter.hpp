@@ -31,6 +31,9 @@ struct ObservationAdmissionDiagnostics {
     std::uint64_t rejectStateSequenceExhausted = 0;
     std::uint64_t rejectStateNonMonotonic = 0;
     std::uint64_t rejectRepairAfterAbsent = 0;
+    // Local RF recovery diagnostics, independent of raw optical TrackingStatus.
+    // Pending counts devices with quarantined candidates, never admitted poses.
+    std::uint64_t resyncStarted = 0, resyncCompleted = 0, resyncReset = 0, resyncPending = 0;
     int lastAcceptedRf = -1;
     // Snapshot of the last RF duplicate/reorder/gap rejection, not the latest packet.
     int lastRejectedRf = -1;
@@ -65,6 +68,12 @@ public:
 private:
     struct Stream {
         std::int64_t poseSequence = 0, stateSequence = 0, lastPoseNs = -1, lastStateNs = -1;
+        struct Candidate {
+            std::int64_t lastNs;
+            std::uint8_t rf;
+            unsigned packets;
+        };
+        std::optional<Candidate> candidate;
         std::uint8_t rf = 0;
         bool absent = false;
     };

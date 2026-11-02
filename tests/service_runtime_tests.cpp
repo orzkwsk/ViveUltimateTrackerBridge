@@ -218,7 +218,7 @@ void orderingAndAges() {
     ++f.now;
     CHECK(f.runtime->snapshot()->control->registry.revision == revision);
     CHECK(f.runtime->snapshot()->statistics.callbackRegistrations == 1);
-    CHECK(!ServiceRuntimeSnapshot::pairingMutation && !ServiceRuntimeSnapshot::identifyMutation && !ServiceRuntimeSnapshot::identityAcquisition);
+    CHECK(!f.runtime->snapshot()->pairingAvailable && !f.runtime->snapshot()->identifying && !ServiceRuntimeSnapshot::identityAcquisition);
 }
 void bindingBoundaries() {
     Fixture f;
@@ -564,9 +564,15 @@ void epochOwnershipAndMutation() {
     assertInvalid(*f.probe.beforeAdapter, ConnectionEpochReason::AddressMoved);
     CHECK(!epoch(*f.probe.beforeAdapter, 3).nadsFresh); collect(f, moved);
     auto uncertain = moved; uncertain.slot = 4;
+    const auto admissionsBeforeUnbound = f.probe.admissions;
     CHECK(f.deliver(f.event(BackendEvent::Kind::Pose, uncertain, 1)));
-    assertInvalid(*f.probe.beforeAdapter, ConnectionEpochReason::AddressMoved, 3);
-    CHECK(!f.probe.beforeAdapter->control->registry.devices.back().runtimeHandle);
+    // Registry ownership failure now stops before adapter mutation; inspect the
+    // authoritative result rather than the previous tracing-stage snapshot.
+    const auto unbound = f.runtime->snapshot();
+    CHECK(f.probe.admissions == admissionsBeforeUnbound);
+    CHECK(unbound->statistics.rejectedUnboundPose == 1);
+    assertInvalid(*unbound, ConnectionEpochReason::AddressMoved, 3);
+    CHECK(!unbound->control->registry.devices.back().runtimeHandle);
 
     Fixture ambiguity; CHECK(ambiguity.runtime->start().ok());
     CHECK(ambiguity.deliver(ambiguity.event(BackendEvent::Kind::DevicePaired))); collect(ambiguity);

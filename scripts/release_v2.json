@@ -159,7 +159,14 @@
         "setup_pairing",
         "setup_cli",
         "model_validation",
-        "model_validation_v2"
+        "model_validation_v2",
+        "agent_lifecycle",
+        "agent_process_ownership",
+        "agent_admission_confirmation",
+        "agent_tray",
+        "agent_ipc",
+        "agent_management",
+        "agent_owned_window"
       ]
     }
   ],

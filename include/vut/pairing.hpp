@@ -5,7 +5,7 @@
 #include <optional>
 
 namespace vut::setup {
-enum class PairingState { Idle, Enabling, Pairing, Paired, Cancelling, TimedOut, Failed, CleanupFailed };
+enum class PairingState { Idle, Enabling, Pairing, Paired, Cancelling, TimedOut, Failed, CleanupFailed, Cancelled };
 const char* pairingStateName(PairingState) noexcept;
 
 struct PairingResult {

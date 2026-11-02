@@ -80,7 +80,8 @@ std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& ev
     auto& stream = streams_[event.device.toString()];
     if (event.kind == BackendEvent::Kind::Pose) {
         if (!event.pose) return reject(diagnostics_.rejectMissingPose);
-        if (event.pose->device.toString() != event.device.toString()) return reject(diagnostics_.rejectPoseDeviceMismatch);
+        if (event.pose->device.mac != event.device.mac || event.pose->device.slot != event.device.slot)
+            return reject(diagnostics_.rejectPoseDeviceMismatch);
         if (stream.absent) return reject(diagnostics_.rejectAbsent);
 
         const auto& p = *event.pose;
@@ -91,16 +92,66 @@ std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& ev
 
         if (stream.lastPoseNs >= 0) {
             const auto gapNs = p.observedMonotonicNs - stream.lastPoseNs;
-            const auto delta = static_cast<std::uint8_t>(p.packetIndex - stream.rf);
             const auto rejectRf = [&](std::uint64_t& reason) {
                 diagnostics_.lastRejectedRf = static_cast<int>(p.packetIndex);
                 diagnostics_.lastRejectedGapNs = gapNs;
                 return reject(reason);
             };
-            // Half-range serial arithmetic. Ambiguous gaps require explicit session restart.
-            if (delta == 0) return rejectRf(diagnostics_.rejectDuplicateRf);
-            if (delta >= 128) return rejectRf(diagnostics_.rejectOldOrAmbiguousRf);
-            if (gapNs > 500000000) return rejectRf(diagnostics_.rejectPoseGap);
+            constexpr std::int64_t maximumGapNs = 500000000;
+            if (stream.candidate || gapNs > maximumGapNs) {
+                // The pre-gap 8-bit phase is ambiguous after silence. Quarantine
+                // an independent anchor; never advance admitted time/RF/sequence
+                // until three coherent packets establish a forward chain. This
+                // is deterministic serial resynchronization, not a quality gate.
+                const auto seed = [&] {
+                    if (!stream.candidate) {
+                        ++diagnostics_.resyncPending;
+                        ++diagnostics_.resyncStarted;
+                    }
+                    stream.candidate = Stream::Candidate{p.observedMonotonicNs, p.packetIndex, 1};
+                };
+                const auto reset = [&] {
+                    stream.candidate.reset();
+                    --diagnostics_.resyncPending;
+                    ++diagnostics_.resyncReset;
+                };
+                if (!stream.candidate) {
+                    seed();
+                    return rejectRf(diagnostics_.rejectPoseGap);
+                }
+                auto& candidate = *stream.candidate;
+                if (p.observedMonotonicNs <= candidate.lastNs) {
+                    reset();
+                    return reject(diagnostics_.rejectPoseNonMonotonic);
+                }
+                if (p.observedMonotonicNs - candidate.lastNs > maximumGapNs) {
+                    ++diagnostics_.resyncReset;
+                    seed();
+                    return rejectRf(diagnostics_.rejectPoseGap);
+                }
+                const auto delta = static_cast<std::uint8_t>(p.packetIndex - candidate.rf);
+                if (delta == 0) {
+                    reset();
+                    return rejectRf(diagnostics_.rejectDuplicateRf);
+                }
+                if (delta >= 128) {
+                    reset();
+                    return rejectRf(diagnostics_.rejectOldOrAmbiguousRf);
+                }
+                candidate.lastNs = p.observedMonotonicNs;
+                candidate.rf = p.packetIndex;
+                if (++candidate.packets < 3) return rejectRf(diagnostics_.rejectPoseGap);
+                stream.candidate.reset();
+                --diagnostics_.resyncPending;
+                ++diagnostics_.resyncCompleted;
+                // Publish only this current sample; quarantined predecessors
+                // never reach the publisher or refresh an admitted receipt.
+            } else {
+                const auto delta = static_cast<std::uint8_t>(p.packetIndex - stream.rf);
+                // Half-range serial arithmetic in the continuously admitted stream.
+                if (delta == 0) return rejectRf(diagnostics_.rejectDuplicateRf);
+                if (delta >= 128) return rejectRf(diagnostics_.rejectOldOrAmbiguousRf);
+            }
         }
         if (stream.poseSequence == std::numeric_limits<std::int64_t>::max()) {
             restartReason_ = RestartReason::PoseSequenceExhausted;
@@ -134,6 +185,11 @@ std::optional<c1::Envelope> ViveObservationAdapter::admit(const BackendEvent& ev
     const bool absent = event.kind == BackendEvent::Kind::DeviceUnpaired;
     // Do not reset pose counters or duplicate history on metadata events.
     stream.absent = absent;
+    if (absent && stream.candidate) {
+        stream.candidate.reset();
+        --diagnostics_.resyncPending;
+        ++diagnostics_.resyncReset;
+    }
     out.presence = absent ? "absent" : "present";
     out.tracking_state = absent ? "disconnected" : "initializing";
     ++diagnostics_.acceptedState;

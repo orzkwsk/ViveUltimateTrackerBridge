@@ -212,3 +212,21 @@ observed the same `vive-local-1` source, `23:32:03:81:fe:ec` device and
 single observation does not prove a vendor guarantee. Preserve-mode transport
 reconnect, map reset/reprovision, ambiguous RF recovery, multiple trackers,
 firmware variation, and end-to-end Bridge behavior remain hardware gates.
+# Issue #17 ordinary Pose precedence (2026-10-30)
+
+The session/revision policy below records transport and map generations; it is
+not physical-quality permission. Default `strict` may advance revision on
+restart, but a fresh structurally valid observation remains usable with the
+user's saved Source World/Tracker Mount/body selection. No continuity evidence,
+coordinate revision alignment or new Output Approval is required for normal
+Bridge/Monaka output. Backend restart creates a fresh session/epoch and drops
+old samples; it does not erase downstream saved geometry. Users can inspect
+drift and explicitly recalibrate when needed.
+
+The actual adapter still maps Ok to FULL, RecentlyLost to orientation-only and
+Lost to NONE; mathematical sanity, configured opaque device identity, retired
+transport generations, duplicate/reordered RF and timestamps remain enforced.
+`vut_p0_adapter_replay` is a test-only export of recorded synthetic vendor bytes
+through the actual decoder and adapter for cross-product software E2E. It never
+opens a dongle/HID/SDK and is excluded from deployable product packaging.
+

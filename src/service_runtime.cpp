@@ -36,7 +36,7 @@ bool matchingPose(const BackendEvent& event) {
 }
 }
 ServiceRuntime::ServiceRuntime(Backend backend, ServiceRuntimeConfig config, ServiceRuntimeDependencies deps)
-    : backend_(std::move(backend)), config_(std::move(config)), dependencies_(std::move(deps)),
+    : backend_(std::move(backend)), pairing_(backend_), config_(std::move(config)), dependencies_(std::move(deps)),
       control_([this] { return eventTime_ ? *eventTime_ : dependencies_.clock(); }, config_.registryLimits),
       coordinator_(config_.reconnectRevision), owner_(std::this_thread::get_id()) {
     if (!dependencies_.clock || !dependencies_.advanceRevision || !dependencies_.makeSessionId || !dependencies_.send)
@@ -88,6 +88,8 @@ control::Outcome ServiceRuntime::start() {
             return outcome_;
         }
         epochs_.transportOpened(backend_.transportGeneration());
+        managementDevices_.beginSession(backend_.transportGeneration());
+        admittedPoses_ = {};
         sessionInfo_ = coordinator_.begin(
             {config_.observation.sourceId, config_.observation.spaces}, nextCause_,
             backend_.transportGeneration(), dependencies_.advanceRevision,
@@ -133,6 +135,7 @@ std::optional<control::RuntimeHandle> ServiceRuntime::receive(const BackendEvent
         if (e.kind == BackendEvent::Kind::Pose && !exact &&
             (!matchingPose(e) || e.pose->observedMonotonicNs != e.observedMonotonicNs)) return {};
         if (e.kind == BackendEvent::Kind::DevicePaired || !exact) {
+            admittedPoses_[slot].reset();
             const auto bound = control_.bind(control_.scope(), e.device.mac, slot,
                 e.kind == BackendEvent::Kind::DevicePaired ? ConnectionState::Connected : ConnectionState::Observed);
             checkModel(bound.outcome);
@@ -172,6 +175,8 @@ void ServiceRuntime::dispatch(const BackendEvent& e) noexcept {
             eventTime_ = e.observedMonotonicNs;
             lastEventNs_ = e.observedMonotonicNs;
             epochs_.observe(e); // evidence FIRST, before registry/admission
+            managementDevices_.observe(e);
+            pairing_.observe(e);
             handle = receive(e); // registry FIRST, before actual adapter call
             std::array<std::optional<DeviceId>, 5> bindings{};
             // receive() already reconciles the five routing entries after bind;
@@ -188,7 +193,16 @@ void ServiceRuntime::dispatch(const BackendEvent& e) noexcept {
             if (sessionProvenance && !orderedTime) return;
         }
         const auto before = session_->adapter->diagnostics().rejectUnknownDevice;
-        auto observation = session_->adapter->admit(e); // unchanged real admission
+        // A current-session pose without authoritative registry ownership must
+        // not mutate RF recovery or publish. Retired provenance still reaches
+        // the adapter's generation/epoch diagnostics. Keep eventTime_ cleanup.
+        const bool unboundPose = provenance && e.kind == BackendEvent::Kind::Pose && (!handle || deferredFault_);
+        if (unboundPose) ++statistics_.rejectedUnboundPose;
+        auto observation = unboundPose ? std::optional<monaka::protocol::v2::Envelope>{}
+                                      : session_->adapter->admit(e);
+        if (observation && provenance && handle && e.device.slot >= 0 && e.device.slot < 5)
+            if (const auto* pose = std::get_if<monaka::protocol::v2::TrackerObservation>(&*observation))
+                admittedPoses_[e.device.slot] = *pose;
         if (provenance && handle && e.kind == BackendEvent::Kind::Pose && !deferredFault_) {
             const auto admission = observation && std::holds_alternative<monaka::protocol::v2::TrackerObservation>(*observation)
                 ? control::Admission::Admitted
@@ -227,6 +241,9 @@ void ServiceRuntime::rememberStatistics() {
 }
 void ServiceRuntime::retireTransport(ServiceRuntimeState state) {
     accepting_ = false;
+    pairing_.transportLost("transport retired; explicit restart required");
+    managementDevices_.endSession();
+    admittedPoses_ = {};
     epochs_.invalidateAll(state == ServiceRuntimeState::RestartRequired
         ? ConnectionEpochReason::ObservationSessionRestarted : ConnectionEpochReason::TransportLost);
     checkModel(control_.loseTransport()); // invalidate BEFORE runtime-owned stop
@@ -243,6 +260,7 @@ bool ServiceRuntime::pollOnce() {
     if (!accepting_ || state_ != ServiceRuntimeState::Running) return false;
     try {
         const bool read = backend_.pollOnce();
+        pairing_.tick(dependencies_.clock());
         if (deferredFault_) { shutdownImpl(); return false; }
         if (!read) {
             nextCause_ = SessionStartCause::TransportReconnect;
@@ -277,6 +295,14 @@ void ServiceRuntime::shutdown() {
 void ServiceRuntime::shutdownImpl() {
     if (closed_) return;
     accepting_ = false; // no new work; public API cannot be called recursively
+    try {
+        if (!pairing_.shutdown()) fault(ServiceRuntimeFailure::Poll,
+            {control::ErrorCode::CleanupUnconfirmed, control::Reason::CleanupFailure});
+    } catch (...) {
+        fault(ServiceRuntimeFailure::Poll, {control::ErrorCode::CleanupUnconfirmed, control::Reason::CleanupFailure});
+    }
+    managementDevices_.endSession();
+    admittedPoses_ = {};
     epochs_.invalidateAll(ConnectionEpochReason::RuntimeShutdown);
     checkModel(control_.loseTransport());
     current_ = {};
@@ -307,6 +333,13 @@ std::shared_ptr<const ServiceRuntimeSnapshot> ServiceRuntime::snapshot(control::
     out->observationSession = sessionInfo_; out->control = control_.snapshot(policy);
     out->statistics = statistics();
     out->connectionEpochs = epochs_.snapshot();
+    out->pairingAvailable = config_.allowExplicitPairing && state_ == ServiceRuntimeState::Running;
+    out->pairing = pairing_.result();
+    out->identifying = managementDevices_.identifying(dependencies_.clock());
+    out->identifyCandidates = managementDevices_.motionCandidates(dependencies_.clock());
+    for (std::size_t i = 0; i < current_.size(); ++i)
+        if (current_[i] && admittedPoses_[i] && admittedPoses_[i]->device_id == DeviceId{current_[i]->rf, static_cast<int>(i)}.toString())
+            out->admittedPoses[i] = admittedPoses_[i];
     return out;
 }
 std::vector<BackendEvent> ServiceRuntime::takeDiagnostics() {
@@ -318,6 +351,32 @@ std::vector<BackendEvent> ServiceRuntime::takeDiagnostics() {
     }
     diagnosticCount_ = 0;
     return out;
+}
+control::Outcome ServiceRuntime::beginPairing(int selector, std::chrono::seconds timeout) {
+    checkWorkOwner();
+    FlagGuard work(working_);
+    if (!config_.allowExplicitPairing) return {control::ErrorCode::Unsupported, control::Reason::CapabilityUnavailable};
+    if (!accepting_ || state_ != ServiceRuntimeState::Running) return {control::ErrorCode::Unavailable, control::Reason::TransportBoundary};
+    if (selector < -1 || selector > 4 || timeout.count() < 1 || timeout.count() > 120)
+        return {control::ErrorCode::InvalidArgument, control::Reason::InvalidSlot};
+    if (pairing_.active()) return {control::ErrorCode::Busy, control::Reason::InvalidTransition};
+    if (!pairing_.result().cleanupConfirmed) return {control::ErrorCode::CleanupUnconfirmed, control::Reason::CleanupPending};
+    return pairing_.begin(dependencies_.clock(), selector, timeout) ? control::Outcome{} :
+        control::Outcome{control::ErrorCode::OperationFailed, control::Reason::PrimaryFailure};
+}
+control::Outcome ServiceRuntime::cancelPairing() {
+    checkWorkOwner();
+    FlagGuard work(working_);
+    return pairing_.cancel() ? control::Outcome{} :
+        control::Outcome{control::ErrorCode::CleanupUnconfirmed, control::Reason::CleanupFailure};
+}
+control::Outcome ServiceRuntime::beginIdentify() {
+    checkWorkOwner();
+    FlagGuard work(working_);
+    if (!accepting_ || state_ != ServiceRuntimeState::Running) return {control::ErrorCode::Unavailable, control::Reason::TransportBoundary};
+    if (pairing_.active()) return {control::ErrorCode::Busy, control::Reason::InvalidTransition};
+    managementDevices_.beginIdentify(dependencies_.clock());
+    return {};
 }
 control::Outcome ServiceRuntime::validateHandle(const control::ServiceInstance& instance, const control::RuntimeHandle& handle) {
     checkWorkOwner();
