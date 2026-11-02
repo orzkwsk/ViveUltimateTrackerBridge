@@ -40,8 +40,17 @@ def audit(root):
         for artifact in artifacts:
             require(artifact.lower() not in text.lower(), f'research build/package reachability: {name}: {artifact}')
     service = code((root / 'tools/vut_service.cpp').read_text(encoding='utf-8-sig'))
+    require('runAgentService(argc, argv)' in service, 'service entry must delegate to Agent')
+    service += code((root / 'src/agent_service.cpp').read_text(encoding='utf-8-sig'))
     require(service.count('runtime.start()') == 1, 'service must have exactly one explicit startup')
     require(service.count('while(run)') == 1, 'service must only poll, not automatically reopen')
+    require(service.count('agent.start(') == 1, 'Agent cannot automatically restart')
+    require('agent.pollOnce()' in service and 'agent.shutdown()' in service, 'Agent must own poll/shutdown')
+    lifecycle = code((root / 'src/agent_lifecycle.cpp').read_text(encoding='utf-8-sig'))
+    require(lifecycle.index('native_->acquire(identity)') < lifecycle.index('runtime_ = factory()'),
+            'instance ownership must precede journal/runtime creation')
+    require('PROC_THREAD_ATTRIBUTE_JOB_LIST' in lifecycle and 'JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE' in lifecycle,
+            'owned child creation and parent-death containment required')
     runtime = code((root / 'src/service_runtime.cpp').read_text(encoding='utf-8-sig'))
     dispatch = runtime.split('void ServiceRuntime::dispatch', 1)[1].split('void ServiceRuntime::rememberStatistics', 1)[0]
     require('backend_.' not in dispatch, 'dispatcher cannot call Backend')
